@@ -1,0 +1,61 @@
+package com.review.agent.graph;
+
+import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.review.agent.graph.nodes.DataCollectorNode;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import static com.alibaba.cloud.ai.graph.OverAllState.DEFAULT_INPUT_KEY;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+
+/**
+ * 小红书笔记工作流配置
+ */
+@Slf4j
+@Configuration
+public class GraphConfig {
+    @Resource
+    private DataCollectorNode dataCollectorNode;
+
+    @Bean
+    public KeyStrategyFactory keyStrategyFactory() {
+        return new KeyStrategyFactoryBuilder().addStrategy(DEFAULT_INPUT_KEY, KeyStrategy.REPLACE)
+                .addStrategy("task_id", KeyStrategy.REPLACE) // 任务id
+                .addStrategy("target_origin", KeyStrategy.REPLACE) // 任务参考源
+                .addStrategy("status", KeyStrategy.REPLACE) // 任务执行状态
+                .addStrategy("output_directory", KeyStrategy.REPLACE) // 任务结果保存目录
+                .build();
+    }
+
+    @Bean
+    public StateGraph reviewAgentGraph(KeyStrategyFactory keyStrategyFactory) throws GraphStateException {
+
+        StateGraph graph = new StateGraph("Review Agent Workflow", keyStrategyFactory)
+                // 添加节点
+                .addNode("collector_agent", node_async(dataCollectorNode))
+                // 定义边
+                .addEdge(START, "collector_agent")
+                .addEdge("collector_agent", END);
+
+        return graph;
+    }
+
+    @Bean(name = "compiledReviewAgentGraph")
+    public CompiledGraph compiledReviewAgentGraph(@Qualifier("reviewAgentGraph") StateGraph stateGraph)
+            throws GraphStateException {
+
+        CompiledGraph compiledGraph = stateGraph.compile(CompileConfig.builder().build());
+        // 设置最大迭代次数
+        compiledGraph.setMaxIterations(100);
+        // 配置定时任务，每15分钟执行一次
+//        compiledGraph.schedule(ScheduleConfig.builder().cronExpression("0 0/5 * * * ?").build());
+        return compiledGraph;
+    }
+
+}

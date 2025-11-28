@@ -1,0 +1,45 @@
+package com.review.agent.common.config;
+
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
+
+/**
+ * Spring AI Alibaba配置 配置DashScope模型
+ */
+@Configuration
+public class AIConfig {
+
+    @Value("${spring.ai.dashscope.api-key}")
+    private String apiKey;
+
+    @Value("${spring.ai.dashscope.chat.model}")
+    private String chatModel;
+
+    @Value("${spring.ai.dashscope.embedding.model}")
+    private String embeddingModel;
+
+    @Bean
+    public DashScopeApi dashScopeApi(@Qualifier("restClient") RestClient.Builder restClient) {
+        return DashScopeApi.builder().apiKey(apiKey).restClientBuilder(restClient).build();
+    }
+
+    @Bean
+    public DashScopeChatModel dashScopeChatModel(DashScopeApi dashScopeApi) {
+        return DashScopeChatModel.builder()
+                .dashScopeApi(dashScopeApi)
+                .defaultOptions(DashScopeChatOptions.builder().withModel(chatModel).build())
+                .build();
+    }
+
+    @Bean
+    public DashScopeEmbeddingModel dashScopeEmbeddingModel(DashScopeApi dashScopeApi) {
+        return new DashScopeEmbeddingModel(dashScopeApi);
+    }
+}
