@@ -1,9 +1,6 @@
 package com.review.agent.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,8 +14,12 @@ import java.util.Date;
 @Table(name = "user_config", schema = "review_agent")
 public class UserConfig {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
+
+    @Column(name = "user_id")
+    private Long userId;
 
     @Size(max = 255)
     @Column(name = "scan_directory")

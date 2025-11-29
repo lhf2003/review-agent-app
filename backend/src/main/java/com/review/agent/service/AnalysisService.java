@@ -2,9 +2,9 @@ package com.review.agent.service;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.review.agent.common.CommonConstant;
+import com.review.agent.common.constant.CommonConstant;
 import com.review.agent.entity.AnalysisResult;
-import com.review.agent.entity.FileInfo;
+import com.review.agent.entity.DataInfo;
 import com.review.agent.entity.UserInfo;
 import com.review.agent.entity.request.AnalysisRequest;
 import com.review.agent.repository.AnalysisResultRepository;
@@ -41,47 +41,47 @@ public class AnalysisService {
         List<Long> fileIdList = analysisRequest.getFileIdList();
 
         for (Long fileId : fileIdList) {
-            FileInfo fileInfo = fileInfoService.findById(fileId);
-            if (fileInfo == null) {
+            DataInfo dataInfo = fileInfoService.findById(fileId);
+            if (dataInfo == null) {
                 log.error("file info not found, fileId: {}", fileId);
                 continue;
             }
             Map<String, Object> metaMap = Map.of("fileId", fileId);
             // 调用图计算引擎
             Optional<OverAllState> callResult = compiledGraph.call(metaMap);
-            callResult.ifPresent(overAllState -> processAnalysisResult(overAllState, fileInfo));
+            callResult.ifPresent(overAllState -> processAnalysisResult(overAllState, dataInfo));
         }
     }
 
     /**
      * 处理分析结果
      * @param overAllState 图计算引擎返回的分析结果
-     * @param fileInfo 文件信息
+     * @param dataInfo 文件信息
      */
-    private void processAnalysisResult(OverAllState overAllState, FileInfo fileInfo) {
+    private void processAnalysisResult(OverAllState overAllState, DataInfo dataInfo) {
         Optional<Object> problemStatement = overAllState.value("problem_statement");
         Optional<Object> solution = overAllState.value("solution");
 
         AnalysisResult analysisResult = new AnalysisResult();
-        analysisResult.setFileId(fileInfo.getId());
+        analysisResult.setFileId(dataInfo.getId());
 //                    analysisResult.setUserId(userId);
 
         if (problemStatement.isPresent() && solution.isPresent()) {
             String problemStatementStr = problemStatement.get().toString();
             String solutionStr = solution.get().toString();
 
-            fileInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_PROCESSED);
+            dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_PROCESSED);
 
             analysisResult.setProblemStatement(problemStatementStr);
             analysisResult.setSolution(solutionStr);
             analysisResult.setStatus(CommonConstant.ANALYSIS_STATUS_PROCESSED);
             analysisResult.setCreatedTime(new Date());
         } else {
-            fileInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_ERROR);
+            dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_ERROR);
             analysisResult.setStatus(CommonConstant.ANALYSIS_STATUS_ERROR);
         }
         // 更新文件处理状态
-        fileInfoService.update(fileInfo);
+        fileInfoService.update(dataInfo);
         // 保存AI分析结果
         analysisResultRepository.save(analysisResult);
     }

@@ -1,0 +1,85 @@
+package com.review.agent.controller;
+
+import com.review.agent.common.exception.BaseResponse;
+import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.entity.DataInfo;
+import com.review.agent.entity.request.DataInfoRequest;
+import com.review.agent.service.DataInfoService;
+import jakarta.annotation.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+
+/**
+ * 文件信息接口
+ */
+@RestController
+@RequestMapping("/file-info")
+public class DataInfoController {
+
+    @Resource
+    private DataInfoService dataInfoService;
+
+    /**
+     * 获取文件数据分页列表
+     * @param pageable    分页信息
+     * @param fileRequest 文件数据查询请求
+     * @return 文件数据分页列表
+     */
+    @PostMapping("/page")
+    public BaseResponse<Page<DataInfo>> page(Pageable pageable, @RequestBody DataInfoRequest fileRequest) {
+        Page<DataInfo> dataInfoPage = dataInfoService.page(pageable, fileRequest);
+        return ResultUtil.success(dataInfoPage);
+    }
+
+    /**
+     * 获取文件数据详情
+     * @param userId 用户ID
+     * @param id     数据ID
+     * @return 文件数据详情
+     */
+    @GetMapping("/detail")
+    public BaseResponse<DataInfo> detail(@RequestParam("userId") Long userId, @RequestParam("id") Long id) {
+        DataInfo dataInfo = dataInfoService.findById(id);
+        if (dataInfo == null) {
+            return ResultUtil.error("数据不存在");
+        }
+        return ResultUtil.success(dataInfo);
+    }
+
+    /**
+     * 导入文件数据
+     * @param file 上传的文件
+     * @return 导入结果
+     */
+    @PostMapping("/import")
+    public BaseResponse<DataInfo> importData(@RequestParam("userId") Long userId, @RequestParam("file") MultipartFile file) throws IOException {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null) {
+            originalFilename = "upload.txt";
+        }
+        String content = new String(file.getBytes());
+        DataInfo dataInfo = dataInfoService.importData(userId, originalFilename, content);
+        return ResultUtil.success(dataInfo);
+    }
+
+    /**
+     * 手动开启扫描文件同步数据
+     * @param userId 用户ID
+     * @return 同步结果
+     */
+    @GetMapping("/sync")
+    public BaseResponse<DataInfo> syncData(@RequestParam("userId") Long userId) throws IOException {
+        dataInfoService.syncData(userId);
+        return ResultUtil.success(null);
+    }
+
+    @PatchMapping("/status")
+    public BaseResponse<?> updateStatus(@RequestParam("id") Long id, @RequestParam("status") Integer status) {
+        dataInfoService.updateStatus(id, status);
+        return ResultUtil.success("ok");
+    }
+}

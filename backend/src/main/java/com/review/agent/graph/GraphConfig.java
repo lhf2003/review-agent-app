@@ -15,7 +15,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * 小红书笔记工作流配置
+ * 工作流配置
  */
 @Slf4j
 @Configuration
@@ -26,10 +26,8 @@ public class GraphConfig {
     @Bean
     public KeyStrategyFactory keyStrategyFactory() {
         return new KeyStrategyFactoryBuilder().addStrategy(DEFAULT_INPUT_KEY, KeyStrategy.REPLACE)
-                .addStrategy("task_id", KeyStrategy.REPLACE) // 任务id
-                .addStrategy("target_origin", KeyStrategy.REPLACE) // 任务参考源
-                .addStrategy("status", KeyStrategy.REPLACE) // 任务执行状态
-                .addStrategy("output_directory", KeyStrategy.REPLACE) // 任务结果保存目录
+                .addStrategy("file_id", KeyStrategy.REPLACE) // 文件id
+                .addStrategy("user_id", KeyStrategy.REPLACE) // 用户id
                 .build();
     }
 

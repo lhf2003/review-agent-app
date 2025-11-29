@@ -4,7 +4,6 @@ import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.entity.request.AnalysisRequest;
 import com.review.agent.service.AnalysisService;
-import com.review.agent.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;

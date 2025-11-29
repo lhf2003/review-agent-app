@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.ResourceAccessException;
 
+import java.io.IOException;
 import java.util.NoSuchElementException;
 
 @Slf4j
@@ -46,6 +47,12 @@ public class GlobalExceptionHandler {
     public BaseResponse<?> handleNoSuchElementException(NoSuchElementException ex) {
         log.error(ex.getMessage(), ex);
         return new BaseResponse<>(ErrorCode.NULL_DATA.getCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(IOException.class)
+    public BaseResponse<?> handleIOException(IOException ex) {
+        log.error(ex.getMessage(), ex);
+        return new BaseResponse<>(ErrorCode.ERROR.getCode(), ex.getMessage());
     }
 
 }

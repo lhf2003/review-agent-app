@@ -1,4 +1,4 @@
-package com.review.agent.common;
+package com.review.agent.common.constant;
 
 public class UserConstant {
     public static final String USER_LOGIN_STATUS = "userLoginStatus";

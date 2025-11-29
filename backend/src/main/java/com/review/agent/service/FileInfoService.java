@@ -1,8 +1,8 @@
 package com.review.agent.service;
 
 import com.review.agent.common.utils.ObjectTransformUtil;
-import com.review.agent.entity.FileInfo;
-import com.review.agent.repository.FileInfoRepository;
+import com.review.agent.entity.DataInfo;
+import com.review.agent.repository.DataInfoRepository;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -12,23 +12,23 @@ import org.springframework.stereotype.Service;
 @Service
 public class FileInfoService {
     @Resource
-    private FileInfoRepository fileInfoRepository;
+    private DataInfoRepository dataInfoRepository;
 
-    public FileInfo findById(Long fileId) {
-        return fileInfoRepository.findById(fileId).orElse(null);
+    public DataInfo findById(Long fileId) {
+        return dataInfoRepository.findById(fileId).orElse(null);
     }
 
-    public void add(FileInfo fileInfo) {
-        fileInfoRepository.save(fileInfo);
+    public void add(DataInfo dataInfo) {
+        dataInfoRepository.save(dataInfo);
     }
 
-    public void update(FileInfo fileInfo) {
-        FileInfo fileInfoInDb = findById(fileInfo.getId());
-        if (fileInfoInDb == null) {
-            log.error("file info not found, fileId: {}", fileInfo.getId());
+    public void update(DataInfo dataInfo) {
+        DataInfo dataInfoInDb = findById(dataInfo.getId());
+        if (dataInfoInDb == null) {
+            log.error("file info not found, fileId: {}", dataInfo.getId());
             return;
         }
-        BeanUtils.copyProperties(fileInfo, fileInfoInDb, ObjectTransformUtil.getNullPropertyNames(fileInfo));
-        fileInfoRepository.save(fileInfoInDb);
+        BeanUtils.copyProperties(dataInfo, dataInfoInDb, ObjectTransformUtil.getNullPropertyNames(dataInfo));
+        dataInfoRepository.save(dataInfoInDb);
     }
 }

@@ -12,8 +12,12 @@ import lombok.Setter;
 public class AnalysisTag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "analysis_id", nullable = false)
+    @Column(name = "id", nullable = false)
     private Long id;
+
+    @NotNull
+    @Column(name = "analysis_id", nullable = false)
+    private Long analysisId;
 
     @NotNull
     @Column(name = "tag_id", nullable = false)

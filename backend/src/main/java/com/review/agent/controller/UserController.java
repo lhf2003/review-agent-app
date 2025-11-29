@@ -1,14 +1,13 @@
 package com.review.agent.controller;
 
-import com.review.agent.common.UserConstant;
+import com.review.agent.common.constant.UserConstant;
 import com.review.agent.common.exception.BaseResponse;
-import com.review.agent.common.exception.ErrorCode;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.entity.UserConfig;
 import com.review.agent.entity.UserInfo;
 import com.review.agent.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +22,11 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    // region 用户信息接口
+
+    /**
+     * 注册用户
+     */
     @PostMapping("/register")
     public BaseResponse<?> register(@RequestBody UserInfo userInfo) {
         userService.register(userInfo);
@@ -37,7 +41,7 @@ public class UserController {
             return ResultUtil.error("username not found");
         }
         if (!userInfoFromDb.getPassword().equals(DigestUtils.md5DigestAsHex((UserConstant.SALT + userInfo.getPassword()).getBytes()))) {
-            return ResultUtil.error( "password not match");
+            return ResultUtil.error("password not match");
         }
         return ResultUtil.success("login success");
     }
@@ -56,5 +60,32 @@ public class UserController {
         userService.updateInfo(userInfo);
         return ResultUtil.success("update success");
     }
+    // endregion 用户信息接口
+
+    // region 用户配置接口
+
+    /**
+     * 获取用户配置
+     */
+    @GetMapping("/config/get")
+    public BaseResponse<UserConfig> getUserConfig(@RequestParam("userId") Long userId) {
+        // 校验用户是否存在
+        UserInfo userInfo = userService.findById(userId);
+        if (userInfo == null) {
+            return ResultUtil.error("user not found");
+        }
+
+        return ResultUtil.success(userService.getUserConfig(userId));
+    }
+
+     /**
+      * 更新用户配置
+      */
+    @PostMapping("/config/update")
+    public BaseResponse<?> updateUserConfig(@RequestBody UserConfig userConfig) {
+        userService.updateUserConfig(userConfig);
+        return ResultUtil.success("update success");
+    }
+    // endregion 用户配置接口
 
 }

@@ -12,16 +12,15 @@ import java.util.Date;
 @Getter
 @Setter
 @Entity
-@Table(name = "file_info", schema = "review_agent")
-public class FileInfo {
+@Table(name = "data_info", schema = "review_agent")
+public class DataInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @ColumnDefault("1")
     @Column(name = "user_id")
-    private Integer userId;
+    private Long userId;
 
     @Size(max = 255)
     @NotNull

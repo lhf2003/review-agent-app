@@ -1,4 +1,4 @@
-package com.review.agent.common;
+package com.review.agent.common.constant;
 
 /**
  * 公共常量

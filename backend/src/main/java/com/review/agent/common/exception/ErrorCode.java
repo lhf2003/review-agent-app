@@ -10,6 +10,7 @@ public enum ErrorCode {
     USER_NOT_FOUND(40002, "用户不存在"),
     USER_EXIST(40003, "用户已存在"),
     NOT_FOUND_ERROR(40004, "资源不存在"),
+    NOT_FOUND_DIRECTORY(40004, "目录不存在"),
 
     USER_NOT_LOGIN(40100, "用户未登录"),
     NULL_DATA(40004, "数据为空"),
