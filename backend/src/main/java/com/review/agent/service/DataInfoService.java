@@ -164,12 +164,7 @@ public class DataInfoService {
         }
     }
 
-    public void updateStatus(Long id, Integer status) {
-        DataInfo dataInfo = findById(id);
-        if (dataInfo == null) {
-            throw new IllegalArgumentException("data not found");
-        }
-        dataInfo.setProcessedStatus(status);
+    public void update(DataInfo dataInfo) {
         dataInfoRepository.save(dataInfo);
     }
 }

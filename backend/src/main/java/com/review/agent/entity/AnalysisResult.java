@@ -23,12 +23,19 @@ public class AnalysisResult {
     @Column(name = "file_id", nullable = false)
     private Long fileId;
 
-    @Size(max = 255)
-    @NotNull
-    @Column(name = "vector_id", nullable = false)
+    @Column(name = "vector_id")
     private String vectorId;
 
-    @Size(max = 255)
+    @NotNull
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @Column(name = "tag_id")
+    private Long tagId;
+
+    @Column(name = "keyword")
+    private String keyword;
+
     @Column(name = "problem_statement")
     private String problemStatement;
 

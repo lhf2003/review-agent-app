@@ -65,11 +65,3 @@ management:
   endpoint:
     health:
       show-details: always
-
-
-app:
-  python:
-    # 替换为你自己的 python 解释器路径
-    interpreter: ${PYTHON_INTERPRETER:python.exe}
-    # python 脚本目录
-    script-dir: ${user.dir}/scripts

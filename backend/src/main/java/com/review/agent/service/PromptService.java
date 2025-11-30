@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class PromptService {
 
     // 提示词文件列表
-    private static final String[] PROMPT_FILES = {"prompts/summary-agent-prompt.md"};
+    private static final String[] PROMPT_FILES = {"prompts/Analysis-agent-prompt.md", "prompts/Classify-agent-prompt.md"};
 
     private Map<String, String> promptTemplates = new HashMap<>();
 
@@ -68,7 +68,7 @@ public class PromptService {
      */
     private void parsePrompts(String content, String fileName) {
         // 使用正则表达式匹配提示词块
-        Pattern pattern = Pattern.compile("## (.*?)\\n(.*?)(?=\\n## |$)", Pattern.DOTALL);
+        Pattern pattern = Pattern.compile("# (.*?)\\n(.*?)(?=\\n# |$)", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(content);
 
         while (matcher.find()) {
@@ -87,11 +87,11 @@ public class PromptService {
      * 构建提示词名称，消除复杂的条件链
      */
     private String buildPromptName(String fileName, String promptName) {
-        if (fileName.contains("summary")) {
-            return "summary." + promptName;
+        if (fileName.contains("Analysis")) {
+            return "Analysis." + promptName;
         }
-        if (fileName.contains("common")) {
-            return "common." + promptName;
+        if (fileName.contains("Classify")) {
+            return "Classify." + promptName;
         }
         return promptName;
     }
@@ -131,7 +131,7 @@ public class PromptService {
         String result = template;
 
         for (Map.Entry<String, Object> entry : variables.entrySet()) {
-            String placeholder = "{" + entry.getKey() + "}";
+            String placeholder = "${" + entry.getKey() + "}";
             String value = entry.getValue() != null ? entry.getValue().toString() : "";
             result = result.replace(placeholder, value);
         }
@@ -141,21 +141,21 @@ public class PromptService {
 
 
     /**
-     * 获取生成封面文案提示词
+     * 获取分析提示词
      */
-    public String getXhsSummaryPrompt(String problemStatement) throws PromptProcessingException {
+    public String getAnalysisPrompt(String problemStatement) throws PromptProcessingException {
         Map<String, Object> variables = new HashMap<>();
         variables.put("problemStatement", problemStatement);
-        return buildPrompt("summary.小红书文案提示词", variables);
+        return buildPrompt("Analysis.文本分析提示词", variables);
     }
 
     /**
-     * 获取总结文本提示词
+     * 获取分类提示词
      */
-    public String getTextSummaryPrompt(String problemStatement) throws PromptProcessingException {
+    public String getClassifyPrompt(String categories) throws PromptProcessingException {
         Map<String, Object> variables = new HashMap<>();
-        variables.put("problemStatement", problemStatement);
-        return buildPrompt("summary.内容总结提示词", variables);
+        variables.put("categories", categories);
+        return buildPrompt("Classify.文本分类提示词", variables);
     }
 
     // ========== 通用提示词 ==========

@@ -17,7 +17,7 @@ import java.io.IOException;
  * 文件信息接口
  */
 @RestController
-@RequestMapping("/file-info")
+@RequestMapping("/data")
 public class DataInfoController {
 
     @Resource
@@ -26,12 +26,12 @@ public class DataInfoController {
     /**
      * 获取文件数据分页列表
      * @param pageable    分页信息
-     * @param fileRequest 文件数据查询请求
+     * @param dataInfoRequest 文件数据查询请求
      * @return 文件数据分页列表
      */
     @PostMapping("/page")
-    public BaseResponse<Page<DataInfo>> page(Pageable pageable, @RequestBody DataInfoRequest fileRequest) {
-        Page<DataInfo> dataInfoPage = dataInfoService.page(pageable, fileRequest);
+    public BaseResponse<Page<DataInfo>> page(Pageable pageable, @RequestBody DataInfoRequest dataInfoRequest) {
+        Page<DataInfo> dataInfoPage = dataInfoService.page(pageable, dataInfoRequest);
         return ResultUtil.success(dataInfoPage);
     }
 
@@ -75,11 +75,5 @@ public class DataInfoController {
     public BaseResponse<DataInfo> syncData(@RequestParam("userId") Long userId) throws IOException {
         dataInfoService.syncData(userId);
         return ResultUtil.success(null);
-    }
-
-    @PatchMapping("/status")
-    public BaseResponse<?> updateStatus(@RequestParam("id") Long id, @RequestParam("status") Integer status) {
-        dataInfoService.updateStatus(id, status);
-        return ResultUtil.success("ok");
     }
 }

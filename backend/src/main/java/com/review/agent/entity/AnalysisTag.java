@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.security.PrivateKey;
+
 @Getter
 @Setter
 @Entity
@@ -21,7 +23,10 @@ public class AnalysisTag {
 
     @NotNull
     @Column(name = "tag_id", nullable = false)
-    private Integer tagId;
+    private Long tagId;
+
+    @Column(name = "keywords")
+    private String keywords;
 
     @Column(name = "confidence_score")
     private Double confidenceScore;

@@ -45,5 +45,4 @@ public class UserInfo {
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "update_time")
     private Date updateTime;
-
 }

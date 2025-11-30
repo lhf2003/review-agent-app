@@ -1,5 +1,6 @@
 package com.review.agent.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -43,9 +44,13 @@ public class DataInfo {
     @Column(name = "processed_status")
     private Integer processedStatus;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @ColumnDefault("CURRENT_TIMESTAMP")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @Column(name = "created_time")
     private Date createdTime;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @Column(name = "update_time")
+    private Date updateTime;
+
 
 }

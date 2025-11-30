@@ -1,6 +1,8 @@
 package com.review.agent.service;
 
+import com.review.agent.common.constant.UserConstant;
 import com.review.agent.common.utils.ObjectTransformUtil;
+import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.entity.UserConfig;
 import com.review.agent.entity.UserInfo;
 import com.review.agent.repository.UserConfigRepository;
@@ -69,7 +71,11 @@ public class UserService {
      * @return 用户信息
      */
     public UserInfo findByUsername(String username) {
-        return userInfoRepository.findByUsername(username);
+        UserInfo userInfo = userInfoRepository.findByUsername(username);
+        if (userInfo == null) {
+            throw new IllegalArgumentException("username not found");
+        }
+        return userInfo;
     }
 
     public UserInfo findById(Long id) {
@@ -84,6 +90,7 @@ public class UserService {
         BeanUtils.copyProperties(userInfo, userInfo, ObjectTransformUtil.getNullPropertyNames(userInfo));
         userInfoRepository.save(userInfo);
     }
+
     // endregion
 
     // region 用户配置相关
