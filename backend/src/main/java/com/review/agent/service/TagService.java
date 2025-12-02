@@ -24,14 +24,19 @@ public class TagService {
     @Resource
     private AnalysisTagRepository analysisTagRepository;
 
-    public List<Tag> findAll() {
-        return tagRepository.findAll();
+    public Page<Tag> page(Pageable pageable, TagRequest tagRequest) {
+        return tagRepository.findAllByPage(pageable, tagRequest.getUserId(), tagRequest.getTagName(),tagRequest.getParentId());
     }
+
 
     public List<Tag> findAllByUserId(Long userId) {
         return tagRepository.findAllByUserId(userId);
     }
 
+    /**
+     * 添加主标签
+     * @param tag 标签
+     */
     @Transactional
     public void add(Tag tag) {
         if (tag.getName() == null || tag.getName().isEmpty()) {
@@ -41,6 +46,24 @@ public class TagService {
             throw new IllegalArgumentException("tag name exists");
         }
         tag.setId(null);
+        tag.setParentId(0L);
+        tag.setCount(0);
+        tagRepository.save(tag);
+    }
+
+    /**
+     * 添加子标签
+     * @param tag 标签
+     */
+    public void addSub(Tag tag) {
+        if (tag.getParentId() == null) {
+            throw new IllegalArgumentException("parent id required");
+        }
+        if (tagRepository.existsByName(tag.getName())) {
+            throw new IllegalArgumentException("tag name exists");
+        }
+        tag.setId(null);
+        tag.setCount(0);
         tagRepository.save(tag);
     }
 
@@ -56,10 +79,6 @@ public class TagService {
         tagRepository.deleteById(id);
     }
 
-    public Page<Tag> page(Pageable pageable, TagRequest tagRequest) {
-        return tagRepository.findAllByPage(pageable, tagRequest.getUserId(), tagRequest.getTagName());
-    }
-
     public void update(Tag tag) {
         Tag tagInDb = tagRepository.findById(tag.getId()).orElse(null);
         if (tagInDb == null) {
@@ -67,5 +86,9 @@ public class TagService {
         }
         BeanUtils.copyProperties(tag, tagInDb, ObjectTransformUtil.getNullPropertyNames(tag));
         tagRepository.save(tagInDb);
+    }
+
+    public List<Tag> findByIdList(List<Long> tagIdList) {
+        return tagRepository.findAllById(tagIdList);
     }
 }

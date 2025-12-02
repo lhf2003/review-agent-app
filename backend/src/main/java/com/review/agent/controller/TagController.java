@@ -20,17 +20,40 @@ public class TagController {
     @Resource
     private TagService tagService;
 
+    /**
+     * 分页查询标签
+     * @param pageable 分页参数
+     * @param tagRequest 查询参数
+     * @return 标签列表
+     */
     @PostMapping("/page")
-    public BaseResponse<?> page(Pageable pageable,@RequestBody TagRequest tagRequest) {
-        return ResultUtil.success(tagService.page(pageable,tagRequest));
+    public BaseResponse<?> page(Pageable pageable, @RequestBody TagRequest tagRequest) {
+        return ResultUtil.success(tagService.page(pageable, tagRequest));
     }
 
 
+    /**
+     * 添加主标签
+     * @param tag 标签
+     * @return 成功
+     */
     @PostMapping("/add")
     public BaseResponse<?> add(@RequestBody Tag tag) {
         tagService.add(tag);
         return ResultUtil.success("ok");
     }
+
+    /**
+     * 添加子标签
+     * @param tag 标签
+     * @return 成功
+     */
+    @PostMapping("/add/sub")
+    public BaseResponse<?> addSub(@RequestBody Tag tag) {
+        tagService.addSub(tag);
+        return ResultUtil.success("ok");
+    }
+
 
     @PostMapping("/update")
     public BaseResponse<?> update(@RequestBody Tag tag) {

@@ -32,7 +32,7 @@ public class Tag {
 
     @ColumnDefault("0")
     @Column(name = "parent_id")
-    private Integer parentId;
+    private Long parentId;
 
     @Column(name = "type")
     private Byte type;

@@ -23,7 +23,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     @Query(nativeQuery = true, value = """
         select * from tag t where (:tagName is null or t.user_id = :userId)\s
         and (:tagName is null or :tagName = '' or t.name like concat('%', :tagName, '%'))
+        and (:parentId is null or t.parent_id = :parentId)
        \s""")
-    Page<Tag> findAllByPage(Pageable pageable, @Param("userId") Long userId, @Param("tagName") String tagName);
+    Page<Tag> findAllByPage(Pageable pageable, @Param("userId") Long userId, @Param("tagName") String tagName, @Param("parentId") Integer parentId);
 
 }
