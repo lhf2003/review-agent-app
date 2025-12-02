@@ -4,6 +4,7 @@ import com.review.agent.entity.DataInfo;
 import com.review.agent.entity.SyncRecord;
 import com.review.agent.entity.UserConfig;
 import com.review.agent.entity.request.DataInfoRequest;
+import com.review.agent.entity.vo.DataInfoVo;
 import com.review.agent.repository.DataInfoRepository;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +17,9 @@ import org.springframework.util.StopWatch;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -32,12 +34,13 @@ public class DataInfoService {
     @Resource
     private UserService userService;
 
-    public Page<DataInfo> page(Pageable pageable, DataInfoRequest fileRequest) {
+    public Page<DataInfoVo> page(Pageable pageable, DataInfoRequest fileRequest) {
         Long userId = fileRequest.getUserId();
         Integer processedStatus = fileRequest.getProcessedStatus();
+        String fileName = fileRequest.getFileName();
         Date startTime = fileRequest.getStartTime();
         Date endTime = fileRequest.getEndTime();
-        return dataInfoRepository.findByPage(pageable, userId, processedStatus, startTime, endTime);
+        return dataInfoRepository.findByPage(pageable, userId, fileName, processedStatus, startTime, endTime);
     }
 
     public DataInfo findById(Long id) {
@@ -74,13 +77,16 @@ public class DataInfoService {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
-        List<DataInfo> dataList = new ArrayList<>();
         File[] files = file.listFiles();
-        if (files != null) {
-            for (File fileData : files) {
-                if (fileData.isFile()) {
-                    upsertFile(userId, fileData, dataList);
-                }
+        if (files == null) {
+            log.info("scan directory is empty");
+            return;
+        }
+
+        List<DataInfo> dataList = new ArrayList<>();
+        for (File newFileData : files) {
+            if (newFileData.isFile()) {
+                upsertFile(userId, newFileData, dataList);
             }
         }
 
@@ -100,49 +106,55 @@ public class DataInfoService {
     /**
      * 封装数据
      * @param userId 用户ID
-     * @param fileData 文件数据
+     * @param newFileData 文件数据
      * @param dataList 数据列表
      */
-    private void upsertFile(Long userId, File fileData, List<DataInfo> dataList) {
+    private void upsertFile(Long userId, File newFileData, List<DataInfo> dataList) {
         String content;
         try {
-            content = FileUtils.readFileToString(fileData, StandardCharsets.UTF_8);
+            content = FileUtils.readFileToString(newFileData, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        String filePath = fileData.getPath();
-        DataInfo existing = dataInfoRepository.findByFilePath(filePath);
-        if (existing == null) {
+        String filePath = newFileData.getPath();
+        String filename = newFileData.getName();
+
+        DataInfo existingData = dataInfoRepository.findByFilePath(filePath);
+
+        long currentModifiedTime = 0;
+        try {
+            currentModifiedTime = Files.getLastModifiedTime(Path.of(filePath)).toMillis();
+        } catch (IOException e) {
+            log.error("❌无法获取修改时间: " + filePath);
+        }
+        Date currentDateTime = Date.from(Instant.ofEpochMilli(currentModifiedTime));
+        // 新增文件
+        if (existingData == null || existingData.getId() == null) {
             DataInfo dataInfo = new DataInfo();
             dataInfo.setUserId(userId);
             dataInfo.setFilePath(filePath);
-            dataInfo.setFileName(fileData.getName());
+            dataInfo.setFileName(newFileData.getName());
             dataInfo.setFileContent(content);
             dataInfo.setProcessedStatus(0);
             dataInfo.setCreatedTime(new Date());
+            dataInfo.setUpdateTime(currentDateTime);
             dataList.add(dataInfo);
         } else {
-            existing.setFileContent(content);
-            existing.setProcessedStatus(0);
-            dataList.add(existing);
+            // 更新文件内容
+            Date previousModifiedTime = existingData.getUpdateTime();
+            long previousMilli = previousModifiedTime.toInstant().toEpochMilli();
+            if (currentModifiedTime > previousMilli) {
+                existingData.setFileContent(content);
+                existingData.setProcessedStatus(3);
+                existingData.setUpdateTime(currentDateTime);
+                dataList.add(existingData);
+                log.info("✏️ 更新文件: " + filename);
+            }
         }
     }
 
     public List<DataInfo> findByUserId(Long userId) {
         return dataInfoRepository.findByUserId(userId);
-    }
-
-    /**
-     * 获取用户最后一次同步数据的数据
-     * @param userId 用户ID
-     * @return 最后一次同步数据的数据
-     */
-    private DataInfo getLastSyncDate(Long userId) {
-        List<DataInfo> dataInfoList = findByUserId(userId);
-        if (dataInfoList.isEmpty()) {
-            return null;
-        }
-        return dataInfoList.get(dataInfoList.size() - 1);
     }
 
     public DataInfo importData(Long userId, String originalFilename, String content) {

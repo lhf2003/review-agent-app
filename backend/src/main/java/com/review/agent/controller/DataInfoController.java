@@ -4,6 +4,7 @@ import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.entity.DataInfo;
 import com.review.agent.entity.request.DataInfoRequest;
+import com.review.agent.entity.vo.DataInfoVo;
 import com.review.agent.service.DataInfoService;
 import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
@@ -24,31 +25,31 @@ public class DataInfoController {
     private DataInfoService dataInfoService;
 
     /**
-     * 获取文件数据分页列表
+     * 分页
      * @param pageable    分页信息
      * @param dataInfoRequest 文件数据查询请求
      * @return 文件数据分页列表
      */
     @PostMapping("/page")
-    public BaseResponse<Page<DataInfo>> page(Pageable pageable, @RequestBody DataInfoRequest dataInfoRequest) {
-        Page<DataInfo> dataInfoPage = dataInfoService.page(pageable, dataInfoRequest);
+    public BaseResponse<Page<DataInfoVo>> page(Pageable pageable, @RequestBody DataInfoRequest dataInfoRequest) {
+        Page<DataInfoVo> dataInfoPage = dataInfoService.page(pageable, dataInfoRequest);
         return ResultUtil.success(dataInfoPage);
     }
 
-    /**
-     * 获取文件数据详情
-     * @param userId 用户ID
-     * @param id     数据ID
-     * @return 文件数据详情
-     */
-    @GetMapping("/detail")
-    public BaseResponse<DataInfo> detail(@RequestParam("userId") Long userId, @RequestParam("id") Long id) {
-        DataInfo dataInfo = dataInfoService.findById(id);
-        if (dataInfo == null) {
-            return ResultUtil.error("数据不存在");
-        }
-        return ResultUtil.success(dataInfo);
-    }
+//    /**
+//     * 获取文件数据详情
+//     * @param userId 用户ID
+//     * @param id     数据ID
+//     * @return 文件数据详情
+//     */
+//    @GetMapping("/detail")
+//    public BaseResponse<DataInfo> detail(@RequestParam("userId") Long userId, @RequestParam("id") Long id) {
+//        DataInfo dataInfo = dataInfoService.findById(id);
+//        if (dataInfo == null) {
+//            return ResultUtil.error("数据不存在");
+//        }
+//        return ResultUtil.success(dataInfo);
+//    }
 
     /**
      * 导入文件数据
@@ -67,7 +68,7 @@ public class DataInfoController {
     }
 
     /**
-     * 手动开启扫描文件同步数据
+     * 同步数据
      * @param userId 用户ID
      * @return 同步结果
      */

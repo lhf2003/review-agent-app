@@ -14,6 +14,10 @@ public class DataInfoRequest {
      */
     private Long userId;
     /**
+     * 文件名
+     */
+    private String fileName;
+    /**
      * 处理状态（0=未分析, 1=已分析 2=正在分析 3=分析失败）
      */
     private Integer processedStatus;
