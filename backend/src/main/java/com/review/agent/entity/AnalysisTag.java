@@ -25,8 +25,11 @@ public class AnalysisTag {
     @Column(name = "tag_id", nullable = false)
     private Long tagId;
 
-    @Column(name = "keywords")
-    private String keywords;
+    @Column(name = "sub_tag_id")
+    private String subTagId;
+
+    @Column(name = "recommends")
+    private String recommends;
 
     @Column(name = "confidence_score")
     private Double confidenceScore;

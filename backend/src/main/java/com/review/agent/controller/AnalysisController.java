@@ -1,9 +1,11 @@
 package com.review.agent.controller;
 
+import com.review.agent.AnalysisResultInfo;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.entity.AnalysisResult;
 import com.review.agent.entity.request.AnalysisRequest;
+import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisTagVo;
 import com.review.agent.service.AnalysisService;
 import jakarta.annotation.Resource;
@@ -24,9 +26,15 @@ public class AnalysisController {
     @Resource
     private AnalysisService analysisService;
 
+    /**
+     * 分页查询分析结果
+     * @param pageable 分页参数
+     * @param resultRequest 查询参数
+     * @return 分析结果列表
+     */
     @PostMapping("/page")
-    public BaseResponse<List<AnalysisResult>> page(Pageable pageable, @RequestBody AnalysisResult analysisResult) {
-        return ResultUtil.success(analysisService.page(pageable, analysisResult));
+    public BaseResponse<List<AnalysisResultInfo>> page(Pageable pageable, @RequestBody AnalysisResultRequest resultRequest) {
+        return ResultUtil.success(analysisService.page(pageable, resultRequest));
     }
 
     /**
@@ -41,21 +49,23 @@ public class AnalysisController {
 
     /**
      * 开始分析
+     * @param analysisRequest 分析请求
+     * @return 分析结果
      */
     @PostMapping("/start")
     public BaseResponse<?> startAnalysis(@RequestBody AnalysisRequest analysisRequest) {
         analysisService.startAnalysis(analysisRequest);
-        return ResultUtil.success("analysis started");
+        return ResultUtil.success("analysis success!");
     }
 
     /**
-     * 获取分析结果
+     * 获取指定会话的分析结果
      * @param userId 用户ID
      * @param dataId 数据ID
      * @return 分析结果
      */
     @GetMapping("/result")
-    public BaseResponse<AnalysisResult> getAnalysisResult(@RequestParam("userId") Long userId, @RequestParam("dataId") Long dataId) {
-        return ResultUtil.success(analysisService.getAnalysisResult(userId, dataId));
+    public BaseResponse<AnalysisResult> getAnalysisResult(@RequestParam("userId") Long userId, @RequestParam("dataId") Long dataId, @RequestParam("analysisId") Long analysisId) {
+        return ResultUtil.success(analysisService.getAnalysisResult(userId, dataId, analysisId));
     }
 }

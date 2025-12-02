@@ -2,10 +2,8 @@ package com.review.agent.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.util.Date;
 
@@ -30,12 +28,6 @@ public class AnalysisResult {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "tag_id")
-    private Long tagId;
-
-    @Column(name = "keyword")
-    private String keyword;
-
     @Column(name = "problem_statement")
     private String problemStatement;
 
@@ -43,12 +35,19 @@ public class AnalysisResult {
     @Column(name = "solution")
     private String solution;
 
+    @Column(name = "session_start")
+    private Integer sessionStart;
+
+    @Column(name = "session_end")
+    private Integer sessionEnd;
+
+    @Column(name = "session_content")
+    private String sessionContent;
+
     @NotNull
     @Column(name = "status", nullable = false)
     private Integer status;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_time")
     private Date createdTime;
 

@@ -1,5 +1,6 @@
 package com.review.agent.repository;
 
+import com.review.agent.AnalysisResultInfo;
 import com.review.agent.entity.AnalysisResult;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -34,19 +35,30 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
      * @return 分析结果列表
      */
     @Query(nativeQuery = true, value = """
-            select * from analysis_result a 
+            select a.id as id,a.file_id as fileId ,a.problem_statement as problemStatement, a.status as status, a.created_time as createdTime, tag.name as tagName 
+                from analysis_result a 
+                  left join analysis_tag at on a.id = at.analysis_id
+                  left join tag on at.tag_id = tag.id
             where (:problemStatement is null or :problemStatement = '' or a.problem_statement like concat('%', :problemStatement, '%'))
-            and (:tagId is null or a.tag_id = :tagId)
+            and (:tagId is null or at.tag_id = :tagId)
             and (:userId is null or a.user_id = :userId)
             and (:status is null or a.status = :status)
                         and 1= 1
             """)
-    List<AnalysisResult> findByPage(Pageable pageable,
-                                    @Param("problemStatement") String problemStatement,
-                                    @Param("tagId") Long tagId,
-                                    @Param("userId") Long userId,
-                                    @Param("status") Integer status);
+    List<AnalysisResultInfo> findByPage(Pageable pageable,
+                                        @Param("problemStatement") String problemStatement,
+                                        @Param("tagId") Long tagId,
+                                        @Param("userId") Long userId,
+                                        @Param("status") Integer status);
 
     @Query("select a from AnalysisResult a where a.userId = :userId and a.fileId = :dataId order by a.createdTime desc limit 1")
     AnalysisResult findByUserIdAndDataId(Long userId, Long dataId);
+
+    @Query("""
+            select a from AnalysisResult a where a.userId = :userId 
+                        and (:dataId is null or a.fileId = :dataId )
+                        and (:analysisId is null or a.id = :analysisId )
+                        order by a.createdTime desc limit 1
+            """)
+    AnalysisResult findByCondition(Long userId, Long dataId, Long analysisId);
 }
