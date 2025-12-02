@@ -2,10 +2,9 @@ package com.review.agent.graph.nodes;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.node.QuestionClassifierNode;
-import com.review.agent.entity.DataInfo;
+import com.review.agent.entity.AnalysisResult;
+import com.review.agent.entity.AnalysisTag;
 import com.review.agent.entity.Tag;
-import com.review.agent.service.DataInfoService;
 import com.review.agent.service.PromptService;
 import com.review.agent.service.TagService;
 import jakarta.annotation.Resource;
@@ -14,6 +13,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,39 +34,42 @@ public class TagClassifyNode implements NodeAction {
     private ChatClient chatClient;
 
     @Override
-    public Map<String, Object> apply(OverAllState state) throws Exception {
+    public Map<String, Object> apply(OverAllState state) {
         log.info("======TagClassifyNode apply start======");
-//        QuestionClassifierNode questionType = new QuestionClassifierNode.Builder()
-//                .chatClient(chatClient)
-//                .inputTextKey("solution")
-//                .classificationInstructions(List.of("Java", "数据库"))
-//                .categories(List.of("和Java相关则分类为Java，和数据库相关则分类为数据库"))
-//                .outputKey("question_type")
-//                .build();
-//        Map<String, Object> result = questionType.apply(state);
 
-        String solution = state.value("solution").get().toString();
         String userId = state.value("userId").get().toString();
+        @SuppressWarnings("unchecked")
+        List<AnalysisResult> analysisResultList = (List<AnalysisResult>) state.value("analysisResultList").get();
 
         Map<String, Long> nameToIdMap = new HashMap<>();
         String categories = buildCategories(Long.parseLong(userId), nameToIdMap);
         String systemPrompt = promptService.getClassifyPrompt(categories);
 
-        AiAnalysisResult result = chatClient.prompt()
-                .system(systemPrompt)
-                .user(solution)
-                .call()
-                .entity(AiAnalysisResult.class);
+        List<AnalysisTag> analysisTagList = new ArrayList<>();
+        for (AnalysisResult result : analysisResultList) {
+            AiAnalysisResult response = chatClient.prompt()
+                    .system(systemPrompt)
+                    .user(result.getSolution())
+                    .call()
+                    .entity(AiAnalysisResult.class);
 
-        if (result == null) {
-            log.info("AI 分类结果为空");
-            return Map.of();
+            if (response == null) {
+                log.info("AI 分类标签失败，fileId：{},sessionStart：{}，sessionEnd：{}，",
+                        result.getFileId(), result.getSessionStart(), result.getSessionEnd());
+                continue;
+            }
+            AnalysisTag analysisTag = new AnalysisTag();
+            analysisTag.setTagId(nameToIdMap.get(response.category()));
+            List<String> subTagIdList = response.subCategory().stream()
+                    .filter(nameToIdMap::containsKey)
+                    .map(nameToIdMap::get)
+                    .map(String::valueOf)
+                    .toList();
+            analysisTag.setSubTagId(String.join(",", subTagIdList));
+            analysisTagList.add(analysisTag);
         }
 
-        Long tagId = nameToIdMap.get(result.category());
-        return Map.of("tagId", tagId,
-                "category", result.category(),
-                "keywords", result.keywords());
+        return Map.of("analysisTagList", analysisTagList, "analysisResultList", analysisResultList);
     }
 
     /**
@@ -76,6 +79,10 @@ public class TagClassifyNode implements NodeAction {
      */
     private String buildCategories(Long userId, Map<String, Long> nameToIdMap) {
         List<Tag> tagList = tagService.findAllByUserId(userId);
+        Map<Long, List<Tag>> idToChildrenMap = new HashMap<>();
+        for (Tag tag : tagList) {
+            idToChildrenMap.computeIfAbsent(tag.getParentId(), k -> new ArrayList<>()).add(tag);
+        }
         StringBuilder stringBuilder = new StringBuilder();
         for (Tag tag : tagList) {
             nameToIdMap.put(tag.getName(), tag.getId());
@@ -84,12 +91,22 @@ public class TagClassifyNode implements NodeAction {
                 stringBuilder.append("：").append(tag.getDescription());
             }
             stringBuilder.append("\n");
+            // 子标签
+            if (idToChildrenMap.containsKey(tag.getId())) {
+                for (Tag subTag : idToChildrenMap.get(tag.getId())) {
+                    stringBuilder.append("- ").append(subTag.getName());
+                    if (StringUtils.hasText(subTag.getDescription())) {
+                        stringBuilder.append("：").append(subTag.getDescription());
+                    }
+                    stringBuilder.append("\n");
+                }
+            }
         }
         return stringBuilder.toString();
     }
 
 
-    record AiAnalysisResult(String category, List<String> keywords) {
+    record AiAnalysisResult(String category, List<String> subCategory, List<String> recommends) {
     }
 
 }

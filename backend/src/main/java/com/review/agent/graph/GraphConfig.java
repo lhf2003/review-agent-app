@@ -3,6 +3,7 @@ package com.review.agent.graph;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.review.agent.graph.nodes.DataAnalysisNode;
+import com.review.agent.graph.nodes.SessionExtractionNode;
 import com.review.agent.graph.nodes.TagClassifyNode;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @Configuration
 public class GraphConfig {
     @Resource
+    private SessionExtractionNode sessionExtractionNode;
+    @Resource
     private DataAnalysisNode dataAnalysisNode;
 
     @Resource
@@ -40,10 +43,12 @@ public class GraphConfig {
 
         return new StateGraph("Review Agent Workflow", keyStrategyFactory)
                 // 添加节点
+                .addNode("session_extraction_agent", node_async(sessionExtractionNode))
                 .addNode("analysis_agent", node_async(dataAnalysisNode))
                 .addNode("tag_classify_agent", node_async(tagClassifyNode))
                 // 定义边
-                .addEdge(START, "analysis_agent")
+                .addEdge(START, "session_extraction_agent")
+                .addEdge("session_extraction_agent", "analysis_agent")
                 .addEdge("analysis_agent", "tag_classify_agent")
                 .addEdge("tag_classify_agent", END);
     }

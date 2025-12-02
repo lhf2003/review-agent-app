@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class PromptService {
 
     // 提示词文件列表
-    private static final String[] PROMPT_FILES = {"prompts/Analysis-agent-prompt.md", "prompts/Classify-agent-prompt.md"};
+    private static final String[] PROMPT_FILES = {"prompts/Analysis-agent-prompt.md", "prompts/Classify-agent-prompt.md", "prompts/Extract-agent-prompt.md"};
 
     private Map<String, String> promptTemplates = new HashMap<>();
 
@@ -89,9 +89,10 @@ public class PromptService {
     private String buildPromptName(String fileName, String promptName) {
         if (fileName.contains("Analysis")) {
             return "Analysis." + promptName;
-        }
-        if (fileName.contains("Classify")) {
+        } else if (fileName.contains("Classify")) {
             return "Classify." + promptName;
+        } else if (fileName.contains("Extract")) {
+            return "Extract." + promptName;
         }
         return promptName;
     }
@@ -156,6 +157,15 @@ public class PromptService {
         Map<String, Object> variables = new HashMap<>();
         variables.put("categories", categories);
         return buildPrompt("Classify.文本分类提示词", variables);
+    }
+
+    /**
+     * 获取会话提取提示词
+     */
+    public String getSessionExtractionPrompt(String categories) throws PromptProcessingException {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("categories", categories);
+        return buildPrompt("Extract.会话提取提示词", variables);
     }
 
     // ========== 通用提示词 ==========

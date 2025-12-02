@@ -15,16 +15,17 @@ public class MultiLLMConfig {
     // 模型配置常量 - 默认使用百炼模型
     private static final String ANALYSIS_MODEL = "qwen-plus";
     private static final String CLASSIFY_MODEL = "qwen-plus";
-    private static final String IMAGE_MODEL = "wan2.5-i2i-preview";
+    private static final String EXTRACT_MODEL = "qwen-plus";
 
     // 温度参数常量
     private static final double ANALYSIS_TEMPERATURE = 0.8;
     private static final double CLASSIFY_TEMPERATURE = 0.1;
-    public static final double IMAGE_TEMPERATURE = 0.6;
+    public static final double EXTRACT_TEMPERATURE = 0.6;
 
     // Token限制常量
     private static final int ANALYSIS_MAX_TOKENS = 30000;
     private static final int CLASSIFY_MAX_TOKENS = 1000;
+    private static final int EXTRACT_MAX_TOKENS = 1000;
 
     /**
      * 数据分析助手专用模型 - 擅长数据分析
@@ -61,15 +62,16 @@ public class MultiLLMConfig {
     }
 
     /**
-     * 图片编辑助手专用模型 - 擅长图片编辑
+     * 提取助手专用模型
      */
-    @Bean("imageChatModel")
-    public DashScopeChatModel imageChatModel(DashScopeApi dashScopeApi) {
+    @Bean("extractChatModel")
+    public DashScopeChatModel extractChatModel(DashScopeApi dashScopeApi) {
         return DashScopeChatModel.builder()
                 .dashScopeApi(dashScopeApi)
                 .defaultOptions(DashScopeChatOptions.builder()
-                        .withModel(IMAGE_MODEL)
-                        .withTemperature(IMAGE_TEMPERATURE)
+                        .withModel(EXTRACT_MODEL)
+                        .withTemperature(EXTRACT_TEMPERATURE)
+                        .withMaxToken(EXTRACT_MAX_TOKENS)
                         .build())
                 .build();
     }
@@ -102,10 +104,10 @@ public class MultiLLMConfig {
     }
 
     /**
-     * 图片编辑助手专用ChatClient
+     * 提取助手专用ChatClient
      */
-    @Bean("imageChatClient")
-    public ChatClient imageChatClient(@Qualifier("imageChatModel") DashScopeChatModel imageChatModel) {
+    @Bean("extractChatClient")
+    public ChatClient imageChatClient(@Qualifier("extractChatModel") DashScopeChatModel imageChatModel) {
         return ChatClient.builder(imageChatModel).defaultAdvisors(new TokenLoggerAdvisor()).build();
     }
 }
