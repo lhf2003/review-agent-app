@@ -35,10 +35,10 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
      * @return 分析结果列表
      */
     @Query(nativeQuery = true, value = """
-            select a.id as id,a.file_id as fileId ,a.problem_statement as problemStatement, a.status as status, a.created_time as createdTime, tag.name as tagName 
+            select a.id as id,a.file_id as fileId ,a.problem_statement as problemStatement, a.status as status, a.created_time as createdTime, m.name as tagName 
                 from analysis_result a 
                   left join analysis_tag at on a.id = at.analysis_id
-                  left join tag on at.tag_id = tag.id
+                  left join main_tag m on at.tag_id = m.id
             where (:problemStatement is null or :problemStatement = '' or a.problem_statement like concat('%', :problemStatement, '%'))
             and (:tagId is null or at.tag_id = :tagId)
             and (:userId is null or a.user_id = :userId)

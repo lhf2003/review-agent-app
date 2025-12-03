@@ -129,11 +129,11 @@ public class AnalysisService {
         List<Long> analysisIdList = analysisResultList.stream().map(AnalysisResult::getId).toList();
         List<AnalysisTag> analysisTagList = analysisTagRepository.findByAnalysisIdIn(analysisIdList);
         List<Long> tagIdList = analysisTagList.stream().map(AnalysisTag::getTagId).toList();
-        List<Tag> tagList = tagService.findByIdList(tagIdList);
+        List<MainTag> mainTagList = tagService.findByIdList(tagIdList);
         // 统计每个标签的出现次数
         Map<Long, Long> countMap = analysisTagList.stream().collect(Collectors.groupingBy(AnalysisTag::getTagId, Collectors.counting()));
         // 构建标签ID到名称的映射
-        Map<Long, String> tagIdToNameMap = tagList.stream().collect(Collectors.toMap(Tag::getId, Tag::getName));
+        Map<Long, String> tagIdToNameMap = mainTagList.stream().collect(Collectors.toMap(MainTag::getId, MainTag::getName));
 
         // 构建分析标签VO
         for (Map.Entry<Long, String> entry : tagIdToNameMap.entrySet()) {

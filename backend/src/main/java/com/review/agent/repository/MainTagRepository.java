@@ -1,6 +1,6 @@
 package com.review.agent.repository;
 
-import com.review.agent.entity.Tag;
+import com.review.agent.entity.MainTag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface TagRepository extends JpaRepository<Tag, Long> {
+public interface MainTagRepository extends JpaRepository<MainTag, Long> {
     boolean existsByName(String name);
 
     /**
@@ -17,14 +17,14 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
      * @param userId 用户ID
      * @return 标签列表
      */
-    @Query("select t from Tag t where t.userId = ?1")
-    List<Tag> findAllByUserId(Long userId);
+    @Query("select t from MainTag t where t.userId = :userId")
+    List<MainTag> findAllByUserId(@Param("userId") Long userId);
 
     @Query(nativeQuery = true, value = """
-        select * from tag t where (:tagName is null or t.user_id = :userId)\s
+        select * from main_tag t where (:tagName is null or t.user_id = :userId)\s
         and (:tagName is null or :tagName = '' or t.name like concat('%', :tagName, '%'))
         and (:parentId is null or t.parent_id = :parentId)
        \s""")
-    Page<Tag> findAllByPage(Pageable pageable, @Param("userId") Long userId, @Param("tagName") String tagName, @Param("parentId") Integer parentId);
+    Page<MainTag> findAllByPage(Pageable pageable, @Param("userId") Long userId, @Param("tagName") String tagName, @Param("parentId") Integer parentId);
 
 }

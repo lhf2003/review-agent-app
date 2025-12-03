@@ -4,7 +4,8 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.review.agent.entity.AnalysisResult;
 import com.review.agent.entity.AnalysisTag;
-import com.review.agent.entity.Tag;
+import com.review.agent.entity.MainTag;
+import com.review.agent.entity.SubTag;
 import com.review.agent.service.PromptService;
 import com.review.agent.service.TagService;
 import jakarta.annotation.Resource;
@@ -78,28 +79,18 @@ public class TagClassifyNode implements NodeAction {
      * @return 分类类别
      */
     private String buildCategories(Long userId, Map<String, Long> nameToIdMap) {
-        List<Tag> tagList = tagService.findAllByUserId(userId);
-        Map<Long, List<Tag>> idToChildrenMap = new HashMap<>();
-        for (Tag tag : tagList) {
-            idToChildrenMap.computeIfAbsent(tag.getParentId(), k -> new ArrayList<>()).add(tag);
-        }
         StringBuilder stringBuilder = new StringBuilder();
-        for (Tag tag : tagList) {
-            nameToIdMap.put(tag.getName(), tag.getId());
-            stringBuilder.append(tag.getName());
-            if (StringUtils.hasText(tag.getDescription())) {
-                stringBuilder.append("：").append(tag.getDescription());
-            }
-            stringBuilder.append("\n");
+        // 主标签
+        List<MainTag> mainTagList = tagService.findMainTagList(userId);
+        for (MainTag mainTag : mainTagList) {
+            nameToIdMap.put(mainTag.getName(), mainTag.getId());
+            stringBuilder.append(mainTag.getName()).append("\n");
+
             // 子标签
-            if (idToChildrenMap.containsKey(tag.getId())) {
-                for (Tag subTag : idToChildrenMap.get(tag.getId())) {
-                    stringBuilder.append("- ").append(subTag.getName());
-                    if (StringUtils.hasText(subTag.getDescription())) {
-                        stringBuilder.append("：").append(subTag.getDescription());
-                    }
-                    stringBuilder.append("\n");
-                }
+            List<SubTag> subTagList = tagService.findSubTagListByMainTagId(userId, mainTag.getId());
+            for (SubTag subTag : subTagList) {
+                nameToIdMap.put(subTag.getName(), subTag.getId());
+                stringBuilder.append("- ").append(subTag.getName()).append("\n");
             }
         }
         return stringBuilder.toString();
