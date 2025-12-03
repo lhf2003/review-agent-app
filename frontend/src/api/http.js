@@ -31,80 +31,40 @@ export const api = {
     return request('/user/config/update', { method: 'POST', body })
   },
 
-  // tags
-  getAllTags() {
-    return request('/tag/get/all')
+  // tag controller endpoints
+  getMainTagList(userId) {
+    return request('/tag/list', { headers: { userId } })
   },
-  addTag(tag) {
-    return request('/tag/add', { method: 'POST', body: tag })
+  getTagRelations(userId, mainTagId) {
+    const params = mainTagId != null ? { mainTagId } : undefined
+    return request('/tag/list/relation', { headers: { userId }, params })
   },
-  deleteTag(id) {
-    return request('/tag/delete', { method: 'DELETE', params: { id } })
+  addMainTag(mainTag) {
+    return request('/tag/add', { method: 'POST', body: mainTag })
   },
-  renameTag(userId, id, name) {
-    return request('/tag/update', { method: 'POST', body: { userId, id, name } }).catch(() => ({ ok: true }))
+  updateMainTag(mainTag) {
+    return request('/tag/update', { method: 'POST', body: mainTag })
   },
-  mergeTags(userId, sourceIds, targetId) {
-    // 预期：POST /tag/merge { sourceIds, targetId }
-    return request('/tag/merge', { method: 'POST', body: { userId, sourceIds, targetId } }).catch(() => ({ ok: true }))
+  deleteMainTag(userId, id) {
+    return request('/tag/delete', { method: 'DELETE', params: { id }, headers: { userId } })
   },
-  // 标签分页
-  getTagPage(params) {
-    // 改为 POST 请求，分页参数放 body
-    const { page = 0, size = 10, ...rest } = params || {}
-    return request('/tag/page', {
-      method: 'POST',
-      body: { page, size, ...rest },
-    }).catch(() => ({
-      list: [
-        { id: 1, name: 'React', type: 1 },
-        { id: 2, name: 'Vue', type: 1 },
-        { id: 3, name: 'TypeScript', type: 1 },
-        { id: 4, name: 'JavaScript', type: 1 },
-        { id: 5, name: 'useEffect', type: 2 },
-        { id: 6, name: 'useState', type: 2 },
-        { id: 7, name: 'Next.js', type: 1 },
-        { id: 8, name: 'Tailwind', type: 1 },
-        { id: 9, name: 'Python', type: 1 },
-        { id: 10, name: 'Django', type: 1 },
-        { id: 11, name: 'FastAPI', type: 1 },
-        { id: 12, name: 'SQL', type: 1 },
-      ],
-      total: 23,
-    }))
+  getSubTagList(userId) {
+    return request('/tag/sub/list', { headers: { userId } })
   },
-  getTagTypeStats() {
-    // 预期：GET /tag/type/stats 返回各类型计数
-    return request('/tag/type/stats').catch(() => ({
-      stats: [
-        { type: 0, name: '全部', count: 23 },
-        { type: 1, name: '技术栈', count: 12 },
-        { type: 2, name: '问题类型', count: 6 },
-        { type: 3, name: '难度', count: 5 },
-      ],
-    }))
+  addSubTag(subTag) {
+    return request('/tag/add/sub', { method: 'POST', body: subTag })
   },
-  searchTags(q) {
-    // 预期：GET /tag/search?q=...
-    return request('/tag/search', { params: { q } }).catch(() => ({
-      list: [{ id: 1, name: 'React', type: 1 }, { id: 5, name: 'useEffect', type: 2 }],
-    }))
+  updateSubTag(subTag) {
+    return request('/tag/update/sub', { method: 'POST', body: subTag })
   },
-
-  // tag page (分页查询，请求体包含 userId / tagName)
-  getTagPage({ page = 0, size = 20, userId, tagName }) {
-    return request('/tag/page', { method: 'POST', params: { page, size }, body: { userId, tagName } })
-      .catch(() => ({
-        list: [
-          { id: 1, name: 'React', type: 1 },
-          { id: 2, name: 'Vue', type: 1 },
-          { id: 3, name: 'TypeScript', type: 1 },
-          { id: 4, name: 'JavaScript', type: 1 },
-          { id: 5, name: 'useEffect', type: 2 },
-          { id: 6, name: 'useState', type: 2 },
-        ],
-        total: 6,
-      }))
+  deleteSubTag(userId, id) {
+    return request('/tag/delete/sub', { method: 'DELETE', params: { id }, headers: { userId } })
+  },
+  addTagRelation(params) {
+    return request('/tag/add/relation', { method: 'POST', body: params })
+  },
+  deleteTagRelation(params) {
+    return request('/tag/delete/relation', { method: 'DELETE', body: params })
   },
 
   // file info
@@ -176,7 +136,7 @@ export const api = {
     return request('/analysis/result', { params: { userId, dataId, analysisId } })
   },
   getTagStats(params) {
-    // 预期：返回 { tags: [{ id, name, count }] }
+    // 返回 { tags: [{ id, name, count }] }
     return request('/analysis/tag/list', { params }).catch(() => ({ tags: [{ id: 1, name: 'React', count: 8 }, { id: 2, name: 'useEffect', count: 5 }, { id: 3, name: 'Python', count: 6 }, { id: 4, name: '错误处理', count: 4 }] }))
   },
 
