@@ -149,10 +149,10 @@ onMounted(load)
       <el-table-column prop="sessionCount" label="会话数" width="140" />
       <el-table-column prop="processedStatus" label="状态" width="160">
         <template #default="{ row }">
-          <el-tag v-if="row.processedStatus===0">未分析</el-tag>
-          <el-tag type="success" v-else-if="row.processedStatus===2">已分析</el-tag>
-          <el-tag type="warning" v-else-if="row.processedStatus===3">有更新</el-tag>
-          <el-tag type="danger" v-else-if="row.processedStatus===4">失败</el-tag>
+          <el-mainTag v-if="row.processedStatus===0">未分析</el-mainTag>
+          <el-mainTag type="success" v-else-if="row.processedStatus===2">已分析</el-mainTag>
+          <el-mainTag type="warning" v-else-if="row.processedStatus===3">有更新</el-mainTag>
+          <el-mainTag type="danger" v-else-if="row.processedStatus===4">失败</el-mainTag>
         </template>
       </el-table-column>
       <el-table-column prop="createdTime" label="同步时间" width="250" />
