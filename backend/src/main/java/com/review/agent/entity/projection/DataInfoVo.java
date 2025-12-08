@@ -1,4 +1,4 @@
-package com.review.agent.entity.vo;
+package com.review.agent.entity.projection;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.review.agent.entity.DataInfo;

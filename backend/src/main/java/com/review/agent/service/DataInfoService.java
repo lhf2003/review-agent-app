@@ -4,7 +4,7 @@ import com.review.agent.entity.DataInfo;
 import com.review.agent.entity.SyncRecord;
 import com.review.agent.entity.UserConfig;
 import com.review.agent.entity.request.DataInfoRequest;
-import com.review.agent.entity.vo.DataInfoVo;
+import com.review.agent.entity.projection.DataInfoVo;
 import com.review.agent.repository.DataInfoRepository;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

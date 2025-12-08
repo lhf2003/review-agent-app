@@ -4,7 +4,7 @@ import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.entity.DataInfo;
 import com.review.agent.entity.request.DataInfoRequest;
-import com.review.agent.entity.vo.DataInfoVo;
+import com.review.agent.entity.projection.DataInfoVo;
 import com.review.agent.service.DataInfoService;
 import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
