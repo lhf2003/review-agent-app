@@ -83,6 +83,13 @@ watch(() => auth.isAuthenticated, (val) => {
             </el-menu-item>
           </template>
         </el-tooltip>
+        <el-tooltip content="词云" placement="right">
+          <template #default>
+            <el-menu-item index="/word-cloud">
+              <el-icon><TrendCharts /></el-icon>
+            </el-menu-item>
+          </template>
+        </el-tooltip>
         <div class="menu-spacer"></div>
         <el-tooltip content="配置" placement="right">
           <template #default>
