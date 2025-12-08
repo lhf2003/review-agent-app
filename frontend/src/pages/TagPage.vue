@@ -84,6 +84,7 @@ function onDragEndFromAvailable() { draggingFromAvailable.value = false }
 function onDragEndFromAssociated() { draggingFromAssociated.value = false }
 function onDragOverAssociated(e) { e.preventDefault(); isOverAssociated.value = true }
 function onDragLeaveAssociated() { isOverAssociated.value = false }
+function onDragEnterAssociated(e) { e.preventDefault(); isOverAssociated.value = true; try { e.dataTransfer.dropEffect = 'move' } catch {} }
 function onDropToAssociated(e) {
   e.preventDefault(); isOverAssociated.value = false
   draggingFromAvailable.value = false
@@ -94,6 +95,7 @@ function onDropToAssociated(e) {
   } catch {}
 }
 function onDragOverAvailable(e) { e.preventDefault(); isOverAvailable.value = true }
+function onDragEnterAvailable(e) { e.preventDefault(); isOverAvailable.value = true; try { e.dataTransfer.dropEffect = 'move' } catch {} }
 function onDragLeaveAvailable() { isOverAvailable.value = false }
 function onDropToAvailable(e) {
   e.preventDefault(); isOverAvailable.value = false
@@ -151,6 +153,13 @@ async function doRenameSub() {
   ElMessage.success('已重命名')
   subRenameDialog.value = false
   await loadSub(); await loadRelation()
+}
+async function deleteSubInDialog() {
+  const st = { id: subRenameForm.value.id, name: subRenameForm.value.name }
+  try {
+    await doDeleteSub(st)
+    subRenameDialog.value = false
+  } catch (e) {}
 }
 async function doDeleteSub(st) {
   await ElMessageBox.confirm(`确认删除子标签「${st.name}」？`, '提示', { type: 'warning' })
@@ -221,11 +230,11 @@ onMounted(loadAll)
           <div class="region-content-scroll">
             <div class="region-body">
               <div style="font-weight:600; margin-bottom: 12px;">已关联 ({{ associatedSubTags.length }})</div>
-              <div v-loading="loading" :class="['sub-list-associated','droppable', { 'droppable--over': isOverAssociated, 'drag-target': draggingFromAvailable }]" @dragover="onDragOverAssociated" @dragleave="onDragLeaveAssociated" @drop="onDropToAssociated">
+              <div v-loading="loading" :class="['sub-list-associated','droppable', { 'droppable--over': isOverAssociated, 'drag-target': draggingFromAvailable }]" @dragover="onDragOverAssociated" @dragenter="onDragEnterAssociated" @dragleave="onDragLeaveAssociated" @drop="onDropToAssociated">
                 <el-card v-for="st in associatedSubTags" :key="st.id" shadow="never" class="sub-item associated-item" :draggable="true" @dragstart="onDragStartFromAssociated(st, $event)" @dragend="onDragEndFromAssociated">
                   <div class="sub-name">{{ st.name }}</div>
                 </el-card>
-                <div v-if="draggingFromAvailable" class="drag-hint">拖拽</div>
+                <div v-if="draggingFromAvailable" class="drag-hint">关联</div>
                 <el-empty v-if="!associatedSubTags.length" description="尚未关联任何子标签" :image-size="60" />
               </div>
             </div>
@@ -236,11 +245,11 @@ onMounted(loadAll)
               <div style="font-weight:600;margin-bottom:12px;">可用子标签 ({{ availableSubTags.length }})</div>
               <el-input v-model="searchSub" placeholder="搜索可用子标签..." prefix-icon="Search" clearable
                 style="margin-bottom:12px;" />
-              <div :class="['sub-list','droppable', { 'droppable--over': isOverAvailable, 'drag-target': draggingFromAssociated }]" @dragover="onDragOverAvailable" @dragleave="onDragLeaveAvailable" @drop="onDropToAvailable">
+              <div :class="['sub-list','droppable', { 'droppable--over': isOverAvailable, 'drag-target': draggingFromAssociated }]" @dragover="onDragOverAvailable" @dragenter="onDragEnterAvailable" @dragleave="onDragLeaveAvailable" @drop="onDropToAvailable">
                 <el-card v-for="st in availableSubTags" :key="st.id" shadow="hover" class="sub-item available-item" :draggable="true" @dragstart="onDragStartFromAvailable(st, $event)" @dragend="onDragEndFromAvailable">
                   <div class="sub-name">{{ st.name }}</div>
                 </el-card>
-                <div v-if="draggingFromAssociated" class="drag-hint">拖拽</div>
+                <div v-if="draggingFromAssociated" class="drag-hint--cancel">取消关联</div>
                 <el-empty v-if="!availableSubTags.length" description="暂无可用子标签" :image-size="60" />
               </div>
             </div>
@@ -268,7 +277,6 @@ onMounted(loadAll)
                 >
                   <div class="sub-item-content">
                     <div class="sub-name is-editable" @click="openRenameSub(st)">{{ st.name }}</div>
-                    <el-button text size="small" type="danger" @click="doDeleteSub(st)">删除</el-button>
                   </div>
                 </el-card>
               </div>
@@ -315,14 +323,15 @@ onMounted(loadAll)
       </el-form>
     </el-dialog>
 
-    <el-dialog v-model="subRenameDialog" title="重命名子标签" width="380px" align-center>
+    <el-dialog v-model="subRenameDialog" title="编辑子标签" width="420px" align-center>
       <el-form label-width="80px">
-        <el-form-item label="新名称">
-          <el-input v-model="subRenameForm.name" />
-        </el-form-item>
-        <el-form-item>
-          <el-button @click="subRenameDialog = false">取消</el-button>
-          <el-button type="primary" @click="doRenameSub">保存</el-button>
+        <el-form-item label="名称">
+          <div style="display:flex;align-items:center;gap:8px;width:100%;">
+            <el-input v-model="subRenameForm.name" style="max-width:240px" />
+            <el-button type="primary" @click="doRenameSub">保存</el-button>
+            <div style="flex:1"></div>
+            <el-button type="danger" plain @click="deleteSubInDialog">删除</el-button>
+          </div>
         </el-form-item>
       </el-form>
     </el-dialog>
@@ -501,31 +510,45 @@ onMounted(loadAll)
   gap: 8px;
   padding: 6px 8px;
 }
-  .droppable {
-    border: 2px dashed transparent;
-    border-radius: var(--el-border-radius-base);
-    transition: border-color .2s ease, background-color .2s ease;
-  }
-  .droppable--over {
-    border-color: var(--el-color-primary);
-    background-color: var(--el-color-primary-light-9);
-  }
-</style>
-
+.droppable {
+  border: 2px dashed transparent;
+  border-radius: var(--el-border-radius-base);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.droppable--over {
+  border-color: var(--el-color-primary);
+  background-color: var(--el-color-primary-light-9);
+}
 .droppable { position: relative; }
-.droppable.drag-target .sub-item { filter: blur(4px); opacity: 0.5; pointer-events: none; }
+.droppable.drag-target .sub-item { filter: blur(6px); opacity: 0.4; pointer-events: none; }
 .drag-hint {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 42px;
+  font-size: 40px;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   color: var(--el-color-primary);
-  text-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  background: rgba(255,255,255,0.65);
-  backdrop-filter: blur(2px);
+  text-shadow: 0 3px 7px rgba(0,0,0,0.18);
+  background: rgba(255,255,255,0.68);
+  backdrop-filter: blur(3px); /* 拖拽提示背景模糊效果，提升视觉层次 */
   border: 2px dashed var(--el-color-primary);
 }
+.drag-hint--cancel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--el-color-danger);
+  text-shadow: 0 3px 7px rgba(0,0,0,0.18);
+  background: rgba(255,255,255,0.68);
+  backdrop-filter: blur(3px);
+  border: 2px dashed var(--el-color-danger);
+}
+</style>

@@ -10,7 +10,7 @@ export const useAuthStore = defineStore('auth', {
   }),
   actions: {
     async login(username, password) {
-      const res = await fetch('http://localhost:8081/user/login', {
+      const res = await fetch('/user/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -24,7 +24,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('auth', JSON.stringify({ isAuthenticated: this.isAuthenticated, username: this.username, userId: this.userId }))
     },
     async register(username, password) {
-      const res = await fetch('http://localhost:8081/user/register', {
+      const res = await fetch('/user/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -41,7 +41,7 @@ export const useAuthStore = defineStore('auth', {
       router.push('/login')
     },
     routerPushAfterLogin() {
-      router.push('/config')
+      router.push('/data')
     },
     routerPushLogin() {
       router.push('/login')

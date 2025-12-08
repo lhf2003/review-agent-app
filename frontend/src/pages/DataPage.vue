@@ -10,6 +10,7 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 
 const auth = useAuthStore()
+const router = useRouter()
 const loading = ref(false)
 const tableData = ref([])
 const page = ref(1)
@@ -92,17 +93,7 @@ function onAction(row) {
       .then(() => { ElMessage.success('已触发分析'); load() })
       .catch(e => ElMessage.error(`触发失败: ${e.message}`))
   } else {
-    api.getAnalysisResult(auth.userId, row.id)
-      .then(resp => {
-        const data = resp?.data || resp
-        result.value = {
-          title: data?.problemStatement ? String(data.problemStatement).slice(0, 20) : `结果 #${row.id}`,
-          problemStatement: data?.problemStatement || '',
-          solution: data?.solution || '',
-        }
-        resultDialog.value = true
-      })
-      .catch(e => ElMessage.error(`查询失败: ${e.message}`))
+    router.push({ path: '/analysis', query: { dataId: row.id } })
   }
 }
 
@@ -145,14 +136,14 @@ onMounted(load)
 
   <el-table :data="tableData" v-loading="loading" style="width:100%">
       <el-table-column prop="id" label="ID" width="90" />
-      <el-table-column prop="fileName" label="文件名" width="300" />
+      <el-table-column prop="fileName" label="文件名" width="200" />
       <el-table-column prop="sessionCount" label="会话数" width="140" />
       <el-table-column prop="processedStatus" label="状态" width="160">
         <template #default="{ row }">
-          <el-mainTag v-if="row.processedStatus===0">未分析</el-mainTag>
-          <el-mainTag type="success" v-else-if="row.processedStatus===2">已分析</el-mainTag>
-          <el-mainTag type="warning" v-else-if="row.processedStatus===3">有更新</el-mainTag>
-          <el-mainTag type="danger" v-else-if="row.processedStatus===4">失败</el-mainTag>
+          <el-tag v-if="row.processedStatus===0">未分析</el-tag>
+          <el-tag type="success" v-else-if="row.processedStatus===2">已分析</el-tag>
+          <el-tag type="warning" v-else-if="row.processedStatus===3">有更新</el-tag>
+          <el-tag type="danger" v-else-if="row.processedStatus===4">失败</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="createdTime" label="同步时间" width="250" />
@@ -161,7 +152,7 @@ onMounted(load)
           <el-button size="small" type="primary" plain style="opacity:0.7" @click="openContent(row)">查看内容</el-button>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="350">
+      <el-table-column label="操作" width="150">
         <template #default="{ row }">
           <el-button size="small" :type="row.processedStatus === 2 ? 'success' : 'primary'" @click="onAction(row)">{{ row.processedStatus === 2 ? '查看' : '分析' }}</el-button>
           <el-button size="small" type="danger" @click="doDelete(row)">删除</el-button>
@@ -190,7 +181,7 @@ onMounted(load)
           :auto-upload="false"
           :show-file-list="false"
           :on-change="(file) => importFile = file.raw"
-          accept=".xlsx,.xls,.csv"
+          accept=".md,.txt"
         >
           <template #trigger>
             <el-button type="primary" plain icon="Upload">选择文件</el-button>
