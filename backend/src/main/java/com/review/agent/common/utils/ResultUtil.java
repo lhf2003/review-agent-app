@@ -13,6 +13,10 @@ public class ResultUtil {
         return new BaseResponse<>(0, "ok", data);
     }
 
+    public static <T> BaseResponse<T> success() {
+        return new BaseResponse<>(0, "ok");
+    }
+
     public static <T> BaseResponse<T> error(ErrorCode errorCode) {
         return new BaseResponse<>(errorCode.getCode(), errorCode.getMessage());
     }

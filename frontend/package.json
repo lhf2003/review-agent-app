@@ -12,6 +12,8 @@
     "@element-plus/icons-vue": "^2.3.2",
     "blueimp-md5": "^2.19.0",
     "dompurify": "^3.3.0",
+    "echarts": "^5.6.0",
+    "echarts-wordcloud": "^2.1.0",
     "element-plus": "^2.11.9",
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.0",

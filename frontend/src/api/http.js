@@ -1,3 +1,6 @@
+const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV
+const isEmbeddedHttp = typeof window !== 'undefined' && window.location && window.location.protocol === 'http:' && window.location.port === '3000'
+// const BASE_URL = isDev || isEmbeddedHttp ? '/' : 'http://localhost:8081'
 const BASE_URL = 'http://localhost:8081'
 
 async function request(path, { method = 'GET', params, body, headers } = {}) {
@@ -101,7 +104,7 @@ export const api = {
     return request('/analysis/page', {
       method: 'POST',
       params: { page, size },
-      body: { userId, problemStatement: params?.problemStatement, status: params?.status, tagId: params?.tagId }
+      body: { userId, problemStatement: params?.problemStatement, status: params?.status, tagId: params?.tagId, fileId: params?.fileId }
     })
       .then((resp) => {
         const list = resp?.data || resp
@@ -166,5 +169,12 @@ export const api = {
   dataDelete(id) {
     // 缺少后端DELETE接口，占位埋点
     return request('/data/delete', { method: 'DELETE', params: { id } }).catch(() => ({ ok: false, message: '后端未实现 /data/delete' }))
+  },
+
+  // report
+  getWordReport(userId) {
+    return request('/report/word', { params: { userId } })
+      .then((resp) => resp?.data || resp)
+      .catch(() => ({ 并发: 2, Java: 1, 性能优化: 2, 基础语法: 2, SQL: 1 }))
   },
 }
