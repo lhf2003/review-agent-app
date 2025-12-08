@@ -25,4 +25,10 @@ public interface AnalysisTagRepository extends JpaRepository<AnalysisTag, Long> 
 
     @Query("select at from AnalysisTag at where at.analysisId in :analysisIdList")
     List<AnalysisTag> findByAnalysisIdIn(List<Long> analysisIdList);
+
+
+    @Query("""
+            select ar from AnalysisTag ar where ar.analysisId in :analysisResultIdList
+            """)
+    List<AnalysisTag> findAllByAnalysisResultId(List<Long> analysisResultIdList);
 }

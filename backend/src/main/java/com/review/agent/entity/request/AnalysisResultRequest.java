@@ -5,9 +5,7 @@ import lombok.Data;
 @Data
 public class AnalysisResultRequest {
     private Long userId;
-    private Long analysisId;
+    private Long fileId;
     private String problemStatement;
     private Long tagId;
-    private Integer status;
-
 }

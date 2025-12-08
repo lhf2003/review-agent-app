@@ -2,11 +2,12 @@ package com.review.agent.service;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.review.agent.AnalysisResultInfo;
+import com.review.agent.entity.projection.AnalysisResultInfo;
 import com.review.agent.common.constant.CommonConstant;
 import com.review.agent.entity.*;
 import com.review.agent.entity.request.AnalysisRequest;
 import com.review.agent.entity.request.AnalysisResultRequest;
+import com.review.agent.entity.vo.AnalysisResultVo;
 import com.review.agent.entity.vo.AnalysisTagVo;
 import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.AnalysisTagRepository;
@@ -128,8 +129,8 @@ public class AnalysisService {
         List<AnalysisResult> analysisResultList = analysisResultRepository.findByUserId(userId);
         List<Long> analysisIdList = analysisResultList.stream().map(AnalysisResult::getId).toList();
         List<AnalysisTag> analysisTagList = analysisTagRepository.findByAnalysisIdIn(analysisIdList);
-        List<Long> tagIdList = analysisTagList.stream().map(AnalysisTag::getTagId).toList();
-        List<MainTag> mainTagList = tagService.findByIdList(tagIdList);
+        List<Long> mainTagIdList = analysisTagList.stream().map(AnalysisTag::getTagId).toList();
+        List<MainTag> mainTagList = tagService.findByIdList(mainTagIdList);
         // 统计每个标签的出现次数
         Map<Long, Long> countMap = analysisTagList.stream().collect(Collectors.groupingBy(AnalysisTag::getTagId, Collectors.counting()));
         // 构建标签ID到名称的映射
@@ -143,14 +144,65 @@ public class AnalysisService {
             tagVo.setTagId(key);
             tagVo.setTagName(value);
             tagVo.setCount(countMap.get(key).intValue());
+            tagVo.setType("main");
             resultList.add(tagVo);
         }
+
+        // 构建子标签id列表
+        List<String> subTagIdStringList = analysisTagList.stream().map(AnalysisTag::getSubTagId).toList();
+        List<Long> subTagIdList = new ArrayList<>();
+        subTagIdStringList.forEach(item -> subTagIdList.addAll(Arrays.stream(item.split(",")).map(Long::parseLong).toList()));
+        // 去重
+        List<Long> distinctSubTagIdList = subTagIdList.stream().distinct().toList();
+
+        // 构建<id,name>映射
+        List<SubTag> subTags = tagService.findSubTagList(userId);
+        Map<Long, String> subTagMap = subTags.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
+
+        // 构建子标签VO列表
+        distinctSubTagIdList.forEach(id -> {
+            AnalysisTagVo tagVo = new AnalysisTagVo();
+            long count = subTagIdList.stream().filter(item -> item.equals(id)).count();
+            tagVo.setTagId(id);
+            tagVo.setTagName(subTagMap.get(id));
+            tagVo.setCount((int) count);
+            tagVo.setType("sub");
+            resultList.add(tagVo);
+        });
+
         return resultList;
     }
 
-    public List<AnalysisResultInfo> page(Pageable pageable, AnalysisResultRequest resultRequest) {
-        return analysisResultRepository.findByPage(pageable, resultRequest.getProblemStatement(), resultRequest.getTagId()
-                , resultRequest.getUserId(), resultRequest.getStatus());
+
+    public List<AnalysisResultVo> page(Pageable pageable, AnalysisResultRequest resultRequest) {
+        // 分页查询分析结果
+        List<AnalysisResultInfo> page = analysisResultRepository.findByPage(pageable, resultRequest.getFileId(), resultRequest.getProblemStatement(), resultRequest.getTagId()
+                , resultRequest.getUserId());
+
+        // 构建子标签ID到名称的映射
+        List<SubTag> subTagList = tagService.findSubTagList(resultRequest.getUserId());
+        Map<Long, String> subTagIdToNameMap = subTagList.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
+
+        // 构建分析结果VO列表
+        List<AnalysisResultVo> resultList = new ArrayList<>(page.size());
+        page.forEach(item -> {
+            AnalysisResultVo vo = new AnalysisResultVo();
+            vo.setId(item.getId());
+            vo.setFileId(item.getFileId());
+            vo.setProblemStatement(item.getProblemStatement());
+            vo.setMainTagName(item.getTagName());
+            // 转换子标签ID为标签名列表
+            if (item.getSubTagIds() != null && !item.getSubTagIds().isEmpty()) {
+                List<String> subTagNameList = Arrays.stream(item.getSubTagIds().split(","))
+                        .map(Long::parseLong)
+                        .map(subTagIdToNameMap::get)
+                        .toList();
+                vo.setSubTagNameList(subTagNameList);
+            }
+            resultList.add(vo);
+        });
+
+        return resultList;
     }
 
     public AnalysisResult getAnalysisResult(Long userId, Long dataId, Long analysisId) {

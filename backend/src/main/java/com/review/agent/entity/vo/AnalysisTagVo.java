@@ -10,4 +10,8 @@ public class AnalysisTagVo {
     private Long tagId;
     private String tagName;
     private Integer count;
+    /**
+     * 标签类型：main=主标签，sub=子标签
+     */
+    private String type;
 }

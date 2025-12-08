@@ -1,11 +1,11 @@
 package com.review.agent.controller;
 
-import com.review.agent.AnalysisResultInfo;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.entity.AnalysisResult;
 import com.review.agent.entity.request.AnalysisRequest;
 import com.review.agent.entity.request.AnalysisResultRequest;
+import com.review.agent.entity.vo.AnalysisResultVo;
 import com.review.agent.entity.vo.AnalysisTagVo;
 import com.review.agent.service.AnalysisService;
 import jakarta.annotation.Resource;
@@ -33,7 +33,7 @@ public class AnalysisController {
      * @return 分析结果列表
      */
     @PostMapping("/page")
-    public BaseResponse<List<AnalysisResultInfo>> page(Pageable pageable, @RequestBody AnalysisResultRequest resultRequest) {
+    public BaseResponse<List<AnalysisResultVo>> page(Pageable pageable, @RequestBody AnalysisResultRequest resultRequest) {
         return ResultUtil.success(analysisService.page(pageable, resultRequest));
     }
 

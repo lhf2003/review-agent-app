@@ -1,6 +1,4 @@
-package com.review.agent;
-
-import java.util.Date;
+package com.review.agent.entity.projection;
 
 /**
  * Projection for {@link com.review.agent.entity.AnalysisResult}
@@ -10,17 +8,11 @@ public interface AnalysisResultInfo {
 
     Long getFileId();
 
-    String getVectorId();
-
     Long getUserId();
 
     String getTagName();
 
-    String getProblemStatement();
+    String getSubTagIds();
 
-//    String getSolution();
-//
-//    Integer getStatus();
-//
-//    Date getCreatedTime();
+    String getProblemStatement();
 }
