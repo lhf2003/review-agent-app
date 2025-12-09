@@ -10,28 +10,19 @@ export const useAuthStore = defineStore('auth', {
   }),
   actions: {
     async login(username, password) {
-      const res = await fetch('/user/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      })
-      if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      if (data.code && data.code !== 0) throw new Error(data.message || '登录错误')
+      const data = await api.login(username, password)
+      if (data && data.code && data.code !== 0) throw new Error(data.message || '登录错误')
+      
+      const user = data.data || data // Handle potential direct data return or wrapped response
+      
       this.isAuthenticated = true
-      this.username = data.data?.username || ''
-      this.userId = data.data?.id || null
+      this.username = user?.username || ''
+      this.userId = user?.id || null
       localStorage.setItem('auth', JSON.stringify({ isAuthenticated: this.isAuthenticated, username: this.username, userId: this.userId }))
     },
     async register(username, password) {
-      const res = await fetch('/user/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      })
-      if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      if (data.code && data.code !== 0) throw new Error(data.message || '注册错误')
+      const data = await api.register(username, password)
+      if (data && data.code && data.code !== 0) throw new Error(data.message || '注册错误')
     },
     logout() {
       this.isAuthenticated = false

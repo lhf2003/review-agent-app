@@ -11,7 +11,7 @@ const records = ref([])
 async function load() {
   try {
     loading.value = true
-    const resp = await api.getSyncHistory(auth.userId || undefined)
+    const resp = await api.getSyncHistory()
     const list = resp?.data || resp
     records.value = Array.isArray(list) ? list : []
   } catch (e) {

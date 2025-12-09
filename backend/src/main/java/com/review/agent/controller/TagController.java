@@ -39,7 +39,10 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/add")
-    public BaseResponse<Void> add(@Valid @RequestBody MainTag mainTag) {
+    public BaseResponse<Void> add(@Valid @RequestBody MainTag mainTag, @RequestHeader(value = "userId", required = false) Long userId) {
+        if (userId != null) {
+            mainTag.setUserId(userId);
+        }
         tagService.addTag(mainTag);
         return ResultUtil.success();
     }
@@ -50,7 +53,10 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/update")
-    public BaseResponse<Void> update(@RequestBody MainTag mainTag) {
+    public BaseResponse<Void> update(@RequestBody MainTag mainTag, @RequestHeader(value = "userId", required = false) Long userId) {
+        if (userId != null) {
+            mainTag.setUserId(userId);
+        }
         tagService.updateMainTag(mainTag);
         return ResultUtil.success();
     }
@@ -87,7 +93,10 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/add/sub")
-    public BaseResponse<Void> addSub(@Valid @RequestBody SubTag subTag) {
+    public BaseResponse<Void> addSub(@Valid @RequestBody SubTag subTag, @RequestHeader(value = "userId", required = false) Long userId) {
+        if (userId != null) {
+            subTag.setUserId(userId);
+        }
         tagService.addSubTag(subTag);
         return ResultUtil.success();
     }
@@ -98,7 +107,10 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/update/sub")
-    public BaseResponse<Void> updateSub(@RequestBody SubTag subTag) {
+    public BaseResponse<Void> updateSub(@RequestBody SubTag subTag, @RequestHeader(value = "userId", required = false) Long userId) {
+        if (userId != null) {
+            subTag.setUserId(userId);
+        }
         tagService.updateSubTag(subTag);
         return ResultUtil.success();
     }

@@ -21,16 +21,6 @@ async function saveAvatar() {
   } catch (e) { ElMessage.error(`更新失败: ${e.message}`) }
 }
 
-async function changePassword() {
-  if (!auth.userId || !profileForm.value.newPassword) { ElMessage.warning('缺少用户ID或新密码'); return }
-  if (profileForm.value.newPassword !== profileForm.value.confirm) { ElMessage.warning('两次密码不一致'); return }
-  try {
-    const hashed = md5('lhf' + profileForm.value.newPassword)
-    await api.updateUserInfo({ id: Number(auth.userId), password: hashed })
-    ElMessage.success('密码已修改')
-  } catch (e) { ElMessage.error(`修改失败: ${e.message}`) }
-}
-
 function onLogout() {
   avatarDialog.value = false
   auth.logout()
@@ -120,13 +110,6 @@ watch(() => auth.isAuthenticated, (val) => {
         <el-form label-width="100px">
           <el-form-item label="用户名">
             <el-input :model-value="auth.username" disabled />
-          </el-form-item>
-          <el-form-item label="新密码">
-            <el-input v-model="profileForm.newPassword" type="password" show-password />
-          </el-form-item>
-          <el-form-item label="确认密码">
-            <el-input v-model="profileForm.confirm" type="password" show-password />
-            <el-button type="warning" style="margin-top:8px;" @click="changePassword">修改密码</el-button>
           </el-form-item>
           <el-form-item>
             <el-button type="danger" @click="onLogout">退出登录</el-button>

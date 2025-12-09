@@ -5,23 +5,18 @@ import com.review.agent.common.utils.ObjectTransformUtil;
 import com.review.agent.entity.MainTag;
 import com.review.agent.entity.SubTag;
 import com.review.agent.entity.TagRelation;
-import com.review.agent.entity.vo.TagRelationVo;
 import com.review.agent.repository.AnalysisTagRepository;
 import com.review.agent.repository.MainTagRepository;
 import com.review.agent.repository.SubTagRepository;
 import com.review.agent.repository.TagRelationRepository;
 import jakarta.annotation.Resource;
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -148,7 +143,7 @@ public class TagService {
     public void updateSubTag(SubTag subTag) {
         SubTag subTagInDb = subTagRepository.findById(subTag.getId()).orElse(null);
         if (subTagInDb == null) {
-            ExceptionUtils.throwDatabaseNotFound("子标签" + subTag.getId() + "不存在");
+            ExceptionUtils.throwDataNotFound("子标签" + subTag.getId() + "不存在");
         }
         BeanUtils.copyProperties(subTag, subTagInDb, ObjectTransformUtil.getNullPropertyNames(subTag));
         subTagRepository.save(subTagInDb);

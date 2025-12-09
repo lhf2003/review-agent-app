@@ -31,7 +31,10 @@ public class DataInfoController {
      * @return 文件数据分页列表
      */
     @PostMapping("/page")
-    public BaseResponse<Page<DataInfoVo>> page(Pageable pageable, @RequestBody DataInfoRequest dataInfoRequest) {
+    public BaseResponse<Page<DataInfoVo>> page(Pageable pageable, @RequestBody DataInfoRequest dataInfoRequest, @RequestHeader(value = "userId", required = false) Long userId) {
+        if (userId != null) {
+            dataInfoRequest.setUserId(userId);
+        }
         Page<DataInfoVo> dataInfoPage = dataInfoService.page(pageable, dataInfoRequest);
         return ResultUtil.success(dataInfoPage);
     }
@@ -57,7 +60,7 @@ public class DataInfoController {
      * @return 导入结果
      */
     @PostMapping("/import")
-    public BaseResponse<DataInfo> importData(@RequestParam("userId") Long userId, @RequestParam("file") MultipartFile file) throws IOException {
+    public BaseResponse<DataInfo> importData(@RequestHeader("userId") Long userId, @RequestParam("file") MultipartFile file) throws IOException {
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null) {
             originalFilename = "upload.txt";
@@ -73,7 +76,7 @@ public class DataInfoController {
      * @return 同步结果
      */
     @GetMapping("/sync")
-    public BaseResponse<DataInfo> syncData(@RequestParam("userId") Long userId) throws IOException {
+    public BaseResponse<DataInfo> syncData(@RequestHeader("userId") Long userId) throws IOException {
         dataInfoService.syncData(userId);
         return ResultUtil.success(null);
     }
