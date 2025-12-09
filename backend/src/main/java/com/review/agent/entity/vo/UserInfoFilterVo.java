@@ -13,4 +13,7 @@ public class UserInfoFilterVo {
      */
     private String username;
     private String avatar;
+    private String nickname;
+    private String email;
+    private String phone;
 }

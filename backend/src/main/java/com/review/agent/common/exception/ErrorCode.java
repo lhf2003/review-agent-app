@@ -15,6 +15,7 @@ public enum ErrorCode {
     USER_NOT_LOGIN(40100, "用户未登录"),
     DATA_ALREADY_EXISTS(40002, "数据已存在"),
     NULL_DATA(40004, "数据为空"),
+    PASSWORD_ERROR(40015, "密码错误"),
     DATA_IN_USE(40003, "数据正在被使用"),
     AUTH_ERROR(40005, "权限不足"),
     SUCCESS(0, "操作成功"),
@@ -48,7 +49,7 @@ public enum ErrorCode {
     /**
      * 数据库操作失败
      */
-    DATABASE_NOT_FOUND(6001, "数据库不存在该数据"),
+    DATA_NOT_FOUND(6001, "数据不存在"),
 
     /**
      * 数据库超时

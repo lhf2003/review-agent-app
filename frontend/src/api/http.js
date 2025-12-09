@@ -2,6 +2,63 @@ const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.me
 const isEmbeddedHttp = typeof window !== 'undefined' && window.location && window.location.protocol === 'http:' && window.location.port === '3000'
 // const BASE_URL = isDev || isEmbeddedHttp ? '/' : 'http://localhost:8081'
 const BASE_URL = 'http://localhost:8081'
+const AES_KEY_STR = 'ReviewAgentSecureKey20250101!!!!';
+
+async function encryptPassword(password) {
+  if (!password) return password;
+  try {
+    const enc = new TextEncoder();
+    const keyMaterial = await window.crypto.subtle.importKey(
+      "raw",
+      enc.encode(AES_KEY_STR),
+      "AES-GCM",
+      false,
+      ["encrypt"]
+    );
+    
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const encodedPassword = enc.encode(password);
+    
+    const ciphertext = await window.crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      keyMaterial,
+      encodedPassword
+    );
+    
+    // Combine IV + Ciphertext
+    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(ciphertext), iv.length);
+    
+    // Convert to Base64
+    let binary = '';
+    const bytes = combined;
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+  } catch (e) {
+    console.error('Encryption failed', e);
+    return password;
+  }
+}
+
+function getUserId() {
+  try {
+    const authRaw = localStorage.getItem('auth')
+    if (authRaw) {
+      const auth = JSON.parse(authRaw)
+      return auth.userId
+    }
+  } catch (e) {
+    console.error('Failed to parse auth from localStorage', e)
+  }
+  return null
+}
 
 async function request(path, { method = 'GET', params, body, headers } = {}) {
   let url = BASE_URL + path
@@ -9,12 +66,19 @@ async function request(path, { method = 'GET', params, body, headers } = {}) {
     const usp = new URLSearchParams(params)
     url += `?${usp.toString()}`
   }
+  
+  const userId = getUserId()
+  const finalHeaders = {
+    'Content-Type': 'application/json',
+    ...(headers || {}),
+  }
+  if (userId) {
+    finalHeaders['userId'] = userId
+  }
+
   const res = await fetch(url, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(headers || {}),
-    },
+    headers: finalHeaders,
     body: body ? JSON.stringify(body) : undefined,
   })
   if (!res.ok) {
@@ -26,21 +90,31 @@ async function request(path, { method = 'GET', params, body, headers } = {}) {
 }
 
 export const api = {
+  // auth
+  async login(username, password) {
+    const encryptedPassword = await encryptPassword(password)
+    return request('/user/login', { method: 'POST', body: { username, password: encryptedPassword } })
+  },
+  async register(username, password) {
+    const encryptedPassword = await encryptPassword(password)
+    return request('/user/register', { method: 'POST', body: { username, password: encryptedPassword } })
+  },
+
   // config
-  getConfig(userId) {
-    return request('/user/config/get', { params: { userId } })
+  getConfig() {
+    return request('/user/config/get')
   },
   updateConfig(body) {
     return request('/user/config/update', { method: 'POST', body })
   },
 
   // tag controller endpoints
-  getMainTagList(userId) {
-    return request('/tag/list', { headers: { userId } })
+  getMainTagList() {
+    return request('/tag/list')
   },
-  getTagRelations(userId, mainTagId) {
+  getTagRelations(mainTagId) {
     const params = mainTagId != null ? { mainTagId } : undefined
-    return request('/tag/list/relation', { headers: { userId }, params })
+    return request('/tag/list/relation', { params })
   },
   addMainTag(mainTag) {
     return request('/tag/add', { method: 'POST', body: mainTag })
@@ -48,11 +122,11 @@ export const api = {
   updateMainTag(mainTag) {
     return request('/tag/update', { method: 'POST', body: mainTag })
   },
-  deleteMainTag(userId, id) {
-    return request('/tag/delete', { method: 'DELETE', params: { id }, headers: { userId } })
+  deleteMainTag(id) {
+    return request('/tag/delete', { method: 'DELETE', params: { id } })
   },
-  getSubTagList(userId) {
-    return request('/tag/sub/list', { headers: { userId } })
+  getSubTagList() {
+    return request('/tag/sub/list')
   },
   addSubTag(subTag) {
     return request('/tag/add/sub', { method: 'POST', body: subTag })
@@ -60,8 +134,8 @@ export const api = {
   updateSubTag(subTag) {
     return request('/tag/update/sub', { method: 'POST', body: subTag })
   },
-  deleteSubTag(userId, id) {
-    return request('/tag/delete/sub', { method: 'DELETE', params: { id }, headers: { userId } })
+  deleteSubTag(id) {
+    return request('/tag/delete/sub', { method: 'DELETE', params: { id } })
   },
   addTagRelation(params) {
     return request('/tag/add/relation', { method: 'POST', body: params })
@@ -71,12 +145,19 @@ export const api = {
   },
 
   // file info
-  importFile(userId, file) {
+  importFile(file) {
     const formData = new FormData()
-    formData.append('userId', userId)
     formData.append('file', file)
+    
+    const userId = getUserId()
+    const headers = {}
+    if (userId) {
+      headers['userId'] = userId
+    }
+
     return fetch(BASE_URL + '/file-info/import', {
       method: 'POST',
+      headers: headers,
       body: formData,
     }).then(async (res) => {
       if (!res.ok) throw new Error(await res.text())
@@ -88,23 +169,39 @@ export const api = {
   },
 
   // sync history
-  getSyncHistory(userId) {
-    return request('/sync-record/history', { params: userId ? { userId } : undefined })
+  getSyncHistory() {
+    return request('/sync-record/history')
   },
 
   // user info
+  getUserInfo(id) {
+    return request('/user/info', { params: { id } })
+  },
   updateUserInfo(body) {
     return request('/user/info/update', { method: 'POST', body })
+  },
+  async updateUserPassword(oldPassword, newPassword) {
+    const encOld = await encryptPassword(oldPassword)
+    const encNew = await encryptPassword(newPassword)
+    return request('/user/info/update/password', { method: 'POST', body: { oldPassword: encOld, newPassword: encNew } })
   },
 
   getAnalysisList(params) {
     const page = params?.page ?? 0
     const size = params?.size ?? 10
-    const userId = params?.userId || null
+    
+    const body = {
+        userId: getUserId(),
+        ...(params || {})
+    }
+    // Remove page/size from body if they are in params
+    delete body.page
+    delete body.size
+    
     return request('/analysis/page', {
       method: 'POST',
       params: { page, size },
-      body: { userId, problemStatement: params?.problemStatement, status: params?.status, tagId: params?.tagId, fileId: params?.fileId }
+      body
     })
       .then((resp) => {
         const list = resp?.data || resp
@@ -128,15 +225,15 @@ export const api = {
       ],
     }))
   },
-  startAnalysis(userId, fileIdList) {
-    return request('/analysis/start', { method: 'POST', body: { userId, fileIdList } })
+  startAnalysis(fileId) {
+    return request('/analysis/start', { method: 'GET', params: { fileId } })
   },
-  getAnalysisResult(userId, dataId) {
-    return request('/analysis/result', { params: { userId, dataId } })
+  getAnalysisResult(dataId) {
+    return request('/analysis/result', { params: { dataId } })
   },
   // 获取分析结果（需要同时传 dataId 与 analysisId）
-  getAnalysisResultByIds(userId, dataId, analysisId) {
-    return request('/analysis/result', { params: { userId, dataId, analysisId } })
+  getAnalysisResultByIds(dataId, analysisId) {
+    return request('/analysis/result', { params: { dataId, analysisId } })
   },
   getTagStats(params) {
     // 返回 { tags: [{ id, name, count }] }
@@ -148,17 +245,23 @@ export const api = {
     const page = params?.page ?? 0
     const size = params?.size ?? 10
     const body = {
-      userId: params?.userId,
+      userId: getUserId(),
       fileName: params?.fileName ?? null,
       processedStatus: params?.processedStatus ?? null,
     }
     return request('/data/page', { method: 'POST', params: { page, size }, body })
   },
-  dataImport(userId, file) {
+  dataImport(file) {
     const formData = new FormData()
-    formData.append('userId', userId)
     formData.append('file', file)
-    return fetch(BASE_URL + '/data/import', { method: 'POST', body: formData }).then(async (res) => {
+    
+    const userId = getUserId()
+    const headers = {}
+    if (userId) {
+      headers['userId'] = userId
+    }
+
+    return fetch(BASE_URL + '/data/import', { method: 'POST', headers, body: formData }).then(async (res) => {
       if (!res.ok) throw new Error(await res.text())
       return res.json()
     })
@@ -172,8 +275,8 @@ export const api = {
   },
 
   // report
-  getWordReport(userId) {
-    return request('/report/word', { params: { userId } })
+  getWordReport() {
+    return request('/report/word')
       .then((resp) => resp?.data || resp)
       .catch(() => ({ 并发: 2, Java: 1, 性能优化: 2, 基础语法: 2, SQL: 1 }))
   },

@@ -27,6 +27,20 @@ public class ExceptionUtils {
     }
 
     /**
+     * 密码错误时抛出异常
+     */
+    public static void throwPasswordError() {
+        throw new BusinessException(ErrorCode.PASSWORD_ERROR, "密码错误");
+    }
+
+    /**
+     * 密码错误时抛出异常
+     */
+    public static void throwParamError(String message) {
+        throw new BusinessException(ErrorCode.PARAM_ERROR, message);
+    }
+
+    /**
      * 数据已存在时抛出异常
      */
     public static void throwDataAlreadyExists(String dataName) {
@@ -43,8 +57,8 @@ public class ExceptionUtils {
     /**
      * 数据库不存在该数据时抛出异常
      */
-    public static void throwDatabaseNotFound(String message) {
-        throw new BusinessException(ErrorCode.DATABASE_NOT_FOUND, message);
+    public static void throwDataNotFound(String message) {
+        throw new BusinessException(ErrorCode.DATA_NOT_FOUND, message);
     }
 
     /**
