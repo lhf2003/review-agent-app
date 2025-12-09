@@ -30,6 +30,9 @@ const result = ref({ title: '', problemStatement: '', solution: '' })
 const drawerVisible = ref(false)
 const drawerTitle = ref('')
 const drawerContent = ref('')
+const logs = ref([])
+const showLogs = ref(false)
+let eventSource = null
 
 const md = markdownit({
   breaks: true,
@@ -88,10 +91,53 @@ async function doImport() {
 }
 
 function onAction(row) {
-  if (row.processedStatus === 0) {
-    api.startAnalysis(auth.userId, [row.id])
-      .then(() => { ElMessage.success('已触发分析'); load() })
-      .catch(e => ElMessage.error(`触发失败: ${e.message}`))
+  if (row.processedStatus !== 2) {
+    // Open logs dialog
+    showLogs.value = true
+
+    // If it's a new analysis (status != 1), clear logs
+    if (row.processedStatus !== 1) {
+      logs.value = []
+    }
+    
+    if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
+
+    } else {
+       const baseUrl = 'http://localhost:8081' // Hardcoded base URL matching http.js
+       eventSource = new EventSource(`${baseUrl}/analysis/log/stream?userId=${auth.userId}`)
+       
+       eventSource.addEventListener('log', (event) => {
+         logs.value.push(event.data)
+         // Auto scroll to bottom
+         setTimeout(() => {
+            const logContainer = document.getElementById('log-container')
+            if (logContainer) logContainer.scrollTop = logContainer.scrollHeight
+         }, 0)
+       })
+       
+       eventSource.onerror = () => {
+         eventSource.close()
+       }
+    }
+
+    // Only trigger startAnalysis if it is NOT already analyzing (status != 1)
+    if (row.processedStatus !== 1) {
+        api.startAnalysis({ userId: auth.userId, fileId: Number(row.id) })
+          .then(() => { 
+            ElMessage.success('已触发分析')
+            logs.value.push('分析任务已提交...')
+            // 立即将状态置为“正在分析”，UI 即时反馈
+            row.processedStatus = 1
+            load() 
+          })
+          .catch(e => {
+            ElMessage.error(`触发失败: ${e.message}`)
+            logs.value.push(`错误: ${e.message}`)
+            if(eventSource) eventSource.close()
+          })
+    } else {
+        logs.value.push('已重新连接到日志流...')
+    }
   } else {
     router.push({ path: '/analysis', query: { dataId: row.id } })
   }
@@ -141,6 +187,7 @@ onMounted(load)
       <el-table-column prop="processedStatus" label="状态" width="160">
         <template #default="{ row }">
           <el-tag v-if="row.processedStatus===0">未分析</el-tag>
+          <el-tag type="primary" v-else-if="row.processedStatus===1">正在分析</el-tag>
           <el-tag type="success" v-else-if="row.processedStatus===2">已分析</el-tag>
           <el-tag type="warning" v-else-if="row.processedStatus===3">有更新</el-tag>
           <el-tag type="danger" v-else-if="row.processedStatus===4">失败</el-tag>
@@ -152,9 +199,9 @@ onMounted(load)
           <el-button size="small" type="primary" plain style="opacity:0.7" @click="openContent(row)">查看内容</el-button>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="150">
+      <el-table-column label="操作" width="250">
         <template #default="{ row }">
-          <el-button size="small" :type="row.processedStatus === 2 ? 'success' : 'primary'" @click="onAction(row)">{{ row.processedStatus === 2 ? '查看' : '分析' }}</el-button>
+          <el-button size="small" :type="row.processedStatus === 2 ? 'success' : (row.processedStatus === 1 ? 'warning' : 'primary')" @click="onAction(row)">{{ row.processedStatus === 2 ? '查看' : (row.processedStatus === 1 ? '分析中' : '分析') }}</el-button>
           <el-button size="small" type="danger" @click="doDelete(row)">删除</el-button>
         </template>
       </el-table-column>
@@ -173,6 +220,21 @@ onMounted(load)
   </div>
 
   <!-- 导入文件 -->
+    <el-dialog v-model="showLogs" title="分析日志" width="600px" align-center @close="() => { /* if(eventSource) eventSource.close() */ }">
+      <div id="log-container" style="background:#f5f7fa;color:#303133;padding:12px;border-radius:4px;height:300px;overflow-y:auto;font-family:monospace;border:1px solid #dcdfe6;">
+        <div v-for="(log, idx) in logs" :key="idx" style="margin-bottom:4px;border-bottom:1px dashed #ebeef5;padding-bottom:2px;">
+          <span style="color:#909399;margin-right:8px;">[{{ new Date().toLocaleTimeString() }}]</span>
+          <span>{{ log }}</span>
+        </div>
+        <div v-if="logs.length === 0" style="color:#909399;text-align:center;margin-top:20px;">暂无日志...</div>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showLogs = false">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="importDialog" title="导入文件" width="420px" align-center>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <!-- 文件选择 -->

@@ -16,21 +16,13 @@ public class ReportController {
     @Resource
     private ReportService reportService;
 
-
-    @PostMapping("/generate")
-    public BaseResponse<ReportVo> generateReport(@RequestBody ReportRequest request) {
-
-        return ResultUtil.success(new ReportVo());
-    }
-
-
     /**
      * 词云
      * @param userId 用户id
      * @return 名称和对应数量的映射
      */
     @GetMapping("/word")
-    public BaseResponse<Map<String,Integer>> wordReport(@RequestParam("userId") Long userId) {
+    public BaseResponse<Map<String,Integer>> wordReport(@RequestHeader("userId") Long userId) {
         Map<String, Integer> resultMap = reportService.generateWordReport(userId);
         return ResultUtil.success(resultMap);
     }

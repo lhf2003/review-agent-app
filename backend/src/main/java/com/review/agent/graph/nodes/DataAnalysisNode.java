@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.review.agent.entity.AnalysisResult;
 import com.review.agent.service.PromptService;
+import com.review.agent.service.SseService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -30,14 +31,17 @@ public class DataAnalysisNode implements NodeAction {
     @Resource(name = "analysisChatClient")
     private ChatClient chatClient;
 
+    @Resource
+    private SseService sseService;
+
     @Override
     public Map<String, Object> apply(OverAllState state) {
         log.info("======DataAnalysisNode apply start======");
-
         Long userId = Long.parseLong(state.value("userId").get().toString());
         Long fileId = Long.parseLong(state.value("fileId").get().toString());
         String content = state.value("content").get().toString();
         String sessionList = state.value("sessionList").get().toString();
+        sseService.sendLog(userId, "🔍 开始分析文件中的每个会话内容..." );
 
         String systemPrompt = promptService.getAnalysisPrompt("");
 

@@ -7,12 +7,12 @@ import com.review.agent.entity.AnalysisTag;
 import com.review.agent.entity.MainTag;
 import com.review.agent.entity.SubTag;
 import com.review.agent.service.PromptService;
+import com.review.agent.service.SseService;
 import com.review.agent.service.TagService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,12 +33,18 @@ public class TagClassifyNode implements NodeAction {
 
     @Resource(name = "classifyChatClient")
     private ChatClient chatClient;
+    @Resource
+    private SseService sseService;
+
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
         log.info("======TagClassifyNode apply start======");
 
         String userId = state.value("userId").get().toString();
+
+        sseService.sendLog(Long.parseLong(userId), "🏷️ 正在匹配主标签和子标签..." );
+
         @SuppressWarnings("unchecked")
         List<AnalysisResult> analysisResultList = (List<AnalysisResult>) state.value("analysisResultList").get();
 

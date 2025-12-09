@@ -2,8 +2,8 @@ package com.review.agent.graph.nodes;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.review.agent.service.DataInfoService;
 import com.review.agent.service.PromptService;
+import com.review.agent.service.SseService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -22,6 +22,8 @@ public class SessionExtractionNode implements NodeAction {
 
     @Resource(name = "extractChatClient")
     private ChatClient chatClient;
+    @Resource
+    private SseService sseService;
 
     @Override
     public Map<String, Object> apply(OverAllState state) {
@@ -29,6 +31,9 @@ public class SessionExtractionNode implements NodeAction {
 
         Object fileId = state.value("fileId").get();
         String content = state.value("content").get().toString();
+        String userId = state.value("userId").get().toString();
+
+        sseService.sendLog(Long.parseLong(userId), "🤔 拆分文件中...正在计算文件会话数量" );
 
         String systemPrompt = promptService.getSessionExtractionPrompt("");
 

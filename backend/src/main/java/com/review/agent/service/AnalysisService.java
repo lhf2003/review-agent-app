@@ -2,10 +2,10 @@ package com.review.agent.service;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.review.agent.common.utils.ExceptionUtils;
 import com.review.agent.entity.projection.AnalysisResultInfo;
 import com.review.agent.common.constant.CommonConstant;
 import com.review.agent.entity.*;
-import com.review.agent.entity.request.AnalysisRequest;
 import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisResultVo;
 import com.review.agent.entity.vo.AnalysisTagVo;
@@ -39,35 +39,44 @@ public class AnalysisService {
     private ObjectMapper objectMapper;
     @Resource
     private CompiledGraph compiledGraph;
+    @Resource
+    private SseService sseService;
 
 
     /**
      * 开始分析
-     * @param analysisRequest 分析请求
-     * @throws NoSuchElementException 如果用户不存在或文件不存在
      */
-    public void startAnalysis(AnalysisRequest analysisRequest) {
-        Long userId = analysisRequest.getUserId();
+    public void startAnalysis(Long userId, Long fileId) {
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
             throw new IllegalArgumentException("user not found");
         }
-        List<Long> fileIdList = analysisRequest.getFileIdList();
 
-        for (Long fileId : fileIdList) {
-            DataInfo dataInfo = fileInfoService.findById(fileId);
-            if (dataInfo == null) {
-                log.error("file info not found, fileId: {}", fileId);
-                continue;
-            }
+        DataInfo dataInfo = fileInfoService.findById(fileId);
+        if (dataInfo == null) {
+            log.error("file info not found, fileId: {}", fileId);
+            ExceptionUtils.throwDataNotFound("file info not found, fileId: " + fileId);
+        }
+        dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_PROCESSING);
+        fileInfoService.update(dataInfo);
+
+        new Thread(() -> {
+            sseService.sendLog(userId, "🚀 开始分析文件: " + dataInfo.getFileName());
+
             Map<String, Object> metaMap = new HashMap<>();
             metaMap.put("fileId", fileId);
             metaMap.put("userId", userId);
             metaMap.put("content", dataInfo.getFileContent());
+
+            sseService.sendLog(userId, "🤖 正在执行AI分析流...");
             // 调用图计算引擎
             Optional<OverAllState> callResult = compiledGraph.call(metaMap);
             callResult.ifPresent(overAllState -> processAnalysisResult(overAllState, dataInfo));
-        }
+
+            sseService.sendLog(userId, "✅ 分析完成: " + dataInfo.getFileName());
+        }).start();
+
+        return;
     }
 
     /**
@@ -191,6 +200,7 @@ public class AnalysisService {
             vo.setFileId(item.getFileId());
             vo.setProblemStatement(item.getProblemStatement());
             vo.setMainTagName(item.getTagName());
+            vo.setCreateTime(item.getCreateTime());
             // 转换子标签ID为标签名列表
             if (item.getSubTagIds() != null && !item.getSubTagIds().isEmpty()) {
                 List<String> subTagNameList = Arrays.stream(item.getSubTagIds().split(","))
