@@ -6,6 +6,7 @@ import com.review.agent.common.utils.AesUtil;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.entity.UserConfig;
 import com.review.agent.entity.UserInfo;
+import com.review.agent.entity.request.UserConfigUpdateRequest;
 import com.review.agent.entity.request.updatePasswordRequest;
 import com.review.agent.entity.vo.UserInfoFilterVo;
 import com.review.agent.service.UserService;
@@ -47,7 +48,7 @@ public class UserController {
     public BaseResponse<UserInfoFilterVo> login(@RequestBody UserInfo userInfo) {
         // 解密前端传来的密码
         String plainPassword = AesUtil.decrypt(userInfo.getPassword());
-        
+
         // 校验用户名密码是否正确
         UserInfo userInfoFromDb = userService.findByUsername(userInfo.getUsername());
         if (userInfoFromDb == null) {
@@ -101,7 +102,7 @@ public class UserController {
      */
     @PostMapping("/info/update")
     public BaseResponse<?> updateUserInfo(@RequestHeader("userId") Long userId, @RequestBody UserInfo userInfo) {
-        userService.updateInfo(userId,userInfo);
+        userService.updateInfo(userId, userInfo);
         return ResultUtil.success();
     }
 
@@ -112,7 +113,7 @@ public class UserController {
     public BaseResponse<?> updateUserPassword(@RequestHeader("userId") Long userId, @RequestBody updatePasswordRequest request) {
         request.setOldPassword(AesUtil.decrypt(request.getOldPassword()));
         request.setNewPassword(AesUtil.decrypt(request.getNewPassword()));
-        userService.updatePassword(userId,request);
+        userService.updatePassword(userId, request);
         return ResultUtil.success("update success");
     }
 
@@ -138,11 +139,8 @@ public class UserController {
      * 更新用户配置
      */
     @PostMapping("/config/update")
-    public BaseResponse<?> updateUserConfig(@RequestBody UserConfig userConfig, @RequestHeader(value = "userId", required = false) Long userId) {
-        if (userId != null) {
-            userConfig.setUserId(userId);
-        }
-        userService.updateUserConfig(userConfig);
+    public BaseResponse<?> updateUserConfig(@RequestBody UserConfigUpdateRequest updateRequest, @RequestHeader(value = "userId", required = false) Long userId) {
+        userService.updateUserConfig(userId, updateRequest);
         return ResultUtil.success("update success");
     }
     // endregion 用户配置接口

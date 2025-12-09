@@ -53,4 +53,12 @@ public class ReportService {
         });
         return resultMap;
     }
+
+    public void generateDailyReport(Long userId) {
+
+    }
+
+    public void generateWeeklyReport(Long userId) {
+
+    }
 }

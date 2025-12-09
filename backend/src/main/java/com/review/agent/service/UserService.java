@@ -4,16 +4,20 @@ import com.review.agent.common.utils.ExceptionUtils;
 import com.review.agent.common.utils.ObjectTransformUtil;
 import com.review.agent.entity.UserConfig;
 import com.review.agent.entity.UserInfo;
+import com.review.agent.entity.request.UserConfigUpdateRequest;
 import com.review.agent.entity.request.updatePasswordRequest;
 import com.review.agent.repository.UserConfigRepository;
 import com.review.agent.repository.UserInfoRepository;
+import com.review.agent.schedule.DynamicScheduledService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.List;
 
@@ -26,6 +30,10 @@ public class UserService {
 
     @Resource
     private UserConfigRepository userConfigRepository;
+
+    @Resource
+    @Lazy
+    private DynamicScheduledService dynamicScheduledService;
 
     // region 用户信息相关
 
@@ -61,6 +69,8 @@ public class UserService {
         userConfig.setScanIntervalSeconds(30);
         userConfig.setLlmProvider("openai");
         userConfig.setOpenaiApiKeyEncrypted("");
+        userConfig.setWeeklyEnabled(false);
+        userConfig.setDailyEnabled(false);
         userConfig.setUpdateTime(date);
 
         userConfigRepository.save(userConfig);
@@ -119,22 +129,34 @@ public class UserService {
 
     /**
      * 更新用户配置信息
-     * @param userConfig 用户配置信息
      */
-    public void updateUserConfig(UserConfig userConfig) {
+    @Transactional
+    public void updateUserConfig(Long userId, UserConfigUpdateRequest updateRequest) {
         // 校验用户是否存在
-        UserConfig userConfigFromDb = getUserConfig(userConfig.getUserId());
+        UserConfig userConfigFromDb = getUserConfig(userId);
         if (userConfigFromDb == null) {
             ExceptionUtils.throwDataNotFound("user config not found");
         }
-        Integer interval = userConfig.getScanIntervalSeconds();
+        Integer interval = updateRequest.getScanIntervalSeconds();
         if (interval != null) {
             if (interval < 3600 || interval > 43200) {
                 ExceptionUtils.throwParamError("scan interval must be 3600-43200 seconds");
             }
         }
-        BeanUtils.copyProperties(userConfig, userConfigFromDb, ObjectTransformUtil.getNullPropertyNames(userConfig));
+        BeanUtils.copyProperties(updateRequest, userConfigFromDb, ObjectTransformUtil.getNullPropertyNames(updateRequest));
+        // 构建日报的cron表达式
+        if(updateRequest.getDailyAnalysisTime() != null) {
+            LocalTime time = updateRequest.getDailyAnalysisTime();
+            userConfigFromDb.setDailyCron("0 " + time.getMinute() + " " + time.getHour() + " * * ?");
+        }
+        // 构建周报的cron表达式
+        if(updateRequest.getWeeklyAnalysisTime() != null) {
+            LocalTime time = updateRequest.getWeeklyAnalysisTime();
+            userConfigFromDb.setWeeklyCron("0 " + time.getMinute() + " " + time.getHour() + " ? * " + updateRequest.getWeeklyAnalysisDay());
+        }
         userConfigRepository.save(userConfigFromDb);
+        // 刷新定时任务
+        dynamicScheduledService.reloadUserTask(userId);
     }
 
     public void uploadAvatar(Long userId, MultipartFile avatar) {
