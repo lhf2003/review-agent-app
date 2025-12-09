@@ -32,7 +32,7 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
      * @return 分析结果列表
      */
     @Query(nativeQuery = true, value = """
-            select a.id as id,a.file_id as fileId ,a.problem_statement as problemStatement, m.name as tagName, GROUP_CONCAT(at.sub_tag_id) as subTagIds
+            select a.id as id,a.file_id as fileId ,a.problem_statement as problemStatement, a.created_time as createTime, m.name as tagName, GROUP_CONCAT(at.sub_tag_id) as subTagIds
                 from analysis_result a 
                   left join analysis_tag at on a.id = at.analysis_id
                   left join main_tag m on at.tag_id = m.id

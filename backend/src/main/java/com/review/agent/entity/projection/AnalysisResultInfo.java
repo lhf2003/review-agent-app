@@ -1,5 +1,7 @@
 package com.review.agent.entity.projection;
 
+import java.util.Date;
+
 /**
  * Projection for {@link com.review.agent.entity.AnalysisResult}
  */
@@ -15,4 +17,6 @@ public interface AnalysisResultInfo {
     String getSubTagIds();
 
     String getProblemStatement();
+
+    Date getCreateTime();
 }

@@ -10,5 +10,5 @@ import java.util.List;
 @Data
 public class AnalysisRequest {
     private Long userId;
-    private List<Long> fileIdList;
+    private Long fileId;
 }

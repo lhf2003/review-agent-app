@@ -33,7 +33,10 @@ public class AnalysisController {
      * @return 分析结果列表
      */
     @PostMapping("/page")
-    public BaseResponse<List<AnalysisResultVo>> page(Pageable pageable, @RequestBody AnalysisResultRequest resultRequest) {
+    public BaseResponse<List<AnalysisResultVo>> page(Pageable pageable, @RequestBody AnalysisResultRequest resultRequest, @RequestHeader(value = "userId", required = false) Long userId) {
+        if (userId != null) {
+            resultRequest.setUserId(userId);
+        }
         return ResultUtil.success(analysisService.page(pageable, resultRequest));
     }
 
@@ -43,18 +46,16 @@ public class AnalysisController {
      * @return 分析标签列表
      */
     @GetMapping("/tag/list")
-    public BaseResponse<List<AnalysisTagVo>> getTagList(@RequestParam("userId") Long userId) {
+    public BaseResponse<List<AnalysisTagVo>> getTagList(@RequestHeader("userId") Long userId) {
         return ResultUtil.success(analysisService.getTagList(userId));
     }
 
     /**
      * 开始分析
-     * @param analysisRequest 分析请求
-     * @return 分析结果
      */
-    @PostMapping("/start")
-    public BaseResponse<?> startAnalysis(@RequestBody AnalysisRequest analysisRequest) {
-        analysisService.startAnalysis(analysisRequest);
+    @GetMapping("/start")
+    public BaseResponse<?> startAnalysis(@RequestHeader("userId") Long userId, @RequestParam Long fileId) {
+        analysisService.startAnalysis(userId, fileId);
         return ResultUtil.success("analysis success!");
     }
 
@@ -65,7 +66,7 @@ public class AnalysisController {
      * @return 分析结果
      */
     @GetMapping("/result")
-    public BaseResponse<AnalysisResult> getAnalysisResult(@RequestParam("userId") Long userId, @RequestParam("dataId") Long dataId, @RequestParam("analysisId") Long analysisId) {
+    public BaseResponse<AnalysisResult> getAnalysisResult(@RequestHeader("userId") Long userId, @RequestParam("dataId") Long dataId, @RequestParam("analysisId") Long analysisId) {
         return ResultUtil.success(analysisService.getAnalysisResult(userId, dataId, analysisId));
     }
 }
