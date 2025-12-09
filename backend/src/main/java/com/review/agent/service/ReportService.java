@@ -31,7 +31,12 @@ public class ReportService {
     @Resource
     private AnalysisResultRepository analysisResultRepository;
 
-    public Map<String, Integer> generateWordReport(Long userId) {
+    /**
+     * 生成词云
+     * @param userId 用户ID
+     * @return 词云数据
+     */
+    public Map<String, Integer> generateWordCloud(Long userId) {
         List<AnalysisResult> analysisResultList = analysisResultRepository.findByUserId(userId);
         List<Long> analysisResultIdList = analysisResultList.stream().map(AnalysisResult::getId).toList();
         List<AnalysisTag> analysisTags = analysisTagRepository.findAllByAnalysisResultId(analysisResultIdList);
@@ -44,7 +49,7 @@ public class ReportService {
 
         Map<String, Integer> resultMap = new HashMap<>();
         analysisTags.forEach(analysisTag -> {
-            resultMap.merge(mainTagMap.get(analysisTag.getId()), 1, Integer::sum);
+            resultMap.merge(mainTagMap.get(analysisTag.getTagId()), 1, Integer::sum);
 
             String[] subTagIds = analysisTag.getSubTagId().split(",");
             for (String subTagId : subTagIds) {

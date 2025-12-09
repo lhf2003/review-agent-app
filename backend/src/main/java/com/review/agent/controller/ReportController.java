@@ -22,8 +22,8 @@ public class ReportController {
      * @return 名称和对应数量的映射
      */
     @GetMapping("/word")
-    public BaseResponse<Map<String,Integer>> wordReport(@RequestHeader("userId") Long userId) {
-        Map<String, Integer> resultMap = reportService.generateWordReport(userId);
+    public BaseResponse<Map<String,Integer>> generateWordCloud(@RequestHeader("userId") Long userId) {
+        Map<String, Integer> resultMap = reportService.generateWordCloud(userId);
         return ResultUtil.success(resultMap);
     }
 }
