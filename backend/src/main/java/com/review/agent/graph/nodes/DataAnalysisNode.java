@@ -2,9 +2,9 @@ package com.review.agent.graph.nodes;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.review.agent.entity.AnalysisResult;
 import com.review.agent.service.PromptService;
 import com.review.agent.service.SseService;
@@ -37,8 +37,20 @@ public class DataAnalysisNode implements NodeAction {
     @Override
     public Map<String, Object> apply(OverAllState state) {
         log.info("======DataAnalysisNode apply start======");
-        Long userId = Long.parseLong(state.value("userId").get().toString());
-        Long fileId = Long.parseLong(state.value("fileId").get().toString());
+        Object optional = state.value("userId").orElseThrow(() -> new IllegalArgumentException("userId is null"));
+        Long userId = null;
+        if (optional instanceof Long l) {
+            userId = l;
+        } else if (optional instanceof List<?> strings) {
+            userId = Long.parseLong(strings.get(1).toString());
+        }
+        Object optionalFileId = state.value("fileId").orElseThrow(() -> new IllegalArgumentException("fileId is null"));
+        Long fileId = null;
+        if (optionalFileId instanceof Long l) {
+            fileId = l;
+        } else if (optionalFileId instanceof List<?> strings) {
+            fileId = Long.parseLong(strings.get(1).toString());
+        }
         String content = state.value("content").get().toString();
         String sessionList = state.value("sessionList").get().toString();
         sseService.sendLog(userId, "🔍 开始分析文件中的每个会话内容..." );

@@ -30,6 +30,15 @@ spring:
     show-sql: false
     hibernate:
       dialect: org.hibernate.dialect.MySQL8Dialect
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 10s
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
   
   # Spring AI Alibaba配置
   ai:
@@ -46,6 +55,10 @@ spring:
         model: ${OLLAMA_CHAT_MODEL:qwen2.5:14b}
       embedding:
         model: bge-m3:latest
+#    vectorstore:
+#      redis:
+#        initialize-schema: true
+#        index-name: review_agent
 
 # 日志配置
 logging:

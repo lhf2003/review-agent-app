@@ -16,7 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>3.5.7</spring-boot.version>
         <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-ai-alibaba.version>1.0.0.4</spring-ai-alibaba.version>
+        <spring-ai-alibaba.version>1.1.0.0-M5</spring-ai-alibaba.version>
 
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
@@ -97,13 +97,13 @@
         <!-- Spring AI Alibaba -->
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
             <version>${spring-ai-alibaba.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-graph-core</artifactId>
+            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
             <version>${spring-ai-alibaba.version}</version>
         </dependency>
         
@@ -111,6 +111,12 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>
         </dependency>
+
+        <!-- Vector Store Redis -->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.ai</groupId>-->
+<!--            <artifactId>spring-ai-starter-vector-store-redis</artifactId>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -124,6 +130,13 @@
             <version>${mysql-connector-java.version}</version>
         </dependency>
 
+        <!-- Redisson 客户端依赖 -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.22.0</version>
+        </dependency>
+
         <!-- 文件处理 -->
         <dependency>
             <groupId>org.apache.poi</groupId>
@@ -132,6 +145,11 @@
         </dependency>
         
         <!-- JSON处理增强 -->
+        <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <version>2.0.54</version>
+        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
@@ -148,6 +166,18 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${commons-lang3.version}</version>
+        </dependency>
+
+        <!--javaMail-->
+        <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>javax.mail-api</artifactId>
+            <version>1.5.6</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>javax.mail</artifactId>
+            <version>1.5.3</version>
         </dependency>
         
         <dependency>

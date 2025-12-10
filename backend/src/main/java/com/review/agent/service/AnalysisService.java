@@ -2,16 +2,17 @@ package com.review.agent.service;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.review.agent.common.utils.ExceptionUtils;
-import com.review.agent.entity.projection.AnalysisResultInfo;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.review.agent.common.constant.CommonConstant;
+import com.review.agent.common.utils.ExceptionUtils;
 import com.review.agent.entity.*;
+import com.review.agent.entity.projection.AnalysisResultInfo;
 import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisResultVo;
 import com.review.agent.entity.vo.AnalysisTagVo;
 import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.AnalysisTagRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -38,10 +39,9 @@ public class AnalysisService {
     @Resource
     private ObjectMapper objectMapper;
     @Resource
-    private CompiledGraph compiledGraph;
+    private CompiledGraph analysisCompiledGraph;
     @Resource
     private SseService sseService;
-
 
     /**
      * 开始分析
@@ -70,7 +70,10 @@ public class AnalysisService {
 
             sseService.sendLog(userId, "🤖 正在执行AI分析流...");
             // 调用图计算引擎
-            Optional<OverAllState> callResult = compiledGraph.call(metaMap);
+            RunnableConfig config = RunnableConfig.builder()
+                    .threadId("analysis-graph-" + userId)
+                    .build();
+            Optional<OverAllState> callResult = analysisCompiledGraph.invoke(metaMap, config);
             callResult.ifPresent(overAllState -> processAnalysisResult(overAllState, dataInfo));
 
             sseService.sendLog(userId, "✅ 分析完成: " + dataInfo.getFileName());

@@ -41,15 +41,21 @@ public class TagClassifyNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state) {
         log.info("======TagClassifyNode apply start======");
 
-        String userId = state.value("userId").get().toString();
+        Object optional = state.value("userId").orElseThrow(() -> new IllegalArgumentException("userId is null"));
+        Long userId = null;
+        if (optional instanceof Long l) {
+            userId = l;
+        } else if (optional instanceof List<?> strings) {
+            userId = Long.parseLong(strings.get(1).toString());
+        }
 
-        sseService.sendLog(Long.parseLong(userId), "🏷️ 正在匹配主标签和子标签..." );
+        sseService.sendLog(userId, "🏷️ 正在匹配主标签和子标签..." );
 
         @SuppressWarnings("unchecked")
         List<AnalysisResult> analysisResultList = (List<AnalysisResult>) state.value("analysisResultList").get();
 
         Map<String, Long> nameToIdMap = new HashMap<>();
-        String categories = buildCategories(Long.parseLong(userId), nameToIdMap);
+        String categories = buildCategories(userId, nameToIdMap);
         String systemPrompt = promptService.getClassifyPrompt(categories);
 
         List<AnalysisTag> analysisTagList = new ArrayList<>();

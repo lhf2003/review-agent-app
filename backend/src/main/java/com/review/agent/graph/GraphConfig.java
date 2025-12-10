@@ -1,6 +1,7 @@
 package com.review.agent.graph;
 
 import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.review.agent.graph.nodes.DataAnalysisNode;
 import com.review.agent.graph.nodes.SessionExtractionNode;
@@ -30,6 +31,9 @@ public class GraphConfig {
     @Resource
     private TagClassifyNode tagClassifyNode;
 
+    @Resource
+    private SaverConfig saverConfig;
+
     @Bean
     public KeyStrategyFactory keyStrategyFactory() {
         return new KeyStrategyFactoryBuilder().addStrategy(DEFAULT_INPUT_KEY, KeyStrategy.REPLACE)
@@ -38,8 +42,11 @@ public class GraphConfig {
                 .build();
     }
 
+    /**
+     * 分析工作流
+     */
     @Bean
-    public StateGraph reviewAgentGraph(KeyStrategyFactory keyStrategyFactory) throws GraphStateException {
+    public StateGraph analysisGraph(KeyStrategyFactory keyStrategyFactory) throws GraphStateException {
 
         return new StateGraph("Review Agent Workflow", keyStrategyFactory)
                 // 添加节点
@@ -53,16 +60,42 @@ public class GraphConfig {
                 .addEdge("tag_classify_agent", END);
     }
 
-    @Bean(name = "compiledReviewAgentGraph")
-    public CompiledGraph compiledReviewAgentGraph(@Qualifier("reviewAgentGraph") StateGraph stateGraph)
-            throws GraphStateException {
+    /**
+     * 报告工作流
+     */
+    @Bean
+    public StateGraph reportGraph(KeyStrategyFactory keyStrategyFactory) throws GraphStateException {
 
-        CompiledGraph compiledGraph = stateGraph.compile(CompileConfig.builder().build());
-        // 设置最大迭代次数
-        compiledGraph.setMaxIterations(100);
+        return new StateGraph("Review Agent Workflow", keyStrategyFactory)
+                // 添加节点
+                .addNode("session_extraction_agent", node_async(sessionExtractionNode))
+                .addNode("analysis_agent", node_async(dataAnalysisNode))
+                .addNode("tag_classify_agent", node_async(tagClassifyNode))
+                // 定义边
+                .addEdge(START, "session_extraction_agent")
+                .addEdge("session_extraction_agent", "analysis_agent")
+                .addEdge("analysis_agent", "tag_classify_agent")
+                .addEdge("tag_classify_agent", END);
+    }
+
+    @Bean(name = "analysisCompiledGraph")
+    public CompiledGraph analysisCompiledGraph(@Qualifier("analysisGraph") StateGraph stateGraph) throws GraphStateException {
+
+        CompiledGraph compiledGraph = stateGraph.compile(
+                CompileConfig.builder()
+                        .saverConfig(saverConfig)
+                        .build());
         // 配置定时任务，每15分钟执行一次
 //        compiledGraph.schedule(ScheduleConfig.builder().cronExpression("0 0/5 * * * ?").build());
         return compiledGraph;
+    }
+
+    @Bean(name = "reportCompiledGraph")
+    public CompiledGraph reportCompiledGraph(@Qualifier("reportGraph") StateGraph stateGraph) throws GraphStateException {
+        return stateGraph.compile(
+                CompileConfig.builder()
+                        .saverConfig(saverConfig)
+                        .build());
     }
 
 }

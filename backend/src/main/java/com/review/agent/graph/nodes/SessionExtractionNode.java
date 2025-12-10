@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,9 +32,14 @@ public class SessionExtractionNode implements NodeAction {
 
         Object fileId = state.value("fileId").get();
         String content = state.value("content").get().toString();
-        String userId = state.value("userId").get().toString();
-
-        sseService.sendLog(Long.parseLong(userId), "🤔 拆分文件中...正在计算文件会话数量" );
+        Object optional = state.value("userId").orElseThrow(() -> new IllegalArgumentException("userId is null"));
+        Long userId = null;
+        if (optional instanceof Long l) {
+            userId = l;
+        } else if (optional instanceof List<?> strings) {
+            userId = Long.parseLong(strings.get(1).toString());
+        }
+        sseService.sendLog(userId, "🤔 拆分文件中...正在计算文件会话数量");
 
         String systemPrompt = promptService.getSessionExtractionPrompt("");
 
