@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class PromptService {
 
     // 提示词文件列表
-    private static final String[] PROMPT_FILES = {"prompts/Analysis-agent-prompt.md", "prompts/Classify-agent-prompt.md", "prompts/Extract-agent-prompt.md"};
+    private static final String[] PROMPT_FILES = {"prompts/Analysis-agent-prompt.md", "prompts/Classify-agent-prompt.md", "prompts/Extract-agent-prompt.md", "prompts/Report-agent-prompt.md"};
 
     private Map<String, String> promptTemplates = new HashMap<>();
 
@@ -93,6 +93,8 @@ public class PromptService {
             return "Classify." + promptName;
         } else if (fileName.contains("Extract")) {
             return "Extract." + promptName;
+        } else if (fileName.contains("Report")) {
+            return "Report." + promptName;
         }
         return promptName;
     }
@@ -147,7 +149,16 @@ public class PromptService {
     public String getAnalysisPrompt(String problemStatement) throws PromptProcessingException {
         Map<String, Object> variables = new HashMap<>();
         variables.put("problemStatement", problemStatement);
-        return buildPrompt("Analysis.文本分析提示词", variables);
+        return buildPrompt("Analysis.通用分析提示词", variables);
+    }
+
+    /**
+     * 获取分析提示词
+     */
+    public String getBugAnalysisPrompt(String problemStatement) throws PromptProcessingException {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("problemStatement", problemStatement);
+        return buildPrompt("Analysis.BUG分析提示词", variables);
     }
 
     /**
@@ -166,6 +177,15 @@ public class PromptService {
         Map<String, Object> variables = new HashMap<>();
         variables.put("categories", categories);
         return buildPrompt("Extract.会话提取提示词", variables);
+    }
+
+    /**
+     * 获取会话提取提示词
+     */
+    public String getDailyReportPrompt(String categories) throws PromptProcessingException {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("categories", categories);
+        return buildPrompt("Report.报告生成提示词", variables);
     }
 
     // ========== 通用提示词 ==========

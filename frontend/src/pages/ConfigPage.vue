@@ -14,7 +14,7 @@ const form = ref({
   dailyEnabled: false,
   dailyTime: null,
   weeklyEnabled: false,
-  weeklyDay: 5,
+  weeklyDay: 1,
   weeklyTime: null
 })
 
@@ -93,7 +93,7 @@ async function loadConfig() {
       }
     } catch (e) {
        form.value.weeklyTime = new Date().setHours(18, 0, 0, 0)
-       form.value.weeklyDay = 5
+       form.value.weeklyDay = 1
     }
     
     // Load User Info
