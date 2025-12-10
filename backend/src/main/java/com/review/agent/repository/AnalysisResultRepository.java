@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, Long> {
@@ -58,4 +59,14 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
                         order by a.createdTime desc limit 1
             """)
     AnalysisResult findByCondition(Long userId, Long dataId, Long analysisId);
+
+            /**
+             * 根据日期查询分析结果
+             * @param userId 用户ID
+             * @param startDate 开始日期
+             * @param endDate 结束日期
+             * @return 分析结果列表
+             */
+    @Query("select a from AnalysisResult a where a.userId = :userId and a.createdTime between :startDate and :endDate")
+    List<AnalysisResult> findAllByDate(Long userId, LocalDateTime startDate, LocalDateTime endDate);
 }
