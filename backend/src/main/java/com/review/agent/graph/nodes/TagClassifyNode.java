@@ -2,10 +2,9 @@ package com.review.agent.graph.nodes;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.review.agent.entity.AnalysisResult;
-import com.review.agent.entity.AnalysisTag;
 import com.review.agent.entity.MainTag;
 import com.review.agent.entity.SubTag;
+import com.review.agent.entity.dto.NodeExecuteDto;
 import com.review.agent.service.PromptService;
 import com.review.agent.service.SseService;
 import com.review.agent.service.TagService;
@@ -14,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +39,7 @@ public class TagClassifyNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state) {
         log.info("======TagClassifyNode apply start======");
 
+        // 解析状态
         Object optional = state.value("userId").orElseThrow(() -> new IllegalArgumentException("userId is null"));
         Long userId = null;
         if (optional instanceof Long l) {
@@ -49,40 +48,43 @@ public class TagClassifyNode implements NodeAction {
             userId = Long.parseLong(strings.get(1).toString());
         }
 
-        sseService.sendLog(userId, "🏷️ 正在匹配主标签和子标签..." );
+        sseService.sendLog(userId, "🏷️ 正在匹配主标签和子标签...");
 
         @SuppressWarnings("unchecked")
-        List<AnalysisResult> analysisResultList = (List<AnalysisResult>) state.value("analysisResultList").get();
+        List<NodeExecuteDto> nodeDtoList = (List<NodeExecuteDto>) state.value("nodeResult")
+                .orElseThrow(() -> new IllegalArgumentException("nodeDtoList is null"));
 
         Map<String, Long> nameToIdMap = new HashMap<>();
+        // 获取系统提示词
         String categories = buildCategories(userId, nameToIdMap);
         String systemPrompt = promptService.getClassifyPrompt(categories);
 
-        List<AnalysisTag> analysisTagList = new ArrayList<>();
-        for (AnalysisResult result : analysisResultList) {
+        for (NodeExecuteDto result : nodeDtoList) {
+            // 调用AI
             AiAnalysisResult response = chatClient.prompt()
                     .system(systemPrompt)
-                    .user(result.getSolution())
+                    .user(result.getSessionContent())
                     .call()
                     .entity(AiAnalysisResult.class);
 
             if (response == null) {
-                log.info("AI 分类标签失败，fileId：{},sessionStart：{}，sessionEnd：{}，",
-                        result.getFileId(), result.getSessionStart(), result.getSessionEnd());
+                log.info("AI 分类标签失败，sessionStart：{}，sessionEnd：{}，", result.getSessionStart(), result.getSessionEnd());
                 continue;
             }
-            AnalysisTag analysisTag = new AnalysisTag();
-            analysisTag.setTagId(nameToIdMap.get(response.category()));
+
+            // 构建结果列表
+            result.setTagId(nameToIdMap.get(response.category()));
+            result.setRecommends(String.join(",", response.recommends()));
             List<String> subTagIdList = response.subCategory().stream()
                     .filter(nameToIdMap::containsKey)
                     .map(nameToIdMap::get)
                     .map(String::valueOf)
                     .toList();
-            analysisTag.setSubTagId(String.join(",", subTagIdList));
-            analysisTagList.add(analysisTag);
+            result.setSubTagId(String.join(",", subTagIdList));
+            result.setSubTagName(String.join(",", response.subCategory()));
         }
 
-        return Map.of("analysisTagList", analysisTagList, "analysisResultList", analysisResultList);
+        return Map.of("nodeResult", nodeDtoList);
     }
 
     /**

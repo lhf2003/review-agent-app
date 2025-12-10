@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.review.agent.common.constant.CommonConstant;
 import com.review.agent.common.utils.ExceptionUtils;
 import com.review.agent.entity.*;
+import com.review.agent.entity.dto.NodeExecuteDto;
 import com.review.agent.entity.projection.AnalysisResultInfo;
 import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisResultVo;
@@ -46,6 +47,7 @@ public class AnalysisService {
     /**
      * 开始分析
      */
+    @Transactional
     public void startAnalysis(Long userId, Long fileId) {
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
@@ -66,7 +68,7 @@ public class AnalysisService {
             Map<String, Object> metaMap = new HashMap<>();
             metaMap.put("fileId", fileId);
             metaMap.put("userId", userId);
-            metaMap.put("content", dataInfo.getFileContent());
+            metaMap.put("originalContent", dataInfo.getFileContent());
 
             sseService.sendLog(userId, "🤖 正在执行AI分析流...");
             // 调用图计算引擎
@@ -79,7 +81,6 @@ public class AnalysisService {
             sseService.sendLog(userId, "✅ 分析完成: " + dataInfo.getFileName());
         }).start();
 
-        return;
     }
 
     /**
@@ -87,49 +88,59 @@ public class AnalysisService {
      * @param overAllState 图计算引擎返回的分析结果
      * @param dataInfo 文件信息
      */
-    @Transactional
     public void processAnalysisResult(OverAllState overAllState, DataInfo dataInfo) {
-        Optional<Object> analysisResultObj = overAllState.value("analysisResultList");
-        Optional<Object> analysisTagObj = overAllState.value("analysisTagList");
+        Optional<Object> nodeResultObj = overAllState.value("nodeResult");
 
-        List<AnalysisResult> analysisResultList = null;
-        List<AnalysisTag> analysisTagList = null;
+        List<NodeExecuteDto> nodeExecuteDtoList = null;
+
+        List<AnalysisResult> analysisResultList = new ArrayList<>();
+        List<AnalysisTag> analysisTagList = new ArrayList<>();
 
         // 安全地转换对象类型
-        if (analysisResultObj.isPresent() && analysisResultObj.get() instanceof List<?> rawList) {
+        if (nodeResultObj.isPresent() && nodeResultObj.get() instanceof List<?> rawList) {
             try {
-                rawList = (List<?>) analysisResultObj.get();
-                analysisResultList = rawList.stream()
-                        .map(item -> objectMapper.convertValue(item, AnalysisResult.class))
+                nodeExecuteDtoList = rawList.stream()
+                        .map(item -> objectMapper.convertValue(item, NodeExecuteDto.class))
                         .toList();
             } catch (Exception e) {
-                log.error("Failed to convert analysisResultList to List<AnalysisResult>", e);
+                log.error("Failed to convert nodeExecuteDtoList to List<NodeExecuteDto>", e);
             }
         }
 
-        if (analysisTagObj.isPresent() && analysisTagObj.get() instanceof List<?> rawList) {
-            rawList = (List<?>) analysisTagObj.get();
-            analysisTagList = rawList.stream()
-                    .map(item -> objectMapper.convertValue(item, AnalysisTag.class))
-                    .toList();
-        }
-
-        if (analysisResultList != null && analysisTagList != null) {
+        if (!CollectionUtils.isEmpty(nodeExecuteDtoList)) {
             dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_PROCESSED);
+            for (NodeExecuteDto executeDto : nodeExecuteDtoList) {
+                AnalysisResult analysisResult = new AnalysisResult();
+                analysisResult.setUserId(executeDto.getUserId());
+                analysisResult.setFileId(executeDto.getFileId());
+                analysisResult.setProblemStatement(executeDto.getProblemStatement());
+                analysisResult.setSolution(executeDto.getSolution());
+                analysisResult.setSessionStart(executeDto.getSessionStart());
+                analysisResult.setSessionEnd(executeDto.getSessionEnd());
+                analysisResult.setSessionContent(executeDto.getSessionContent());
+                analysisResult.setStatus(executeDto.getStatus());
+                analysisResultList.add(analysisResult);
+
+                AnalysisTag analysisTag = new AnalysisTag();
+                analysisTag.setTagId(executeDto.getTagId());
+                analysisTag.setSubTagId(executeDto.getSubTagId());
+                analysisTag.setRecommends(executeDto.getRecommends());
+                analysisTagList.add(analysisTag);
+            }
         } else {
             dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_ERROR);
         }
 
         // 更新文件处理状态
         fileInfoService.update(dataInfo);
-        if (!CollectionUtils.isEmpty(analysisResultList)) {
-            analysisResultRepository.saveAll(analysisResultList);
-            for (int i = 0; i < analysisTagList.size(); i++) {
-                AnalysisTag analysisTag = analysisTagList.get(i);
-                analysisTag.setAnalysisId(analysisResultList.get(i).getId());
-            }
-            analysisTagRepository.saveAll(analysisTagList);
+
+        analysisResultRepository.saveAll(analysisResultList);
+        for (int i = 0; i < analysisTagList.size(); i++) {
+            AnalysisTag analysisTag = analysisTagList.get(i);
+            analysisTag.setAnalysisId(analysisResultList.get(i).getId());
         }
+        analysisTagRepository.saveAll(analysisTagList);
+
         log.info("分析结束");
     }
 

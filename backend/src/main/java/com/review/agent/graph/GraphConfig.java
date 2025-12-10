@@ -55,9 +55,9 @@ public class GraphConfig {
                 .addNode("tag_classify_agent", node_async(tagClassifyNode))
                 // 定义边
                 .addEdge(START, "session_extraction_agent")
-                .addEdge("session_extraction_agent", "analysis_agent")
-                .addEdge("analysis_agent", "tag_classify_agent")
-                .addEdge("tag_classify_agent", END);
+                .addEdge("session_extraction_agent", "tag_classify_agent")
+                .addEdge("tag_classify_agent", "analysis_agent")
+                .addEdge("analysis_agent", END);
     }
 
     /**

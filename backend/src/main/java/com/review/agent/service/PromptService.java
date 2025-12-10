@@ -162,6 +162,15 @@ public class PromptService {
     }
 
     /**
+     * 获取分析提示词
+     */
+    public String getExtensionAnalysisPrompt(String problemStatement) throws PromptProcessingException {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("problemStatement", problemStatement);
+        return buildPrompt("Analysis.思维拓展分析提示词", variables);
+    }
+
+    /**
      * 获取分类提示词
      */
     public String getClassifyPrompt(String categories) throws PromptProcessingException {

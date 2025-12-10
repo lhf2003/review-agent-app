@@ -2,6 +2,10 @@ package com.review.agent.graph.nodes;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.review.agent.entity.dto.NodeExecuteDto;
 import com.review.agent.service.PromptService;
 import com.review.agent.service.SseService;
 import jakarta.annotation.Resource;
@@ -9,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -30,8 +36,15 @@ public class SessionExtractionNode implements NodeAction {
     public Map<String, Object> apply(OverAllState state) {
         log.info("======SessionExtractionNode apply start======");
 
-        Object fileId = state.value("fileId").get();
-        String content = state.value("content").get().toString();
+        // 解析状态
+        String originalContent = state.value("originalContent").get().toString();
+        Object optionalFileId = state.value("fileId").orElseThrow(() -> new IllegalArgumentException("fileId is null"));
+        Long fileId = null;
+        if (optionalFileId instanceof Long l) {
+            fileId = l;
+        } else if (optionalFileId instanceof List<?> strings) {
+            fileId = Long.parseLong(strings.get(1).toString());
+        }
         Object optional = state.value("userId").orElseThrow(() -> new IllegalArgumentException("userId is null"));
         Long userId = null;
         if (optional instanceof Long l) {
@@ -41,11 +54,13 @@ public class SessionExtractionNode implements NodeAction {
         }
         sseService.sendLog(userId, "🤔 拆分文件中...正在计算文件会话数量");
 
+        // 获取系统提示词
         String systemPrompt = promptService.getSessionExtractionPrompt("");
 
+        // 调用AI
         String result = chatClient.prompt()
                 .system(systemPrompt)
-                .user(content)
+                .user(originalContent)
                 .call()
                 .content();
 
@@ -55,7 +70,9 @@ public class SessionExtractionNode implements NodeAction {
             return Map.of();
         }
 
-        return Map.of("sessionList", result);
+        // 构建结果列表
+        List<NodeExecuteDto> nodeDtoList = buildNodeExecuteList(result, originalContent, userId, fileId);
+        return Map.of("nodeResult", nodeDtoList);
     }
 
     public String formatResult(String result) {
@@ -66,6 +83,56 @@ public class SessionExtractionNode implements NodeAction {
                 .replaceAll("^\\s*```\\s*", "")       // 或者可能是 ``` 开头
                 .replaceAll("\\s*```\\s*$", "")       // 去除结尾 ```
                 .trim();
+    }
+
+
+    /**
+     * 构建节点执行结果列表
+     * @param result 会话提取结果
+     * @param userId 用户ID
+     * @param fileId 文件ID
+     * @return 节点执行结果列表
+     */
+    private List<NodeExecuteDto> buildNodeExecuteList(String result, String originalContent, Long userId, Long fileId) {
+        List<NodeExecuteDto> nodeDtoList = new ArrayList<>();
+
+        JSONArray jsonArray = JSON.parseArray(result);
+        for (Object session : jsonArray) {
+            JSONObject sessionJson = (JSONObject) session;
+            int startIndex = sessionJson.getIntValue("startIndex");
+            int endIndex = sessionJson.getIntValue("endIndex");
+            NodeExecuteDto nodeExecute = new NodeExecuteDto();
+            nodeExecute.setSessionStart(startIndex);
+            nodeExecute.setSessionEnd(endIndex);
+            nodeExecute.setUserId(userId);
+            nodeExecute.setFileId(fileId);
+
+            handleData(originalContent, nodeExecute);
+
+            nodeDtoList.add(nodeExecute);
+        }
+        return nodeDtoList;
+    }
+
+    /**
+     * 提取指定会话内容
+     * @param originalContent 文件内容
+     * @param nodeExecute 会话信息对象
+     */
+    private void handleData(String originalContent, NodeExecuteDto nodeExecute) {
+        Integer startIndex = nodeExecute.getSessionStart();
+        Integer endIndex = nodeExecute.getSessionEnd();
+        // 提取指定会话内容
+        String regex = "(?m)^\\s*(?=#\\s+\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2})";
+        String[] blocks = originalContent.split(regex);
+        List<String> blockList = Arrays.stream(blocks).filter(block -> !block.trim().isEmpty()).toList();
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = startIndex - 1; i < endIndex; i++) {
+            stringBuilder.append(blockList.get(i)).append("\n");
+        }
+        nodeExecute.setSessionStart(startIndex);
+        nodeExecute.setSessionEnd(endIndex);
+        nodeExecute.setSessionContent(stringBuilder.toString());
     }
 
 }
