@@ -1,7 +1,7 @@
 package com.review.agent.common.config;
 
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;
 import lombok.Data;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -32,7 +32,9 @@ public class RedissonConfig {
 
     @Bean
     public RedisSaver redisSaver(RedissonClient redissonClient) {
-        return new RedisSaver(redissonClient);
+        return RedisSaver.builder()
+                .redisson(redissonClient)
+                .build();
     }
 
     /**
