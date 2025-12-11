@@ -1,49 +1,57 @@
+import forge from 'node-forge'
 const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV
 const isEmbeddedHttp = typeof window !== 'undefined' && window.location && window.location.protocol === 'http:' && window.location.port === '3000'
-// const BASE_URL = isDev || isEmbeddedHttp ? '/' : 'http://localhost:8081'
-const BASE_URL = 'http://localhost:8081'
+// 在开发模式下通过 Vite 代理到后端（/api -> target）
+const BASE_URL = 'http://192.168.184.192:8081'
 const AES_KEY_STR = 'ReviewAgentSecureKey20250101!!!!';
 
 async function encryptPassword(password) {
   if (!password) return password;
-  try {
-    const enc = new TextEncoder();
-    const keyMaterial = await window.crypto.subtle.importKey(
-      "raw",
-      enc.encode(AES_KEY_STR),
-      "AES-GCM",
-      false,
-      ["encrypt"]
-    );
-    
-    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    const encodedPassword = enc.encode(password);
-    
-    const ciphertext = await window.crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
-      keyMaterial,
-      encodedPassword
-    );
-    
-    // Combine IV + Ciphertext
-    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
-    combined.set(iv);
-    combined.set(new Uint8Array(ciphertext), iv.length);
-    
-    // Convert to Base64
-    let binary = '';
-    const bytes = combined;
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
+  if (window.crypto && window.crypto.subtle) {
+    try {
+      const enc = new TextEncoder();
+      const keyMaterial = await window.crypto.subtle.importKey(
+        'raw',
+        enc.encode(AES_KEY_STR),
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt']
+      );
+      const iv = window.crypto.getRandomValues(new Uint8Array(12));
+      const encodedPassword = enc.encode(password);
+      const ciphertext = await window.crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        keyMaterial,
+        encodedPassword
+      );
+      const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+      combined.set(iv);
+      combined.set(new Uint8Array(ciphertext), iv.length);
+      let binary = '';
+      const bytes = combined;
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return window.btoa(binary);
+    } catch (e) {
+      console.warn('WebCrypto AES-GCM failed, falling back to forge', e);
     }
-    return window.btoa(binary);
+  }
+  try {
+    const ivRaw = forge.random.getBytesSync(12);
+    const cipher = forge.cipher.createCipher('AES-GCM', AES_KEY_STR);
+    cipher.start({ iv: ivRaw, tagLength: 128 });
+    cipher.update(forge.util.createBuffer(password, 'utf8'));
+    const ok = cipher.finish();
+    if (!ok) throw new Error('forge cipher.finish() failed');
+    const ctRaw = cipher.output.getBytes();
+    const tagRaw = cipher.mode.tag.getBytes();
+    const combinedRaw = ivRaw + ctRaw + tagRaw;
+    return window.btoa(combinedRaw);
   } catch (e) {
-    console.error('Encryption failed', e);
-    return password;
+    console.error('Encryption fallback failed', e);
+    throw new Error('加密不可用：请使用HTTPS或更新浏览器');
   }
 }
 

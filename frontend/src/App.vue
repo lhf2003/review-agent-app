@@ -1,14 +1,39 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Moon, Sunny } from '@element-plus/icons-vue'
 import { useAuthStore } from './stores/auth'
 import { api } from './api/http'
 import md5 from 'blueimp-md5'
 
 const auth = useAuthStore()
+const isDark = ref(true)
 const avatarDialog = ref(false)
 const avatarSizeLarge = ref(false)
 const profileForm = ref({ avatar: '', newPassword: '', confirm: '' })
+
+function toggleTheme(val) {
+  isDark.value = val
+  if (val) {
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('theme', 'dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem('theme', 'light')
+  }
+}
+
+onMounted(() => {
+  const savedTheme = localStorage.getItem('theme')
+  if (savedTheme === 'light') {
+    isDark.value = false
+    document.documentElement.classList.remove('dark')
+  } else {
+    isDark.value = true
+    document.documentElement.classList.add('dark')
+    if (!savedTheme) localStorage.setItem('theme', 'dark')
+  }
+})
 
 function openAvatar() { avatarDialog.value = true }
 function toggleAvatarSize() { avatarSizeLarge.value = !avatarSizeLarge.value }
@@ -93,8 +118,14 @@ watch(() => auth.isAuthenticated, (val) => {
     <el-container>
       <el-header class="app-header">
         <div class="title">Review Agent</div>
-        <div>
-          <el-button type="primary" @click="ElMessage.success('欢迎使用')">帮助</el-button>
+        <div class="theme-switch-wrapper" @click="toggleTheme(!isDark)">
+          <div class="theme-switch" :class="{ 'is-dark': isDark }">
+            <div class="switch-handle">
+              <el-icon class="switch-icon">
+                <component :is="isDark ? Moon : Sunny" />
+              </el-icon>
+            </div>
+          </div>
         </div>
       </el-header>
       <el-main class="app-main">
@@ -133,4 +164,57 @@ watch(() => auth.isAuthenticated, (val) => {
 .dialog-avatar { cursor: zoom-in; transition: transform 200ms ease; }
 .dialog-avatar:hover { transform: scale(1.03); }
 .aside-menu :deep(.el-menu-item) { justify-content: center; }
+
+/* Theme Switch Styles */
+.theme-switch-wrapper {
+  cursor: pointer;
+  padding: 4px;
+}
+
+.theme-switch {
+  width: 70px;
+  height: 34px;
+  background: linear-gradient(to right, #87CEEB, #4da9d5);
+  border-radius: 17px;
+  position: relative;
+  transition: all 0.4s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+}
+
+.theme-switch.is-dark {
+  background: linear-gradient(to right, #2C3E50, #4b6cb7);
+}
+
+.switch-handle {
+  width: 28px;
+  height: 28px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  left: 3px;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.theme-switch.is-dark .switch-handle {
+  transform: translateX(36px);
+  background: #1a1a1a;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.switch-icon {
+  font-size: 18px;
+  color: #f1c40f;
+  animation: rotate-icon 0.5s ease-out;
+}
+
+@keyframes rotate-icon {
+  from { transform: rotate(-180deg) scale(0.5); opacity: 0; }
+  to { transform: rotate(0) scale(1); opacity: 1; }
+}
 </style>

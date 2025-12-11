@@ -42,7 +42,7 @@ async function loadSub() {
 }
 async function loadRelation() {
   const mid = selectedMainId.value ?? undefined
-  const resp = await api.getTagRelations(auth.userId, mid)
+  const resp = await api.getTagRelations(mid)
   relations.value = resp?.data || resp || []
 }
 async function loadAll() {

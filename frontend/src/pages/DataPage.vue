@@ -14,7 +14,7 @@ const router = useRouter()
 const loading = ref(false)
 const tableData = ref([])
 const page = ref(1)
-const pageSize = ref(20)
+const pageSize = ref(10)
 const total = ref(0)
 
 const searchName = ref('')
@@ -22,6 +22,7 @@ const statusFilter = ref(null)
 
 const importDialog = ref(false)
 const importFile = ref(null)
+const uploadRef = ref(null)
 
 const resultDialog = ref(false)
 const result = ref({ title: '', problemStatement: '', solution: '' })
@@ -34,7 +35,7 @@ const logs = ref([])
 const showLogs = ref(false)
 let eventSource = null
 
-const md = markdownit({
+const md = new markdownit({
   breaks: true,
   highlight: function (str, lang) {
     const lg = (lang || '').trim().toLowerCase()
@@ -103,7 +104,7 @@ function onAction(row) {
     if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
 
     } else {
-       const baseUrl = 'http://localhost:8081' // Hardcoded base URL matching http.js
+       const baseUrl = '/api'
        eventSource = new EventSource(`${baseUrl}/analysis/log/stream?userId=${auth.userId}`)
        
        eventSource.addEventListener('log', (event) => {
@@ -122,7 +123,7 @@ function onAction(row) {
 
     // Only trigger startAnalysis if it is NOT already analyzing (status != 1)
     if (row.processedStatus !== 1) {
-        api.startAnalysis({ userId: auth.userId, fileId: Number(row.id) })
+        api.startAnalysis(row.id )
           .then(() => { 
             ElMessage.success('已触发分析')
             logs.value.push('分析任务已提交...')
@@ -162,8 +163,9 @@ onMounted(load)
 </script>
 
 <template>
-  <div style="display:flex;flex-direction:column;gap:12px;">
-    <div style="display:flex;align-items:center;gap:12px;">
+  <div class="page-container">
+    <!-- 顶部工具栏 -->
+    <div class="toolbar">
       <el-input v-model="searchName" placeholder="搜索文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="max-width:280px" />
       <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width:160px" @change="() => { page = 1; load() } ">
         <el-option :value="null" label="全部" />
@@ -172,6 +174,7 @@ onMounted(load)
         <el-option :value="3" label="有更新" />
         <el-option :value="4" label="失败" />
       </el-select>
+      <div class="spacer"></div>
       <el-button type="primary" @click="openImport" icon="Upload">
         导入
       </el-button>
@@ -180,53 +183,59 @@ onMounted(load)
       </el-button>
     </div>
 
-  <el-table :data="tableData" v-loading="loading" style="width:100%">
-      <el-table-column prop="id" label="ID" width="90" />
-      <el-table-column prop="fileName" label="文件名" width="200" />
-      <el-table-column prop="sessionCount" label="会话数" width="140" />
-      <el-table-column prop="processedStatus" label="状态" width="160">
-        <template #default="{ row }">
-          <el-tag v-if="row.processedStatus===0">未分析</el-tag>
-          <el-tag type="primary" v-else-if="row.processedStatus===1">正在分析</el-tag>
-          <el-tag type="success" v-else-if="row.processedStatus===2">已分析</el-tag>
-          <el-tag type="warning" v-else-if="row.processedStatus===3">有更新</el-tag>
-          <el-tag type="danger" v-else-if="row.processedStatus===4">失败</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="createdTime" label="同步时间" width="250" />
-            <el-table-column label="文件内容" width="160">
-        <template #default="{ row }">
-          <el-button size="small" type="primary" plain style="opacity:0.7" @click="openContent(row)">查看内容</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="250">
-        <template #default="{ row }">
-          <el-button size="small" :type="row.processedStatus === 2 ? 'success' : (row.processedStatus === 1 ? 'warning' : 'primary')" @click="onAction(row)">{{ row.processedStatus === 2 ? '查看' : (row.processedStatus === 1 ? '分析中' : '分析') }}</el-button>
-          <el-button size="small" type="danger" @click="doDelete(row)">删除</el-button>
-        </template>
-      </el-table-column>
-  </el-table>
+    <!-- 表格区域 -->
+    <div class="table-wrapper">
+      <el-table :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" border stripe>
+        <el-table-column :resizable="false" prop="id" label="ID" width="90" align="center" />
+        <el-table-column :resizable="false" prop="fileName" label="文件名" width="350"  align="center" />
+        <el-table-column :resizable="false" prop="sessionCount" label="会话数" width="100" align="center" />
+        <el-table-column :resizable="false" prop="processedStatus" label="状态" width="180" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.processedStatus===0" type="info" effect="light">未分析</el-tag>
+            <el-tag type="primary" v-else-if="row.processedStatus===1" effect="light">正在分析</el-tag>
+            <el-tag type="success" v-else-if="row.processedStatus===2" effect="light">已分析</el-tag>
+            <el-tag type="warning" v-else-if="row.processedStatus===3" effect="light">有更新</el-tag>
+            <el-tag type="danger" v-else-if="row.processedStatus===4" effect="light">失败</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column :resizable="false" prop="createdTime" label="同步时间" width="280" align="center" />
+        <el-table-column :resizable="false" label="文件内容" width="218" align="center">
+          <template #default="{ row }">
+            <el-button size="default" type="primary" link @click="openContent(row)">查看内容</el-button>
+          </template>
+        </el-table-column>
+        <el-table-column :resizable="false" label="操作" width="300" align="center" fixed="right">
+          <template #default="{ row }">
+            <el-button size="default" :type="row.processedStatus === 2 ? 'success' : (row.processedStatus === 1 ? 'warning' : 'primary')" @click="onAction(row)">{{ row.processedStatus === 2 ? '查看' : (row.processedStatus === 1 ? '分析中' : '分析') }}</el-button>
+            <el-button size="default" type="danger" plain @click="doDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
-  <div style="display:flex;justify-content:center;">
+    <!-- 分页导航 -->
+    <div class="pagination-bar">
       <el-pagination
+        small
         v-model:current-page="page"
         v-model:page-size="pageSize"
-        :page-sizes="[10,20,50]"
-        layout="prev, sizes, pager, next"
+        :page-sizes="[10,20,50,100]"
+        layout="total, sizes, prev, pager, next"
         :total="total"
+        background
         @current-change="load"
         @size-change="() => { page = 1; load() }"
       />
-  </div>
+    </div>
 
-  <!-- 导入文件 -->
+    <!-- 导入文件 -->
     <el-dialog v-model="showLogs" title="分析日志" width="600px" align-center @close="() => { /* if(eventSource) eventSource.close() */ }">
-      <div id="log-container" style="background:#f5f7fa;color:#303133;padding:12px;border-radius:4px;height:300px;overflow-y:auto;font-family:monospace;border:1px solid #dcdfe6;">
-        <div v-for="(log, idx) in logs" :key="idx" style="margin-bottom:4px;border-bottom:1px dashed #ebeef5;padding-bottom:2px;">
-          <span style="color:#909399;margin-right:8px;">[{{ new Date().toLocaleTimeString() }}]</span>
+      <div id="log-container" style="background:var(--el-fill-color-light);color:var(--el-text-color-primary);padding:12px;border-radius:4px;height:300px;overflow-y:auto;font-family:monospace;border:1px solid var(--el-border-color);">
+        <div v-for="(log, idx) in logs" :key="idx" style="margin-bottom:4px;border-bottom:1px dashed var(--el-border-color-lighter);padding-bottom:2px;">
+          <span style="color:var(--el-text-color-secondary);margin-right:8px;">[{{ new Date().toLocaleTimeString() }}]</span>
           <span>{{ log }}</span>
         </div>
-        <div v-if="logs.length === 0" style="color:#909399;text-align:center;margin-top:20px;">暂无日志...</div>
+        <div v-if="logs.length === 0" style="color:var(--el-text-color-secondary);text-align:center;margin-top:20px;">暂无日志...</div>
       </div>
       <template #footer>
         <span class="dialog-footer">
@@ -248,7 +257,7 @@ onMounted(load)
           <template #trigger>
             <el-button type="primary" plain icon="Upload">选择文件</el-button>
           </template>
-          <span style="margin-left:8px;color:var(--el-text-color-secondary);font-size:12px;">
+          <span style="margin-left:8px;color:var(--el-text-color-secondary);font-size:var(--el-font-size-small);">
             支持 txt、md
           </span>
         </el-upload>
@@ -270,20 +279,20 @@ onMounted(load)
       </div>
     </el-dialog>
 
-  <!-- 分析结果 -->
-  <el-dialog v-model="resultDialog" title="分析结果" width="620px" align-center>
-    <el-card shadow="never">
-      <div style="font-weight:600;margin-bottom:8px;">{{ result.title }}</div>
-      <div><b>Problem:</b> {{ result.problemStatement }}</div>
-      <div style="margin-top:8px;"><b>Solution:</b></div>
-      <div style="white-space:pre-wrap;">{{ result.solution }}</div>
-    </el-card>
-  </el-dialog>
+    <!-- 分析结果 -->
+    <el-dialog v-model="resultDialog" title="分析结果" width="620px" align-center>
+      <el-card shadow="never">
+        <div style="font-weight:600;margin-bottom:8px;">{{ result.title }}</div>
+        <div><b>Problem:</b> {{ result.problemStatement }}</div>
+        <div style="margin-top:8px;"><b>Solution:</b></div>
+        <div style="white-space:pre-wrap;">{{ result.solution }}</div>
+      </el-card>
+    </el-dialog>
 
-  <!-- 文件内容抽屉（Markdown） -->
-  <el-drawer v-model="drawerVisible" :title="drawerTitle" direction="rtl" size="50%">
-    <div class="md-content" v-html="mdRenderedDrawer" style="height:100%;overflow:auto;"></div>
-  </el-drawer>
+    <!-- 文件内容抽屉（Markdown） -->
+    <el-drawer v-model="drawerVisible" :title="drawerTitle" direction="rtl" size="50%">
+      <div class="md-content" v-html="mdRenderedDrawer" style="height:100%;overflow:auto;"></div>
+    </el-drawer>
   </div>
 </template>
 
@@ -301,5 +310,61 @@ onMounted(load)
   display: block;
   overflow-x: auto;
   padding: 0.5em;
+}
+
+/* Page Layout Styles */
+.page-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  /* Ensure it takes full height of parent */
+  min-height: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  background: var(--el-bg-color);
+  padding: 4px 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.table-wrapper {
+  flex: 1;
+  min-height: 0; /* Crucial for scrolling */
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--el-bg-color);
+  box-shadow: var(--el-box-shadow-light);
+}
+.table-wrapper :deep(.el-table__body-wrapper) {
+  overflow: hidden !important;
+}
+.table-wrapper :deep(.el-scrollbar__wrap) {
+  overflow: hidden !important;
+}
+
+.pagination-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 2px 10px;
+  background: var(--el-bg-color);
+  border-top: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode adjustment */
+html.dark .pagination-bar {
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
 }
 </style>
