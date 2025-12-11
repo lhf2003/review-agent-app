@@ -4,24 +4,22 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.review.agent.common.utils.MailUtils;
-import com.review.agent.entity.AnalysisResult;
-import com.review.agent.entity.AnalysisTag;
-import com.review.agent.entity.MainTag;
-import com.review.agent.entity.SubTag;
-import com.review.agent.repository.AnalysisResultRepository;
-import com.review.agent.repository.AnalysisTagRepository;
-import com.review.agent.repository.MainTagRepository;
-import com.review.agent.repository.SubTagRepository;
+import com.review.agent.entity.*;
+import com.review.agent.repository.*;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ReportService {
     @Resource
@@ -38,6 +36,12 @@ public class ReportService {
 
     @Resource
     private PromptService promptService;
+
+    @Resource
+    private ReportDataRepository reportDataRepository;
+
+    @Resource
+    private UserService userService;
 
     @Resource
     private CompiledGraph reportCompiledGraph;
@@ -74,16 +78,28 @@ public class ReportService {
     }
 
     public void generateDailyReport(Long userId) {
+        UserInfo userInfo = userService.findById(userId);
+        if (!StringUtils.hasText(userInfo.getEmail())) {
+            log.error("用户 {} 没有绑定邮箱", userId);
+            return;
+        }
+        // 构建日报范围
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startDate = now.withHour(0).withMinute(0).withSecond(0).withNano(0).minusDays(1);
-        LocalDateTime endDate = now.withHour(23).withMinute(59).withSecond(59).withNano(999999999).minusDays(1);
+        LocalDateTime startDate = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endDate = now.withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDate, endDate);
-        String basicReport = buildBasicReport(userId, analysisResultList);
-        JSONObject jsonObject = JSON.parseObject(basicReport);
-        String dailyReportHtml = jsonObject.getString("daily_report_html");
-        dailyReportHtml = dailyReportHtml.replace("\\n", "");
-        System.out.println(dailyReportHtml);
-        MailUtils.sendReport("2385107101@qq.com", dailyReportHtml);
+
+        String report = buildBasicReport(analysisResultList);
+
+        // 存入数据库
+        ReportData reportData = new ReportData();
+        reportData.setUserId(userId);
+        reportData.setReportContent(report);
+        reportData.setCreateTime(new Date());
+        reportDataRepository.save(reportData);
+
+        // 发送邮件
+        MailUtils.sendReport(userInfo.getEmail(), report);
     }
 
     public void generateWeeklyReport(Long userId) {
@@ -91,30 +107,38 @@ public class ReportService {
         LocalDateTime startDate = now.withHour(0).withMinute(0).withSecond(0).withNano(0).minusDays(7);
         LocalDateTime endDate = now.withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDate, endDate);
-        String basicReport = buildBasicReport(userId, analysisResultList);
-        basicReport = formatResult(basicReport);
-        JSONObject jsonObject = JSON.parseObject(basicReport);
-        String dailyReportHtml = jsonObject.getString("daily_report_html");
-        dailyReportHtml = dailyReportHtml.replace("\\n", "");
-        System.out.println(dailyReportHtml);
-        MailUtils.sendReport("lhf97777@gmail.com", dailyReportHtml);
+        String report = buildBasicReport(analysisResultList);
+
+        // 存入数据库
+        ReportData reportData = new ReportData();
+        reportData.setUserId(userId);
+        reportData.setReportContent(report);
+        reportData.setCreateTime(new Date());
+        reportDataRepository.save(reportData);
+
+        // 发送邮件
+        MailUtils.sendReport("lhf97777@gmail.com", report);
 
     }
 
-    private String buildBasicReport(Long userId, List<AnalysisResult> analysisResultList) {
+    private String buildBasicReport(List<AnalysisResult> analysisResultList) {
         StringBuilder stringBuilder = new StringBuilder();
         for (AnalysisResult analysisResult : analysisResultList) {
             stringBuilder.append("# ").append(analysisResult.getProblemStatement()).append("\n");
             stringBuilder.append(analysisResult.getSolution()).append("\n");
         }
-
         String dailyReportPrompt = promptService.getDailyReportPrompt("");
-        String content = analysisChatClient.prompt()
+        String response = analysisChatClient.prompt()
                 .system(dailyReportPrompt)
                 .user(stringBuilder.toString())
                 .call()
                 .content();
-        return content;
+        if (StringUtils.hasText(response)) {
+            response = formatResult(response);
+            JSONObject jsonObject = JSON.parseObject(response);
+            return jsonObject.getString("daily_report_html");
+        }
+        return null;
     }
 
     public String formatResult(String result) {
@@ -123,7 +147,8 @@ public class ReportService {
         }
         return result.replaceAll("^\\s*```json\\s*", "")   // 去除开头 ```json
                 .replaceAll("^\\s*```\\s*", "")       // 或者可能是 ``` 开头
-                .replaceAll("\\s*```\\s*$", "")       // 去除结尾 ```
+                .replaceAll("\\s*```\\s*$", "")
+                .replace("\\n", "")// 去除结尾 ```
                 .trim();
     }
 }

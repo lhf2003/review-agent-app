@@ -2,11 +2,12 @@ package com.review.agent.controller;
 
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
-import com.review.agent.entity.request.ReportRequest;
-import com.review.agent.entity.vo.ReportVo;
 import com.review.agent.service.ReportService;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 

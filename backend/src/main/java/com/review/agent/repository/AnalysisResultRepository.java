@@ -33,8 +33,10 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
      * @return 分析结果列表
      */
     @Query(nativeQuery = true, value = """
-            select a.id as id,a.file_id as fileId ,a.problem_statement as problemStatement, a.created_time as createTime, m.name as tagName, GROUP_CONCAT(at.sub_tag_id) as subTagIds
+            select a.id as id,a.file_id as fileId ,d.file_name as fileName,a.problem_statement as problemStatement, a.created_time as createTime, 
+                               m.name as tagName, at.recommends as recommendTag,GROUP_CONCAT(at.sub_tag_id) as subTagIds
                 from analysis_result a 
+                                left join data_info d on a.file_id = d.id
                   left join analysis_tag at on a.id = at.analysis_id
                   left join main_tag m on at.tag_id = m.id
             where (:problemStatement is null or :problemStatement = '' or a.problem_statement like concat('%', :problemStatement, '%'))
@@ -60,13 +62,13 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
             """)
     AnalysisResult findByCondition(Long userId, Long dataId, Long analysisId);
 
-            /**
-             * 根据日期查询分析结果
-             * @param userId 用户ID
-             * @param startDate 开始日期
-             * @param endDate 结束日期
-             * @return 分析结果列表
-             */
+    /**
+     * 根据日期查询分析结果
+     * @param userId 用户ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 分析结果列表
+     */
     @Query("select a from AnalysisResult a where a.userId = :userId and a.createdTime between :startDate and :endDate")
     List<AnalysisResult> findAllByDate(Long userId, LocalDateTime startDate, LocalDateTime endDate);
 }
