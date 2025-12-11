@@ -44,7 +44,7 @@ public class UserService {
     @Transactional
     public void register(UserInfo userInfo) {
         String username = userInfo.getUsername();
-        UserInfo userInfoFromDb = findByUsername(username);
+        UserInfo userInfoFromDb = userInfoRepository.findByUsername(username);
         if (userInfoFromDb != null) {
             ExceptionUtils.throwDataInUse("user " + username + " already exists");
         }
