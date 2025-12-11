@@ -10,10 +10,12 @@ import java.util.List;
 public class AnalysisResultVo {
     private Long id;
     private Long fileId;
+    private String fileName;
     private String vectorId;
     private String problemStatement;
     private String mainTagName;
     private List<String> subTagNameList;
+    private List<String> recommendTagList;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime;

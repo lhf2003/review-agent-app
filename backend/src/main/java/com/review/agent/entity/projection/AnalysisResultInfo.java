@@ -10,6 +10,8 @@ public interface AnalysisResultInfo {
 
     Long getFileId();
 
+    String getFileName();
+
     Long getUserId();
 
     String getTagName();
@@ -17,6 +19,8 @@ public interface AnalysisResultInfo {
     String getSubTagIds();
 
     String getProblemStatement();
+
+    String getRecommendTag();
 
     Date getCreateTime();
 }

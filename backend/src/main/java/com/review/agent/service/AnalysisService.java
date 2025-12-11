@@ -119,6 +119,7 @@ public class AnalysisService {
                 analysisResult.setSessionEnd(executeDto.getSessionEnd());
                 analysisResult.setSessionContent(executeDto.getSessionContent());
                 analysisResult.setStatus(executeDto.getStatus());
+                analysisResult.setCreatedTime(new Date());
                 analysisResultList.add(analysisResult);
 
                 AnalysisTag analysisTag = new AnalysisTag();
@@ -214,6 +215,7 @@ public class AnalysisService {
             vo.setFileId(item.getFileId());
             vo.setProblemStatement(item.getProblemStatement());
             vo.setMainTagName(item.getTagName());
+            vo.setFileName(item.getFileName());
             vo.setCreateTime(item.getCreateTime());
             // 转换子标签ID为标签名列表
             if (item.getSubTagIds() != null && !item.getSubTagIds().isEmpty()) {
@@ -222,6 +224,9 @@ public class AnalysisService {
                         .map(subTagIdToNameMap::get)
                         .toList();
                 vo.setSubTagNameList(subTagNameList);
+            }
+            if (item.getRecommendTag() != null && !item.getRecommendTag().isEmpty()) {
+                vo.setRecommendTagList(Arrays.stream(item.getRecommendTag().split(",")).toList());
             }
             resultList.add(vo);
         });
