@@ -288,4 +288,45 @@ export const api = {
       .then((resp) => resp?.data || resp)
       .catch(() => ({ 并发: 2, Java: 1, 性能优化: 2, 基础语法: 2, SQL: 1 }))
   },
+  chatStream(requestText, handlers = {}) {
+    const controller = new AbortController()
+    const userId = getUserId()
+    const headers = { Accept: 'text/event-stream' }
+    if (userId) headers['userId'] = userId
+    const url = new URL(BASE_URL + '/chat')
+    url.searchParams.set('request', requestText || '')
+    fetch(url.toString(), { method: 'GET', headers, signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error('HTTP ' + res.status)
+        if (handlers.onOpen) handlers.onOpen()
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder('utf-8')
+        let buffer = ''
+        function pump() {
+          return reader.read().then(({ done, value }) => {
+            if (done) {
+              if (handlers.onDone) handlers.onDone()
+              return
+            }
+            buffer += decoder.decode(value, { stream: true })
+            const parts = buffer.split('\n\n')
+            buffer = parts.pop() || ''
+            for (const part of parts) {
+              const lines = part.split('\n')
+              const dataLines = lines.filter((l) => l.startsWith('data:'))
+              if (dataLines.length) {
+                const data = dataLines.map((l) => l.slice(5).trim()).join('\n')
+                if (handlers.onEvent) handlers.onEvent(data)
+              }
+            }
+            return pump()
+          })
+        }
+        return pump()
+      })
+      .catch((err) => {
+        if (handlers.onError) handlers.onError(err)
+      })
+    return { cancel: () => controller.abort() }
+  },
 }

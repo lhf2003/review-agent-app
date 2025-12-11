@@ -2,8 +2,10 @@ package com.review.agent.common.exception;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class BaseResponse<T> {
+public class BaseResponse<T> implements Serializable {
     /**
      * 状态码
      */

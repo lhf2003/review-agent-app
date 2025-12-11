@@ -13,19 +13,38 @@ import org.springframework.context.annotation.Configuration;
 public class MultiLLMConfig {
 
     // 模型配置常量 - 默认使用百炼模型
+    private static final String CHAT_MODEL = "qwen-plus";
     private static final String ANALYSIS_MODEL = "qwen-plus";
     private static final String CLASSIFY_MODEL = "qwen-plus";
     private static final String EXTRACT_MODEL = "qwen-plus";
 
-    // 温度参数常量
+    // 温度参数常量 - 控制模型输出的随机性
+    private static final double CHAT_TEMPERATURE = 0.6;
     private static final double ANALYSIS_TEMPERATURE = 0.8;
     private static final double CLASSIFY_TEMPERATURE = 0.1;
     public static final double EXTRACT_TEMPERATURE = 0.6;
 
-    // Token限制常量
+    // Token限制常量 - 控制模型输出的最大token数
+    private static final int CHAT_MAX_TOKENS = 30000;
     private static final int ANALYSIS_MAX_TOKENS = 30000;
     private static final int CLASSIFY_MAX_TOKENS = 1000;
     private static final int EXTRACT_MAX_TOKENS = 1000;
+
+
+    @Bean("chatModel")
+    public DashScopeChatModel chatModel(DashScopeApi dashScopeApi) {
+        return DashScopeChatModel.builder()
+                .dashScopeApi(dashScopeApi)
+                .defaultOptions(DashScopeChatOptions.builder()
+                        .withModel(CHAT_MODEL)
+                        .withTemperature(CHAT_TEMPERATURE)
+                        .withMaxToken(CHAT_MAX_TOKENS)
+                        .withEnableThinking(false)
+                        .withEnableSearch(false)
+                        .withStream(true)
+                        .build())
+                .build();
+    }
 
     /**
      * 数据分析助手专用模型 - 擅长数据分析
