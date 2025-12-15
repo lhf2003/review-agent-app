@@ -1,9 +1,8 @@
 package com.review.agent.common.config;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -19,27 +18,33 @@ public class AIConfig {
     @Value("${spring.ai.dashscope.api-key}")
     private String apiKey;
 
-    @Value("${spring.ai.dashscope.chat.model}")
-    private String chatModel;
+//    @Value("${spring.ai.dashscope.chat.model}")
+//    private String chatModel;
+//
+//    @Value("${spring.ai.dashscope.embedding.model}")
+//    private String embeddingModel;
+//
+//    @Value("${spring.ai.dashscope.embedding.options.dimensions}")
+//    private Integer dimensions;
 
-    @Value("${spring.ai.dashscope.embedding.model}")
-    private String embeddingModel;
+
 
     @Bean
     public DashScopeApi dashScopeApi(@Qualifier("restClient") RestClient.Builder restClient) {
         return DashScopeApi.builder().apiKey(apiKey).restClientBuilder(restClient).build();
     }
 
-    @Bean
-    public DashScopeChatModel dashScopeChatModel(DashScopeApi dashScopeApi) {
-        return DashScopeChatModel.builder()
-                .dashScopeApi(dashScopeApi)
-                .defaultOptions(DashScopeChatOptions.builder().withModel(chatModel).build())
-                .build();
-    }
+//    @Bean
+//    public DashScopeChatModel dashScopeChatModel(DashScopeApi dashScopeApi) {
+//        return DashScopeChatModel.builder()
+//                .dashScopeApi(dashScopeApi)
+//                .defaultOptions(DashScopeChatOptions.builder().model(chatModel).build())
+//                .build();
+//    }
+
 
     @Bean
-    public DashScopeEmbeddingModel dashScopeEmbeddingModel(DashScopeApi dashScopeApi) {
+    public EmbeddingModel embeddingModel(DashScopeApi dashScopeApi) {
         return new DashScopeEmbeddingModel(dashScopeApi);
     }
 }

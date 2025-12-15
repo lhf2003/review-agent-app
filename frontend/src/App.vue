@@ -1,8 +1,9 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Moon, Sunny } from '@element-plus/icons-vue'
+import { Moon, Sunny, FullScreen } from '@element-plus/icons-vue'
 import { useAuthStore } from './stores/auth'
+import { useChatStore } from './stores/chat'
 import { api } from './api/http'
 import md5 from 'blueimp-md5'
 import MarkdownIt from 'markdown-it'
@@ -23,15 +24,12 @@ const md = new MarkdownIt({
   }
 })
 const auth = useAuthStore()
+const chatStore = useChatStore()
 const isDark = ref(true)
 const avatarDialog = ref(false)
 const avatarSizeLarge = ref(false)
 const profileForm = ref({ avatar: '', newPassword: '', confirm: '' })
-const chatOpen = ref(false)
 const chatInput = ref('')
-const chatMessages = ref([])
-const isStreaming = ref(false)
-let chatStreamCtl = null
 
 // Chat trigger logic
 const placeholderMessages = ['你需要我的帮助吗？', '发现一个新文件，需要我分析吗？', '输入关键字搜索分析结果...', '试试问我关于代码的问题']
@@ -69,36 +67,22 @@ onMounted(() => {
 
 function openAvatar() { avatarDialog.value = true }
 function toggleAvatarSize() { avatarSizeLarge.value = !avatarSizeLarge.value }
-function openChat() { chatOpen.value = true }
-function closeChat() {
-  chatOpen.value = false
-  if (chatStreamCtl && isStreaming.value) {
-    chatStreamCtl.cancel()
-    isStreaming.value = false
-  }
-}
+
+// Scroll chat to bottom when messages update
+watch(() => chatStore.messages, () => {
+  nextTick(() => {
+    const box = document.querySelector('.chat-messages')
+    if (box) box.scrollTop = box.scrollHeight
+  })
+}, { deep: true })
 
 function sendChat() {
   if (!auth.userId) { ElMessage.warning('请先登录'); return }
   const text = (chatInput.value || '').trim()
   if (!text) { ElMessage.warning('请输入内容'); return }
-  chatMessages.value.push({ role: 'user', content: text })
-  chatInput.value = ''
-  isStreaming.value = true
   
-  chatStreamCtl = api.chatStream(text, {
-    onEvent: (chunk) => {
-      const lastMsg = chatMessages.value[chatMessages.value.length - 1]
-      if (!lastMsg || lastMsg.role !== 'assistant') {
-        chatMessages.value.push({ role: 'assistant', content: '' })
-      }
-      chatMessages.value[chatMessages.value.length - 1].content += chunk
-      const box = document.querySelector('.chat-messages')
-      if (box) box.scrollTop = box.scrollHeight
-    },
-    onDone: () => { isStreaming.value = false },
-    onError: (e) => { isStreaming.value = false; ElMessage.error('聊天失败: ' + (e?.message || e)) }
-  })
+  chatStore.sendMessage(text)
+  chatInput.value = ''
 }
 
 async function saveAvatar() {
@@ -184,7 +168,7 @@ watch(() => auth.isAuthenticated, (val) => {
           <div class="title">Review Agent</div>
         </div>
         <div class="header-center">
-          <div class="chat-trigger-bar" @click="openChat">
+          <div class="chat-trigger-bar" @click="chatStore.open">
             <el-icon class="trigger-icon"><ChatLineRound /></el-icon>
             <div class="rolling-text-container">
               <transition name="fade-slide" mode="out-in">
@@ -212,27 +196,32 @@ watch(() => auth.isAuthenticated, (val) => {
   </el-container>
 
   <transition name="chat-expand">
-    <div v-if="chatOpen" class="chat-wrapper">
-      <div class="blur-overlay" @click="closeChat"></div>
-      <div class="chat-modal">
+    <div v-if="chatStore.isOpen" class="chat-wrapper">
+      <div class="blur-overlay" @click="chatStore.close"></div>
+      <div class="chat-modal" :class="{ 'is-fullscreen': chatStore.isFullScreen }">
         <div class="chat-inner">
           <div class="chat-header">
             <div class="chat-header-left">
               <el-icon class="ai-icon"><Cpu /></el-icon>
-              <span class="chat-title">AI Assistant</span>
+              <span class="chat-title">AI Assistant {{ chatStore.mode === 'analysis' ? '(Analysis Mode)' : '' }}</span>
             </div>
-            <el-button circle text @click="closeChat">
-              <el-icon><Close /></el-icon>
-            </el-button>
+            <div class="chat-header-right">
+              <el-button circle text @click="chatStore.toggleFullScreen">
+                <el-icon><FullScreen /></el-icon>
+              </el-button>
+              <el-button circle text @click="chatStore.close">
+                <el-icon><Close /></el-icon>
+              </el-button>
+            </div>
           </div>
           
           <div class="chat-messages">
-            <div v-if="chatMessages.length === 0" class="empty-state">
+            <div v-if="chatStore.messages.length === 0" class="empty-state">
               <el-icon class="empty-icon"><ChatDotRound /></el-icon>
               <p>有什么我可以帮你的吗？</p>
             </div>
             
-            <div v-for="(m, i) in chatMessages" :key="i" class="message-row" :class="m.role">
+            <div v-for="(m, i) in chatStore.messages" :key="i" class="message-row" :class="m.role">
               <div class="avatar-container">
                 <el-avatar v-if="m.role === 'user'" :size="36" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" class="user-avatar-icon">User</el-avatar>
                 <div v-else class="ai-avatar">
@@ -245,7 +234,7 @@ watch(() => auth.isAuthenticated, (val) => {
             </div>
             </div>
             
-            <div v-if="isStreaming && chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role !== 'assistant'" class="message-row assistant">
+            <div v-if="chatStore.isStreaming && chatStore.messages.length > 0 && chatStore.messages[chatStore.messages.length - 1].role !== 'assistant'" class="message-row assistant">
                <div class="avatar-container">
                  <div class="ai-avatar">
                    <el-icon><Cpu /></el-icon>
@@ -270,7 +259,7 @@ watch(() => auth.isAuthenticated, (val) => {
                 resize="none"
                 class="chat-input-area"
               />
-              <el-button type="primary" circle class="send-btn" @click="sendChat" :disabled="!chatInput.trim() && !isStreaming">
+              <el-button type="primary" circle class="send-btn" @click="sendChat" :disabled="!chatInput.trim() && !chatStore.isStreaming">
                 <el-icon><Position /></el-icon>
               </el-button>
             </div>
@@ -431,6 +420,16 @@ watch(() => auth.isAuthenticated, (val) => {
   border: 1px solid var(--el-border-color-light);
 }
 
+.chat-modal.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  border-radius: 0;
+  z-index: 2002;
+}
+
 .chat-inner {
   flex: 1;
   background: var(--el-bg-color);
@@ -480,6 +479,7 @@ watch(() => auth.isAuthenticated, (val) => {
   background: var(--el-bg-color);
 }
 .chat-header-left { display: flex; align-items: center; gap: 10px; }
+.chat-header-right { display: flex; align-items: center; }
 .ai-icon { font-size: 24px; color: var(--el-color-primary); }
 .chat-title { font-weight: 600; font-size: 16px; }
 

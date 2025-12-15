@@ -10,9 +10,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+@Data
 @Configuration
 @ConfigurationProperties(prefix = "spring.data.redis")
-@Data
 public class RedissonConfig {
 
     private String host;
@@ -48,4 +48,6 @@ public class RedissonConfig {
                 .register(redisSaver)
                 .build();
     }
+
+
 }

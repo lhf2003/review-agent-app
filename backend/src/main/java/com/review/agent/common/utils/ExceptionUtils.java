@@ -76,6 +76,13 @@ public class ExceptionUtils {
     }
 
     /**
+     * VectorStore服务连接失败时抛出异常
+     */
+    public static void throwVectorStoreException(String message) {
+        throw new ExternalServiceException(ErrorCode.REDIS_CONNECTION_FAILED, "JedisPooled", message);
+    }
+
+    /**
      * LLM服务调用失败时抛出异常
      */
     public static void throwLLMError(String message) {

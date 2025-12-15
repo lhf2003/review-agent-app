@@ -21,7 +21,8 @@ import java.util.regex.Pattern;
 public class PromptService {
 
     // 提示词文件列表
-    private static final String[] PROMPT_FILES = {"prompts/Analysis-agent-prompt.md", "prompts/Classify-agent-prompt.md", "prompts/Extract-agent-prompt.md", "prompts/Report-agent-prompt.md"};
+    private static final String[] PROMPT_FILES = {"prompts/Analysis-agent-prompt.md", "prompts/Classify-agent-prompt.md",
+            "prompts/Extract-agent-prompt.md", "prompts/Report-agent-prompt.md", "prompts/Chat-agent-prompt.md"};
 
     private Map<String, String> promptTemplates = new HashMap<>();
 
@@ -95,6 +96,8 @@ public class PromptService {
             return "Extract." + promptName;
         } else if (fileName.contains("Report")) {
             return "Report." + promptName;
+        } else if (fileName.contains("Chat")) {
+            return "Chat." + promptName;
         }
         return promptName;
     }
@@ -142,6 +145,14 @@ public class PromptService {
         return result;
     }
 
+    /**
+     * 获取闲聊提示词
+     */
+    public String getChatPrompt(String problemStatement) throws PromptProcessingException {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("problemStatement", problemStatement);
+        return buildPrompt("Chat.闲聊提示词", variables);
+    }
 
     /**
      * 获取分析提示词

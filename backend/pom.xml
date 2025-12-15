@@ -112,11 +112,17 @@
             <artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>
         </dependency>
 
-        <!-- Vector Store Redis -->
+        <!-- Vector Store Redis 自动配置-->
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.ai</groupId>-->
 <!--            <artifactId>spring-ai-starter-vector-store-redis</artifactId>-->
 <!--        </dependency>-->
+
+        <!--Vector Store Redis 手动配置-->
+<!--        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-redis-store</artifactId>
+        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

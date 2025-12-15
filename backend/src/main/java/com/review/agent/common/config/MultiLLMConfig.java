@@ -36,12 +36,12 @@ public class MultiLLMConfig {
         return DashScopeChatModel.builder()
                 .dashScopeApi(dashScopeApi)
                 .defaultOptions(DashScopeChatOptions.builder()
-                        .withModel(CHAT_MODEL)
-                        .withTemperature(CHAT_TEMPERATURE)
-                        .withMaxToken(CHAT_MAX_TOKENS)
-                        .withEnableThinking(false)
-                        .withEnableSearch(false)
-                        .withStream(true)
+                        .model(CHAT_MODEL)
+                        .temperature(CHAT_TEMPERATURE)
+                        .maxToken(CHAT_MAX_TOKENS)
+                        .enableThinking(false)
+                        .enableSearch(false)
+                        .stream(true)
                         .build())
                 .build();
     }
@@ -54,11 +54,11 @@ public class MultiLLMConfig {
         return DashScopeChatModel.builder()
                 .dashScopeApi(dashScopeApi)
                 .defaultOptions(DashScopeChatOptions.builder()
-                        .withModel(ANALYSIS_MODEL)
-                        .withTemperature(ANALYSIS_TEMPERATURE)
-                        .withMaxToken(ANALYSIS_MAX_TOKENS)
-                        .withEnableThinking(false)
-                        .withEnableSearch(false)
+                        .model(ANALYSIS_MODEL)
+                        .temperature(ANALYSIS_TEMPERATURE)
+                        .maxToken(ANALYSIS_MAX_TOKENS)
+                        .enableThinking(false)
+                        .enableSearch(false)
                         .build())
                 .build();
     }
@@ -71,11 +71,11 @@ public class MultiLLMConfig {
         return DashScopeChatModel.builder()
                 .dashScopeApi(dashScopeApi)
                 .defaultOptions(DashScopeChatOptions.builder()
-                        .withModel(CLASSIFY_MODEL)
-                        .withTemperature(CLASSIFY_TEMPERATURE)
-                        .withMaxToken(CLASSIFY_MAX_TOKENS)
-                        .withEnableThinking(false)
-                        .withEnableSearch(false)
+                        .model(CLASSIFY_MODEL)
+                        .temperature(CLASSIFY_TEMPERATURE)
+                        .maxToken(CLASSIFY_MAX_TOKENS)
+                        .enableThinking(false)
+                        .enableSearch(false)
                         .build())
                 .build();
     }
@@ -88,9 +88,9 @@ public class MultiLLMConfig {
         return DashScopeChatModel.builder()
                 .dashScopeApi(dashScopeApi)
                 .defaultOptions(DashScopeChatOptions.builder()
-                        .withModel(EXTRACT_MODEL)
-                        .withTemperature(EXTRACT_TEMPERATURE)
-                        .withMaxToken(EXTRACT_MAX_TOKENS)
+                        .model(EXTRACT_MODEL)
+                        .temperature(EXTRACT_TEMPERATURE)
+                        .maxToken(EXTRACT_MAX_TOKENS)
                         .build())
                 .build();
     }
@@ -99,7 +99,7 @@ public class MultiLLMConfig {
     /**
      * 本地模型
      * @param ollamaChatModel 本地模型
-     * @return 本地模型的ChatClient
+     * @return 本地模型的 ChatClient
      */
     @Bean
     public ChatClient ollamachatClient(@Qualifier("ollamaChatModel") OllamaChatModel ollamaChatModel) {

@@ -13,8 +13,20 @@ public class ChatController {
     @Resource
     private ChatService chatService;
 
+    /**
+     * 闲聊
+     */
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> chat(@RequestHeader("userId") Long userId, @RequestParam("request") String request) throws GraphRunnerException {
         return chatService.chat(userId, request);
     }
+
+    /**
+     * 基于分析结果聊天
+     */
+    @PostMapping(path = "/with-analysis", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chatWithAnalysisResult(@RequestHeader("userId") Long userId, @RequestParam("request") String request) throws GraphRunnerException {
+        return chatService.chatWithAnalysisResult(userId, request);
+    }
+
 }

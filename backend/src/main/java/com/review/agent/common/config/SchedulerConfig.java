@@ -16,7 +16,7 @@ public class SchedulerConfig {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setPoolSize(10);
         scheduler.setThreadNamePrefix("DynamicScheduling-");
-        scheduler.setErrorHandler(throwable -> log.error("Unexpected error during scheduling: " + throwable.getMessage()));
+        scheduler.setErrorHandler(throwable -> log.error("Unexpected error during scheduling: " + throwable.getMessage(), throwable));
         scheduler.setWaitForTasksToCompleteOnShutdown(true);
         return scheduler;
     }
