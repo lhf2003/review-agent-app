@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -175,7 +176,14 @@ public class AnalysisService {
         // 构建子标签id列表
         List<String> subTagIdStringList = analysisTagList.stream().map(AnalysisTag::getSubTagId).toList();
         List<Long> subTagIdList = new ArrayList<>();
-        subTagIdStringList.forEach(item -> subTagIdList.addAll(Arrays.stream(item.split(",")).map(Long::parseLong).toList()));
+        subTagIdStringList.forEach(item -> {
+            if (StringUtils.hasText(item)) {
+                List<Long> list = Arrays.stream(item.trim().split(","))
+                        .map(Long::parseLong)
+                        .toList();
+                subTagIdList.addAll(list);
+            }
+        });
         // 去重
         List<Long> distinctSubTagIdList = subTagIdList.stream().distinct().toList();
 
