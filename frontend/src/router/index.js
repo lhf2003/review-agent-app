@@ -10,6 +10,7 @@ const AnalysisResultPage = () => import('../pages/AnalysisResult.vue')
 const SyncHistoryPage = () => import('../pages/SyncHistoryPage.vue')
 const FileDetailPage = () => import('../pages/FileDetailPage.vue')
 const WordCloudPage = () => import('../pages/WordCloudPage.vue')
+const GlowDemo = () => import('../pages/GlowDemo.vue')
 
 const isFileProtocol = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:'
 const history = isFileProtocol ? createWebHashHistory(import.meta.env.BASE_URL) : createWebHistory(import.meta.env.BASE_URL)
@@ -27,12 +28,13 @@ const router = createRouter({
     { path: '/sync', component: SyncHistoryPage },
     { path: '/analysis/:id', component: FileDetailPage },
     { path: '/word-cloud', component: WordCloudPage },
+    { path: '/glow-demo', component: GlowDemo },
   ],
 })
 
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
-  if (to.path === '/login' || to.path === '/register') return next()
+  if (to.path === '/login' || to.path === '/register' || to.path === '/glow-demo') return next()
   if (!auth.isAuthenticated) return next('/login')
   next()
 })

@@ -2,7 +2,7 @@ import forge from 'node-forge'
 const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV
 const isEmbeddedHttp = typeof window !== 'undefined' && window.location && window.location.protocol === 'http:' && window.location.port === '3000'
 // 在开发模式下通过 Vite 代理到后端（/api -> target）
-const BASE_URL = 'http://192.168.184.192:8081'
+const BASE_URL = 'http://localhost:8002'
 const AES_KEY_STR = 'ReviewAgentSecureKey20250101!!!!';
 
 async function encryptPassword(password) {
@@ -288,14 +288,9 @@ export const api = {
       .then((resp) => resp?.data || resp)
       .catch(() => ({ 并发: 2, Java: 1, 性能优化: 2, 基础语法: 2, SQL: 1 }))
   },
-  chatStream(requestText, handlers = {}) {
-    const controller = new AbortController()
-    const userId = getUserId()
-    const headers = { Accept: 'text/event-stream' }
-    if (userId) headers['userId'] = userId
-    const url = new URL(BASE_URL + '/chat')
-    url.searchParams.set('request', requestText || '')
-    fetch(url.toString(), { method: 'GET', headers, signal: controller.signal })
+
+  _handleStream(fetchPromise, handlers) {
+    return fetchPromise
       .then((res) => {
         if (!res.ok) throw new Error('HTTP ' + res.status)
         if (handlers.onOpen) handlers.onOpen()
@@ -315,7 +310,13 @@ export const api = {
               const lines = part.split('\n')
               const dataLines = lines.filter((l) => l.startsWith('data:'))
               if (dataLines.length) {
-                const data = dataLines.map((l) => l.slice(5).trim()).join('\n')
+                const data = dataLines.map((l) => {
+                  let content = l.slice(5)
+                  if (content.startsWith(' ')) {
+                    content = content.slice(1)
+                  }
+                  return content
+                }).join('\n')
                 if (handlers.onEvent) handlers.onEvent(data)
               }
             }
@@ -327,6 +328,31 @@ export const api = {
       .catch((err) => {
         if (handlers.onError) handlers.onError(err)
       })
+  },
+
+  chatStream(requestText, handlers = {}) {
+    const controller = new AbortController()
+    const userId = getUserId()
+    const headers = { Accept: 'text/event-stream' }
+    if (userId) headers['userId'] = userId
+    const url = new URL(BASE_URL + '/chat')
+    url.searchParams.set('request', requestText || '')
+    
+    const p = fetch(url.toString(), { method: 'GET', headers, signal: controller.signal })
+    this._handleStream(p, handlers)
+    return { cancel: () => controller.abort() }
+  },
+
+  chatWithAnalysisStream(requestText, handlers = {}) {
+    const controller = new AbortController()
+    const userId = getUserId()
+    const headers = { Accept: 'text/event-stream' }
+    if (userId) headers['userId'] = userId
+    const url = new URL(BASE_URL + '/chat/with-analysis')
+    url.searchParams.set('request', requestText || '')
+    
+    const p = fetch(url.toString(), { method: 'POST', headers, signal: controller.signal })
+    this._handleStream(p, handlers)
     return { cancel: () => controller.abort() }
   },
 }

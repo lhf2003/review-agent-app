@@ -64,8 +64,8 @@ public class ExceptionUtils {
     /**
      * LLM服务连接失败时抛出异常
      */
-    public static void throwLLMConnectionFailed(String message) {
-        throw new ExternalServiceException(ErrorCode.LLM_CONNECTION_FAILED, "LLM", message);
+    public static void throwLLMConnectionFailed(Throwable throwable) {
+        throw new ExternalServiceException(ErrorCode.LLM_CONNECTION_FAILED, "LLM", throwable.getMessage(), throwable);
     }
 
     /**

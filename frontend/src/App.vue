@@ -23,6 +23,68 @@ const md = new MarkdownIt({
     return '' // use external default escaping
   }
 })
+
+/**
+ * Preprocess markdown content to ensure proper formatting
+ * This handles cases where streaming might have stripped whitespace or
+ * where the source content is missing necessary spacing for markdown syntax.
+ */
+function renderMarkdown(content) {
+  if (!content) return ''
+  let processed = content
+  
+  // 0. Protect code blocks (block and inline)
+  const codeBlocks = []
+  // Matches ```...``` OR `...`
+  processed = processed.replace(/(```[\s\S]*?```|`[^`\n]+`)/g, (match) => {
+    codeBlocks.push(match)
+    return `\u0000CODE_BLOCK_${codeBlocks.length - 1}\u0000`
+  })
+
+  // 1. Fix Headers: ensure space after # (e.g., "###Title" -> "### Title")
+  processed = processed.replace(/(^|\n)(#{1,6})([^\s#])/g, '$1$2 $3')
+  
+  // 2. Fix Lists: 
+  // a. Ensure space after marker (e.g. "1.Item" -> "1. Item")
+  processed = processed.replace(/(^|\n)(\s*(?:\d+\.|-|\*))([^\s\d\-\*])/g, '$1$2 $3')
+  
+  // b. Remove newline after marker (e.g. "1. \n Item" -> "1. Item")
+  processed = processed.replace(/(^|\n)(\s*(?:\d+\.|-|\*))\s*\n+([^\n])/g, '$1$2 $3')
+
+  // 3. Fix Bold/Italic: remove internal newlines
+  processed = processed.replace(/(\*\*|__)([\s\S]*?)\1/g, (match, marker, inner) => {
+    // Remove newlines and trim extra spaces around them
+    return marker + inner.replace(/\s*\n+\s*/g, '').trim() + marker
+  })
+  
+  // 4. Fix blockquotes: ensure space after > (e.g., ">Quote" -> "> Quote")
+  processed = processed.replace(/(^|\n)(\s*>)([^\s>])/g, '$1$2 $3')
+
+  // 5. General Line Joining (Compact content)
+  // Preserve double newlines (paragraphs)
+  processed = processed.replace(/\n\s*\n/g, '\u0000PARAGRAPH_BREAK\u0000')
+  
+  // Join single newlines
+  // Match non-newline/non-placeholder chars
+  const cjk = /[\u4e00-\u9fa5]/
+  processed = processed.replace(/([^\n\u0000])\s*\n\s*([^\n\u0000])/g, (match, p1, p2) => {
+    if (cjk.test(p1) && cjk.test(p2)) {
+      return `${p1}${p2}`
+    }
+    return `${p1} ${p2}`
+  })
+
+  // Restore paragraphs
+  processed = processed.replace(/\u0000PARAGRAPH_BREAK\u0000/g, '\n\n')
+
+  // Restore code blocks
+  processed = processed.replace(/\u0000CODE_BLOCK_(\d+)\u0000/g, (match, index) => {
+    return codeBlocks[index]
+  })
+
+  return md.render(processed)
+}
+
 const auth = useAuthStore()
 const chatStore = useChatStore()
 const isDark = ref(true)
@@ -230,7 +292,7 @@ watch(() => auth.isAuthenticated, (val) => {
               </div>
               <div class="message-content">
               <div class="bubble" v-if="m.role === 'user'">{{ m.content }}</div>
-              <div class="bubble markdown-body" v-else v-html="md.render(m.content)"></div>
+              <div class="bubble markdown-body" v-else v-html="renderMarkdown(m.content)"></div>
             </div>
             </div>
             
@@ -249,7 +311,7 @@ watch(() => auth.isAuthenticated, (val) => {
           </div>
           
           <div class="chat-footer">
-            <div class="input-container">
+            <div class="input-container" :class="{ 'has-content': chatInput && chatInput.trim().length > 0 }">
               <el-input 
                 v-model="chatInput" 
                 placeholder="输入你的问题..." 
@@ -625,7 +687,8 @@ watch(() => auth.isAuthenticated, (val) => {
   overflow: hidden;
 }
 
-.input-container:hover {
+.input-container:hover,
+.input-container.has-content {
   border-color: transparent;
 }
 
@@ -645,7 +708,8 @@ watch(() => auth.isAuthenticated, (val) => {
   transition: opacity 0.3s ease;
 }
 
-.input-container:hover::before {
+.input-container:hover::before,
+.input-container.has-content::before {
   opacity: 1;
 }
 
