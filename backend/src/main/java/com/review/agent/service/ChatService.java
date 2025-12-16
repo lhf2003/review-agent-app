@@ -7,9 +7,9 @@ import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.hook.summarization.SummarizationHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
-import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.review.agent.common.utils.ExceptionUtils;
 import com.review.agent.hook.RedisMemoryHook;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,9 @@ import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -75,12 +77,13 @@ public class ChatService {
                                         String chunk = streamingOutput.message().getText();
                                         if (chunk != null && !chunk.isEmpty()) {
                                             emitter.next(chunk);
+                                            System.out.println(chunk);
                                             stringBuilder.append(chunk);
                                         }
                                     }
                                 },
                                 // 处理错误
-                                throwable -> log.error("流式输出错误: {}", throwable.getMessage(), throwable),
+                                throwable -> ExceptionUtils.throwLLMConnectionFailed(throwable),
                                 // sse 完成时添加到向量数据库
                                 () -> {
                                     Document document = Document.builder()
