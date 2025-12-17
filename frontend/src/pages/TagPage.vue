@@ -127,7 +127,7 @@ async function doRenameMain() {
 }
 async function doDeleteMain(mt) {
   await ElMessageBox.confirm(`确认删除主标签「${mt.name}」？`, '提示', { type: 'warning' })
-  await api.deleteMainTag(auth.userId, mt.id)
+  await api.deleteMainTag(mt.id)
   ElMessage.success('删除成功')
   await loadMain(); await loadRelation()
 }
@@ -163,7 +163,7 @@ async function deleteSubInDialog() {
 }
 async function doDeleteSub(st) {
   await ElMessageBox.confirm(`确认删除子标签「${st.name}」？`, '提示', { type: 'warning' })
-  await api.deleteSubTag(auth.userId, st.id)
+  await api.deleteSubTag(st.id)
   ElMessage.success('删除成功')
   await loadSub(); await loadRelation()
 }

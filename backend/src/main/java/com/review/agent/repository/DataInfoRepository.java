@@ -34,8 +34,8 @@ public interface DataInfoRepository extends JpaRepository<DataInfo, Long> {
     @Query("select d from DataInfo d where d.userId = :userId")
     List<DataInfo> findByUserId(Long userId);
 
-    @Query("select d from DataInfo d where d.filePath = :filePath")
-    DataInfo findByFilePath(String filePath);
+    @Query("select d from DataInfo d where d.fileName = :fileName")
+    DataInfo findByFileName(String fileName);
 
     boolean existsByFilePath(String filePath);
 }

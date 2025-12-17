@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static com.review.agent.common.constant.CommonConstant.*;
+
 @Slf4j
 @Service
 public class DataInfoService {
@@ -119,7 +121,7 @@ public class DataInfoService {
         String filePath = newFileData.getPath();
         String filename = newFileData.getName();
 
-        DataInfo existingData = dataInfoRepository.findByFilePath(filePath);
+        DataInfo existingData = dataInfoRepository.findByFileName(filePath);
 
         long currentModifiedTime = 0;
         try {
@@ -135,7 +137,7 @@ public class DataInfoService {
             dataInfo.setFilePath(filePath);
             dataInfo.setFileName(newFileData.getName());
             dataInfo.setFileContent(content);
-            dataInfo.setProcessedStatus(0);
+            dataInfo.setProcessedStatus(FILE_PROCESS_STATUS_NOT_PROCESSED);
             dataInfo.setCreatedTime(new Date());
             dataInfo.setUpdateTime(currentDateTime);
             dataList.add(dataInfo);
@@ -145,7 +147,7 @@ public class DataInfoService {
             long previousMilli = previousModifiedTime.toInstant().toEpochMilli();
             if (currentModifiedTime > previousMilli) {
                 existingData.setFileContent(content);
-                existingData.setProcessedStatus(3);
+                existingData.setProcessedStatus(FILE_PROCESS_STATUS_UPDATE);
                 existingData.setUpdateTime(currentDateTime);
                 dataList.add(existingData);
                 log.info("✏️ 更新文件: " + filename);
@@ -158,20 +160,21 @@ public class DataInfoService {
     }
 
     public DataInfo importData(Long userId, String originalFilename, String content) {
-        String filePath = "upload://" + userId + "/" + originalFilename;
-        DataInfo existing = dataInfoRepository.findByFilePath(filePath);
+        DataInfo existing = dataInfoRepository.findByFileName(originalFilename);
         if (existing == null) {
             DataInfo dataInfo = new DataInfo();
             dataInfo.setUserId(userId);
-            dataInfo.setFilePath(filePath);
+            dataInfo.setFilePath(originalFilename);
             dataInfo.setFileName(originalFilename);
             dataInfo.setFileContent(content);
-            dataInfo.setProcessedStatus(0);
+            dataInfo.setProcessedStatus(FILE_PROCESS_STATUS_NOT_PROCESSED);
             dataInfo.setCreatedTime(new Date());
+            dataInfo.setUpdateTime(new Date());
             return dataInfoRepository.save(dataInfo);
         } else {
             existing.setFileContent(content);
-            existing.setProcessedStatus(0);
+            existing.setProcessedStatus(FILE_PROCESS_STATUS_UPDATE);
+            existing.setUpdateTime(new Date());
             return dataInfoRepository.save(existing);
         }
     }

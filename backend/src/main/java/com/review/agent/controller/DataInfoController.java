@@ -60,7 +60,7 @@ public class DataInfoController {
      * @return 导入结果
      */
     @PostMapping("/import")
-    public BaseResponse<DataInfo> importData(@RequestHeader("userId") Long userId, @RequestParam("file") MultipartFile file) throws IOException {
+    public BaseResponse<DataInfo> importData(@RequestHeader("userId") Long userId, @RequestPart("file") MultipartFile file) throws IOException {
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null) {
             originalFilename = "upload.txt";

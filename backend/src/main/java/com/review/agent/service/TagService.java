@@ -253,6 +253,10 @@ public class TagService {
      */
     @Transactional
     public void addTagRelation(TagRelation tagRelation) {
+        TagRelation tagRelationInDb = tagRelationRepository.findRelation(tagRelation.getUserId(),tagRelation.getMainTagId(), tagRelation.getSubTagId());
+        if (tagRelationInDb != null) {
+            ExceptionUtils.throwDataAlreadyExists("关联关系");
+        }
         tagRelation.setId(null);
         tagRelationRepository.save(tagRelation);
     }

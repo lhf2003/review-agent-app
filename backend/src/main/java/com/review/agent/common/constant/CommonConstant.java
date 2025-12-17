@@ -17,9 +17,13 @@ public class CommonConstant {
      */
     public static final int FILE_PROCESS_STATUS_PROCESSED = 2;
     /**
+     * 文件处理状态-有更新
+     */
+    public static final int FILE_PROCESS_STATUS_UPDATE = 3;
+    /**
      * 文件处理状态-处理错误
      */
-    public static final int FILE_PROCESS_STATUS_ERROR = 3;
+    public static final int FILE_PROCESS_STATUS_ERROR = 4;
 
     // region AI分析状态
 

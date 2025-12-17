@@ -166,7 +166,8 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/add/relation")
-    public BaseResponse<Void> addRelation(@Valid @RequestBody TagRelation tagRelation) {
+    public BaseResponse<Void> addRelation(@RequestHeader("userId") Long userId, @Valid @RequestBody TagRelation tagRelation) {
+        tagRelation.setUserId(userId);
         tagService.addTagRelation(tagRelation);
         return ResultUtil.success();
     }
