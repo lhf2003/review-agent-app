@@ -1,6 +1,6 @@
 package com.review.agent.repository;
 
-import com.review.agent.entity.MainTag;
+import com.review.agent.entity.pojo.MainTag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

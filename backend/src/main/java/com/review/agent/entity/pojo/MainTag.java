@@ -1,4 +1,4 @@
-package com.review.agent.entity;
+package com.review.agent.entity.pojo;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -7,26 +7,30 @@ import lombok.Setter;
 
 import java.util.Date;
 
+/**
+ * 主标签
+ */
 @Getter
 @Setter
 @Entity
-@Table(name = "report_data", schema = "review_agent")
-public class ReportData {
+@Table(name = "main_tag", schema = "review_agent")
+public class MainTag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @NotNull
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @NotNull
-    @Lob
-    @Column(name = "report_content", nullable = false)
-    private String reportContent;
+    @NotNull(message = "标签名称不能为空")
+    @Column(name = "name", nullable = false, length = 50)
+    private String name;
 
     @Column(name = "create_time")
     private Date createTime;
+
+    @Column(name = "update_time")
+    private Date updateTime;
 
 }

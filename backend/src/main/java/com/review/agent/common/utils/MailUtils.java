@@ -18,7 +18,7 @@ public final class MailUtils {
     private static final String QQ_PASSWORD = "oupvfynkmjziebjj";
 
     private static final String GMAIL_USER = "lhf97777@gmail.com";
-    private static final String GMAIL_PASSWORD = "bffn xfql harj zezr";
+    private static final String GMAIL_PASSWORD = "bffnxfqlharjzezr";
 
     private static final String USER_163 = "15671389027@163.com";
     private static final String PASSWORD_163 = "KMCWIZJMOOOWGIQF";
@@ -99,7 +99,7 @@ public final class MailUtils {
                         "<body>" +
                         "<p>尊敬的用户：</p>" +
                         "<p>您好！</p>" +
-                        "<p>欢迎您注册 <strong>MeetFriends</strong>。</p>" +
+                        "<p>欢迎您注册 <strong>ReviewAgent</strong>。</p>" +
                         "<p>您本次注册所需的验证码：<strong>" + verifyCode + "</strong></p>" +
                         "<p>请您在 <u>5 分钟内完成验证</u>。如果验证码过期或遇到任何问题，请重新点击获取验证码。</p>" +
                         "<p><strong>注意！</strong>此验证码涉及到您的账户安全，请不要随意告知他人。</p>" +
@@ -109,7 +109,7 @@ public final class MailUtils {
                         "</body>" +
                         "</html>";
             } else {
-                message.setSubject("MeetFriends 重置密码");
+                message.setSubject("ReviewAgent 重置密码");
                 text = "<html>" +
                         "<body>" +
                         "<p>尊敬的用户：</p>" +

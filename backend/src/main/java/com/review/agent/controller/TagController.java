@@ -2,9 +2,10 @@ package com.review.agent.controller;
 
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
-import com.review.agent.entity.MainTag;
-import com.review.agent.entity.SubTag;
-import com.review.agent.entity.TagRelation;
+import com.review.agent.entity.pojo.MainTag;
+import com.review.agent.entity.pojo.SubTag;
+import com.review.agent.entity.pojo.TagRelation;
+import com.review.agent.entity.request.TagRecommendRequest;
 import com.review.agent.service.TagService;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
@@ -20,6 +21,23 @@ import java.util.List;
 public class TagController {
     @Resource
     private TagService tagService;
+
+    /**
+     * 添加推荐标签
+     */
+    @PostMapping("/recommand/add")
+    public BaseResponse<Void> addRecommendTag(@RequestHeader("userId") Long userId, @RequestBody TagRecommendRequest request) {
+        tagService.addRecommendTag(userId, request);
+        return ResultUtil.success();
+    }
+
+    /**
+     * 清空推荐标签
+     */
+    @GetMapping("/clear")
+    public BaseResponse<Void> clearRecommendTag(@RequestHeader("userId") Long userId) {
+        return ResultUtil.success();
+    }
 
     // region 主标签
 

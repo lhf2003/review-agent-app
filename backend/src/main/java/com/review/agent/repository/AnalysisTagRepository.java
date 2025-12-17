@@ -1,6 +1,6 @@
 package com.review.agent.repository;
 
-import com.review.agent.entity.AnalysisTag;
+import com.review.agent.entity.pojo.AnalysisTag;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

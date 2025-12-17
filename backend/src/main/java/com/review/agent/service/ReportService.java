@@ -4,19 +4,18 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.review.agent.common.utils.MailUtils;
-import com.review.agent.entity.*;
+import com.review.agent.entity.pojo.*;
 import com.review.agent.repository.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.ZoneOffset;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -67,11 +66,14 @@ public class ReportService {
 
         Map<String, Integer> resultMap = new HashMap<>();
         analysisTags.forEach(analysisTag -> {
-            resultMap.merge(mainTagMap.get(analysisTag.getTagId()), 1, Integer::sum);
-
-            String[] subTagIds = analysisTag.getSubTagId().split(",");
-            for (String subTagId : subTagIds) {
-                resultMap.merge(subTagMap.get(Long.valueOf(subTagId)), 1, Integer::sum);
+            if (analysisTag.getTagId() != null) {
+                resultMap.merge(mainTagMap.get(analysisTag.getTagId()), 1, Integer::sum);
+            }
+            if (StringUtils.hasText(analysisTag.getSubTagId())) {
+                String[] subTagIds = analysisTag.getSubTagId().split(",");
+                for (String subTagId : subTagIds) {
+                    resultMap.merge(subTagMap.get(Long.valueOf(subTagId)), 1, Integer::sum);
+                }
             }
         });
         return resultMap;
@@ -85,16 +87,23 @@ public class ReportService {
         }
         // 构建日报范围
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startDate = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime endDate = now.withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        LocalDateTime startDate = now.withHour(0).withMinute(0).withSecond(0).withNano(0).minusDays(2);
+        LocalDateTime endDate = now.withHour(23).withMinute(59).withSecond(59).withNano(999999999).minusDays(2);
         List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDate, endDate);
 
+        if (CollectionUtils.isEmpty(analysisResultList)) {
+            log.info("用户 {} 当天没有分析结果，无法生成日报", userId);
+            return;
+        }
         String report = buildBasicReport(analysisResultList);
 
         // 存入数据库
         ReportData reportData = new ReportData();
         reportData.setUserId(userId);
         reportData.setReportContent(report);
+        reportData.setType(1);
+        reportData.setStartDate(Date.from(startDate.toInstant(ZoneOffset.UTC)));
+        reportData.setEndDate(Date.from(endDate.toInstant(ZoneOffset.UTC)));
         reportData.setCreateTime(new Date());
         reportDataRepository.save(reportData);
 
@@ -113,6 +122,9 @@ public class ReportService {
         ReportData reportData = new ReportData();
         reportData.setUserId(userId);
         reportData.setReportContent(report);
+        reportData.setType(2);
+        reportData.setStartDate(Date.from(startDate.toInstant(ZoneOffset.UTC)));
+        reportData.setEndDate(Date.from(endDate.toInstant(ZoneOffset.UTC)));
         reportData.setCreateTime(new Date());
         reportDataRepository.save(reportData);
 
@@ -150,5 +162,13 @@ public class ReportService {
                 .replaceAll("\\s*```\\s*$", "")
                 .replace("\\n", "")// 去除结尾 ```
                 .trim();
+    }
+
+    public List<ReportData> getReport(Long userId, Integer type, String date) {
+        List<ReportData> reportDataList = reportDataRepository.findByCondition(userId, type, date);
+        if (CollectionUtils.isEmpty(reportDataList)) {
+            return Collections.emptyList();
+        }
+        return reportDataList;
     }
 }

@@ -1,6 +1,6 @@
 package com.review.agent.service;
 
-import com.review.agent.entity.SyncRecord;
+import com.review.agent.entity.pojo.SyncRecord;
 import com.review.agent.repository.SyncRecordRepository;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

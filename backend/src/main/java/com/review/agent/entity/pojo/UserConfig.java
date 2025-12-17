@@ -1,10 +1,9 @@
-package com.review.agent.entity;
+package com.review.agent.entity.pojo;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalTime;
 import java.util.Date;
 
 @Getter

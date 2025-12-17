@@ -1,11 +1,9 @@
-package com.review.agent.entity;
+package com.review.agent.entity.pojo;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.security.PrivateKey;
 
 @Getter
 @Setter
@@ -21,8 +19,7 @@ public class AnalysisTag {
     @Column(name = "analysis_id", nullable = false)
     private Long analysisId;
 
-    @NotNull
-    @Column(name = "tag_id", nullable = false)
+    @Column(name = "tag_id")
     private Long tagId;
 
     @Column(name = "sub_tag_id")

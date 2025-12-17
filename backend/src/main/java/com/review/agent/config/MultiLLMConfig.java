@@ -1,4 +1,4 @@
-package com.review.agent.common.config;
+package com.review.agent.config;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;

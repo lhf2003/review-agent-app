@@ -1,4 +1,4 @@
-package com.review.agent.common.config;
+package com.review.agent.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClientRequest;

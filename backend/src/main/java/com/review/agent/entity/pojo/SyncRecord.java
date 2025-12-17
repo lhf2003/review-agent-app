@@ -1,39 +1,36 @@
-package com.review.agent.entity;
+package com.review.agent.entity.pojo;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.Date;
 
-/**
- * 主标签
- */
 @Getter
 @Setter
 @Entity
-@Table(name = "main_tag", schema = "review_agent")
-public class MainTag {
+@Table(name = "sync_record", schema = "review_agent")
+public class SyncRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
-    /**
-     * 用户ID
-     */
-    @NotNull(message = "用户ID不能为空")
+
+    @NotNull
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @NotNull(message = "标签名称不能为空")
-    @Column(name = "name", nullable = false, length = 50)
-    private String name;
+    @NotNull
+    @Column(name = "spend_time", nullable = false)
+    private Double spendTime;
 
+    @Column(name = "sync_count", nullable = false)
+    private Integer syncCount;
+
+    @ColumnDefault("(now())")
     @Column(name = "create_time")
     private Date createTime;
-
-    @Column(name = "update_time")
-    private Date updateTime;
 
 }

@@ -1,6 +1,6 @@
 package com.review.agent.repository;
 
-import com.review.agent.entity.UserConfig;
+import com.review.agent.entity.pojo.UserConfig;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

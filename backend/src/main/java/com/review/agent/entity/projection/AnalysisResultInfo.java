@@ -1,9 +1,11 @@
 package com.review.agent.entity.projection;
 
+import com.review.agent.entity.pojo.AnalysisResult;
+
 import java.util.Date;
 
 /**
- * Projection for {@link com.review.agent.entity.AnalysisResult}
+ * Projection for {@link AnalysisResult}
  */
 public interface AnalysisResultInfo {
     Long getId();

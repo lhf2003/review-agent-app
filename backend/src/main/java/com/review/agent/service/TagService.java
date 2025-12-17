@@ -2,9 +2,11 @@ package com.review.agent.service;
 
 import com.review.agent.common.utils.ExceptionUtils;
 import com.review.agent.common.utils.ObjectTransformUtil;
-import com.review.agent.entity.MainTag;
-import com.review.agent.entity.SubTag;
-import com.review.agent.entity.TagRelation;
+import com.review.agent.entity.pojo.AnalysisTag;
+import com.review.agent.entity.pojo.MainTag;
+import com.review.agent.entity.pojo.SubTag;
+import com.review.agent.entity.pojo.TagRelation;
+import com.review.agent.entity.request.TagRecommendRequest;
 import com.review.agent.repository.AnalysisTagRepository;
 import com.review.agent.repository.MainTagRepository;
 import com.review.agent.repository.SubTagRepository;
@@ -14,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.Date;
 import java.util.List;
@@ -33,6 +36,46 @@ public class TagService {
     @Resource
     private AnalysisTagRepository analysisTagRepository;
 
+    public void addRecommendTag(Long userId, TagRecommendRequest request) {
+        List<AnalysisTag> analysisTagList = analysisTagRepository.findAllByAnalysisResultId(List.of(request.getAnalysisId()));
+        AnalysisTag analysisTag = analysisTagList.get(0);
+        String name = request.getName();
+        if (request.getTagType() == 1) {
+            MainTag mainTag = new MainTag();
+            mainTag.setUserId(userId);
+            mainTag.setName(name);
+            // 已有主标签,不能添加主标签
+            if (analysisTag.getTagId() != null) {
+                ExceptionUtils.throwDataAlreadyExists("主标签");
+            }
+            long tagId = addTag(mainTag);
+            analysisTag.setTagId(tagId);
+        } else {
+            SubTag subTag = new SubTag();
+            subTag.setUserId(userId);
+            subTag.setName(name);
+            long newSubTagId = addSubTag(subTag);
+            String oldSubTagId = analysisTag.getSubTagId();
+            if (StringUtils.hasText(oldSubTagId)) {
+                oldSubTagId += "," + newSubTagId;
+            } else {
+                oldSubTagId = newSubTagId + "";
+            }
+            analysisTag.setSubTagId(oldSubTagId);
+        }
+
+        // 更新分析结果
+        String recommends = analysisTag.getRecommends();
+        int startIndex = recommends.indexOf(name);
+        int endIndex = startIndex + name.length();
+        if (name.length() == endIndex) {
+            analysisTag.setRecommends(null);
+        } else {
+            analysisTag.setRecommends(recommends.substring(0, startIndex) + recommends.substring(endIndex + 1));
+        }
+        analysisTagRepository.save(analysisTag);
+    }
+
     // region 主标签
 
     /**
@@ -48,8 +91,7 @@ public class TagService {
      * 添加主标签
      * @param mainTag 标签
      */
-    @Transactional
-    public void addTag(MainTag mainTag) {
+    public long addTag(MainTag mainTag) {
         if (mainTag.getName() == null || mainTag.getName().isEmpty()) {
             throw new IllegalArgumentException("mainTag name required");
         }
@@ -60,7 +102,9 @@ public class TagService {
         Date date = new Date();
         mainTag.setCreateTime(date);
         mainTag.setUpdateTime(date);
-        mainTagRepository.save(mainTag);
+        MainTag saved = mainTagRepository.save(mainTag);
+
+        return saved.getId();
     }
 
     @Transactional
@@ -124,7 +168,7 @@ public class TagService {
      * 添加子标签
      * @param subTag 标签
      */
-    public void addSubTag(SubTag subTag) {
+    public long addSubTag(SubTag subTag) {
         if (subTagRepository.existsByName(subTag.getName())) {
             throw new IllegalArgumentException("subTag name exists");
         }
@@ -132,7 +176,8 @@ public class TagService {
         Date date = new Date();
         subTag.setCreateTime(date);
         subTag.setUpdateTime(date);
-        subTagRepository.save(subTag);
+        SubTag saved = subTagRepository.save(subTag);
+        return saved.getId();
     }
 
     /**

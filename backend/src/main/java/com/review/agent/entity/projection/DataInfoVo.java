@@ -1,7 +1,7 @@
 package com.review.agent.entity.projection;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.review.agent.entity.DataInfo;
+import com.review.agent.entity.pojo.DataInfo;
 
 import java.util.Date;
 

@@ -1,4 +1,4 @@
-package com.review.agent.entity;
+package com.review.agent.entity.pojo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;

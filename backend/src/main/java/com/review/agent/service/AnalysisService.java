@@ -6,8 +6,8 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.review.agent.common.constant.CommonConstant;
 import com.review.agent.common.utils.ExceptionUtils;
-import com.review.agent.entity.*;
 import com.review.agent.entity.dto.NodeExecuteDto;
+import com.review.agent.entity.pojo.*;
 import com.review.agent.entity.projection.AnalysisResultInfo;
 import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisResultVo;
@@ -18,7 +18,6 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -48,7 +47,6 @@ public class AnalysisService {
     /**
      * 开始分析
      */
-    @Transactional
     public void startAnalysis(Long userId, Long fileId) {
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
@@ -154,7 +152,14 @@ public class AnalysisService {
         List<AnalysisResult> analysisResultList = analysisResultRepository.findByUserId(userId);
         List<Long> analysisIdList = analysisResultList.stream().map(AnalysisResult::getId).toList();
         List<AnalysisTag> analysisTagList = analysisTagRepository.findByAnalysisIdIn(analysisIdList);
-        List<Long> mainTagIdList = analysisTagList.stream().map(AnalysisTag::getTagId).toList();
+        // 过滤空标签
+        analysisTagList = analysisTagList.stream().filter(item -> item.getTagId() != null).toList();
+
+        List<Long> mainTagIdList = analysisTagList.stream()
+                .filter(item -> item.getTagId() != null)
+                .map(AnalysisTag::getTagId)
+                .distinct()
+                .toList();
         List<MainTag> mainTagList = tagService.findByIdList(mainTagIdList);
         // 统计每个标签的出现次数
         Map<Long, Long> countMap = analysisTagList.stream().collect(Collectors.groupingBy(AnalysisTag::getTagId, Collectors.counting()));
@@ -246,4 +251,37 @@ public class AnalysisService {
         return analysisResultRepository.findByCondition(userId, dataId, analysisId);
     }
 
+    public Map<String, List<AnalysisResultVo>> getFileNameList(Long userId) {
+        List<AnalysisResultInfo> list = analysisResultRepository.findByPage(Pageable.unpaged(), null, null, null, userId);
+
+        // 构建子标签ID到名称的映射
+        List<SubTag> subTagList = tagService.findSubTagList(userId);
+        Map<Long, String> subTagIdToNameMap = subTagList.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
+
+        List<AnalysisResultVo> voList = list.stream().map(item -> {
+            AnalysisResultVo vo = new AnalysisResultVo();
+            vo.setId(item.getId());
+            vo.setFileId(item.getFileId());
+            vo.setProblemStatement(item.getProblemStatement());
+            vo.setMainTagName(item.getTagName());
+            vo.setFileName(item.getFileName().substring(0, item.getFileName().lastIndexOf(".")));
+            vo.setCreateTime(item.getCreateTime());
+            // 转换子标签ID为标签名列表
+            if (item.getSubTagIds() != null && !item.getSubTagIds().isEmpty()) {
+                List<String> subTagNameList = Arrays.stream(item.getSubTagIds().split(","))
+                        .map(Long::parseLong)
+                        .map(subTagIdToNameMap::get)
+                        .toList();
+                vo.setSubTagNameList(subTagNameList);
+            }
+            if (item.getRecommendTag() != null && !item.getRecommendTag().isEmpty()) {
+                vo.setRecommendTagList(Arrays.stream(item.getRecommendTag().split(",")).toList());
+            }
+            return vo;
+        }).toList();
+        return voList.stream().collect(Collectors.groupingBy(
+                AnalysisResultVo::getFileName,
+                () -> new TreeMap<>(Comparator.reverseOrder()),
+                Collectors.toList()));
+    }
 }

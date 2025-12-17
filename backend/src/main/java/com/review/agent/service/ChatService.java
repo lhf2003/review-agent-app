@@ -10,7 +10,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.review.agent.common.utils.ExceptionUtils;
-import com.review.agent.hook.RedisMemoryHook;
+import com.review.agent.graph.hook.RedisMemoryHook;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;

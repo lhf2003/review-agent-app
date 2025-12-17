@@ -2,8 +2,8 @@ package com.review.agent.service;
 
 import com.review.agent.common.utils.ExceptionUtils;
 import com.review.agent.common.utils.ObjectTransformUtil;
-import com.review.agent.entity.UserConfig;
-import com.review.agent.entity.UserInfo;
+import com.review.agent.entity.pojo.UserConfig;
+import com.review.agent.entity.pojo.UserInfo;
 import com.review.agent.entity.request.UserConfigUpdateRequest;
 import com.review.agent.entity.request.updatePasswordRequest;
 import com.review.agent.repository.UserConfigRepository;
@@ -66,7 +66,7 @@ public class UserService {
         // windows用户默认扫描目录
         userConfig.setScanDirectory("C:\\Users\\" + username + "\\Desktop");
         userConfig.setAutoScanEnabled(true);
-        userConfig.setScanIntervalSeconds(30);
+        userConfig.setScanIntervalSeconds(600);
         userConfig.setLlmProvider("openai");
         userConfig.setOpenaiApiKeyEncrypted("");
         userConfig.setWeeklyEnabled(false);

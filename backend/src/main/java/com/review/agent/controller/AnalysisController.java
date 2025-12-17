@@ -2,8 +2,7 @@ package com.review.agent.controller;
 
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
-import com.review.agent.entity.AnalysisResult;
-import com.review.agent.entity.request.AnalysisRequest;
+import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisResultVo;
 import com.review.agent.entity.vo.AnalysisTagVo;
@@ -14,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 分析接口
@@ -38,6 +38,16 @@ public class AnalysisController {
             resultRequest.setUserId(userId);
         }
         return ResultUtil.success(analysisService.page(pageable, resultRequest));
+    }
+
+    /**
+     * 获取分析文件列表
+     * @param userId 用户ID
+     * @return <文件名, 分析结果列表>
+     */
+    @GetMapping("/file-name/list")
+    public BaseResponse<Map<String, List<AnalysisResultVo>>> getFileNameList(@RequestHeader("userId") Long userId) {
+        return ResultUtil.success(analysisService.getFileNameList(userId));
     }
 
     /**

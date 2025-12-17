@@ -1,7 +1,7 @@
 package com.review.agent.repository;
 
 import com.review.agent.entity.projection.AnalysisResultInfo;
-import com.review.agent.entity.AnalysisResult;
+import com.review.agent.entity.pojo.AnalysisResult;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

@@ -3,7 +3,7 @@ package com.review.agent.controller;
 import com.review.agent.service.SyncRecordService;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
-import com.review.agent.entity.SyncRecord;
+import com.review.agent.entity.pojo.SyncRecord;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 

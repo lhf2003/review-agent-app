@@ -1,6 +1,6 @@
 package com.review.agent.repository;
 
-import com.review.agent.entity.DataInfo;
+import com.review.agent.entity.pojo.DataInfo;
 import com.review.agent.entity.projection.DataInfoVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

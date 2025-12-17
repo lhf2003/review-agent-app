@@ -1,4 +1,4 @@
-package com.review.agent.common.config;
+package com.review.agent.config;
 
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;

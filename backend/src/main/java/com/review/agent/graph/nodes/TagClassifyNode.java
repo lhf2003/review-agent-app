@@ -2,8 +2,8 @@ package com.review.agent.graph.nodes;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.review.agent.entity.MainTag;
-import com.review.agent.entity.SubTag;
+import com.review.agent.entity.pojo.MainTag;
+import com.review.agent.entity.pojo.SubTag;
 import com.review.agent.entity.dto.NodeExecuteDto;
 import com.review.agent.service.PromptService;
 import com.review.agent.service.SseService;

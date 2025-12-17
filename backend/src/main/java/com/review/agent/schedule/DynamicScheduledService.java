@@ -1,10 +1,9 @@
 package com.review.agent.schedule;
 
-import com.review.agent.entity.UserConfig;
+import com.review.agent.entity.pojo.UserConfig;
 import com.review.agent.service.DataInfoService;
 import com.review.agent.service.ReportService;
 import com.review.agent.service.UserService;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
@@ -45,7 +44,7 @@ public class DynamicScheduledService {
     private final Map<Long, ScheduledFuture<?>> scheduledReportWeeklyMap = new ConcurrentHashMap<>();
 
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         reloadAllTasks(taskScheduler);
     }

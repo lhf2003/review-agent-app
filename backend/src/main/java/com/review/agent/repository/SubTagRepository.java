@@ -1,7 +1,6 @@
 package com.review.agent.repository;
 
-import com.review.agent.entity.SubTag;
-import jakarta.validation.constraints.NotNull;
+import com.review.agent.entity.pojo.SubTag;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

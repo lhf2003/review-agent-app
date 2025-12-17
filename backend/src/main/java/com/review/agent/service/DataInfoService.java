@@ -1,8 +1,8 @@
 package com.review.agent.service;
 
-import com.review.agent.entity.DataInfo;
-import com.review.agent.entity.SyncRecord;
-import com.review.agent.entity.UserConfig;
+import com.review.agent.entity.pojo.DataInfo;
+import com.review.agent.entity.pojo.SyncRecord;
+import com.review.agent.entity.pojo.UserConfig;
 import com.review.agent.entity.request.DataInfoRequest;
 import com.review.agent.entity.projection.DataInfoVo;
 import com.review.agent.repository.DataInfoRepository;

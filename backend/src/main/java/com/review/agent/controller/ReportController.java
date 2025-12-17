@@ -2,13 +2,12 @@ package com.review.agent.controller;
 
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.entity.pojo.ReportData;
 import com.review.agent.service.ReportService;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RequestMapping("/report")
@@ -23,8 +22,23 @@ public class ReportController {
      * @return 名称和对应数量的映射
      */
     @GetMapping("/word")
-    public BaseResponse<Map<String,Integer>> generateWordCloud(@RequestHeader("userId") Long userId) {
+    public BaseResponse<Map<String, Integer>> generateWordCloud(@RequestHeader("userId") Long userId) {
         Map<String, Integer> resultMap = reportService.generateWordCloud(userId);
         return ResultUtil.success(resultMap);
+    }
+
+    /**
+     * 获取报告
+     * @param userId 用户id
+     * @param type 报告类型（1：日报，2：周报）
+     * @param date 日期（格式：yyyy-MM-dd）
+     * @return 报告内容（html）
+     */
+    @GetMapping("/get")
+    public BaseResponse<List<ReportData>> getReport(@RequestHeader("userId") Long userId,
+                                                    @RequestParam(name = "type", defaultValue = "1") Integer type,
+                                                    @RequestParam(name = "date", required = false) String date) {
+        List<ReportData> reportList = reportService.getReport(userId, type, date);
+        return ResultUtil.success(reportList);
     }
 }

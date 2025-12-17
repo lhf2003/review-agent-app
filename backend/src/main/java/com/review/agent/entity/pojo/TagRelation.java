@@ -1,4 +1,4 @@
-package com.review.agent.entity;
+package com.review.agent.entity.pojo;
 
 import jakarta.persistence.*;
 import lombok.Getter;

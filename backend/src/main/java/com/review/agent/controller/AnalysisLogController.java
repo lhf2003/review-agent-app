@@ -21,11 +21,7 @@ public class AnalysisLogController {
      * @return SseEmitter
      */
     @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamLogs(@RequestParam(value = "userId", required = false) Long paramUserId, @RequestHeader(value = "userId", required = false) Long headerUserId) {
-        Long userId = headerUserId != null ? headerUserId : paramUserId;
-        if (userId == null) {
-            throw new IllegalArgumentException("UserId is required");
-        }
+    public SseEmitter streamLogs(@RequestHeader(value = "userId", required = false) Long userId) {
         return sseService.createConnection(userId);
     }
 }
