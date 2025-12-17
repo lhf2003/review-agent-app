@@ -1,10 +1,26 @@
 <template>
   <div class="page">
+    <!-- Global Controls -->
+    <div class="global-controls">
+      <div class="date-picker-wrapper">
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          :shortcuts="shortcuts"
+          @change="handleDateChange"
+          style="width: 100%"
+        />
+      </div>
+      <el-button type="primary" @click="handleRefresh" :loading="wordCloudLoading || trendLoading">刷新</el-button>
+    </div>
+
     <!-- Word Cloud Section -->
     <div class="section">
       <div class="header">
         <h2>词云</h2>
-        <el-button type="primary" @click="loadWordCloud" :loading="wordCloudLoading">刷新</el-button>
       </div>
       <div v-loading="wordCloudLoading" class="chart-container">
         <div ref="wordCloudChartRef" class="chart"></div>
@@ -15,19 +31,6 @@
     <div class="section">
       <div class="header">
         <h2>标签趋势</h2>
-        <div class="controls">
-          <el-date-picker
-            v-model="dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            :shortcuts="shortcuts"
-            @change="loadTrend"
-            style="width: 300px"
-          />
-          <el-button type="primary" @click="loadTrend" :loading="trendLoading">刷新</el-button>
-        </div>
       </div>
       <div v-loading="trendLoading" class="chart-container">
         <div ref="trendChartRef" class="chart"></div>
@@ -103,11 +106,25 @@ function formatDate(date) {
   return `${y}-${m}-${d}`
 }
 
+function getFormattedDateRange() {
+    if (!dateRange.value || dateRange.value.length !== 2) return null
+    const startDate = formatDate(dateRange.value[0])
+    // Backend treats endDate as exclusive, so add 1 day to include the selected end date
+    const endDateObj = new Date(dateRange.value[1])
+    endDateObj.setDate(endDateObj.getDate() + 1)
+    const endDate = formatDate(endDateObj)
+    return { startDate, endDate }
+}
+
 async function loadWordCloud() {
+  const dates = getFormattedDateRange()
+  if (!dates) return
+
   wordCloudLoading.value = true
   try {
     const userId = auth.userId || null
-    const data = await api.getWordReport(userId)
+    // Pass dates to API
+    const data = await api.getWordReport(dates.startDate, dates.endDate)
     wordCloudSource.value = data || {}
     updateWordCloudChart()
   } finally {
@@ -116,15 +133,12 @@ async function loadWordCloud() {
 }
 
 async function loadTrend() {
-  if (!dateRange.value || dateRange.value.length !== 2) return
+  const dates = getFormattedDateRange()
+  if (!dates) return
+
   trendLoading.value = true
   try {
-    const startDate = formatDate(dateRange.value[0])
-    // Backend treats endDate as exclusive, so add 1 day to include the selected end date
-    const endDateObj = new Date(dateRange.value[1])
-    endDateObj.setDate(endDateObj.getDate() + 1)
-    const endDate = formatDate(endDateObj)
-    const res = await api.getDateTagCountTrend(startDate, endDate)
+    const res = await api.getDateTagCountTrend(dates.startDate, dates.endDate)
     trendSource.value = res || {}
     updateTrendChart()
   } catch (e) {
@@ -132,6 +146,15 @@ async function loadTrend() {
   } finally {
     trendLoading.value = false
   }
+}
+
+function handleRefresh() {
+    loadWordCloud()
+    loadTrend()
+}
+
+function handleDateChange() {
+    handleRefresh()
 }
 
 function updateWordCloudChart() {
@@ -190,7 +213,6 @@ function updateTrendChart() {
   if (!trendChartInstance) return
 
   const dataMap = trendSource.value || {}
-  // dataMap is { "2025-12-10": [ {tagName, count}, ... ], ... }
   
   const dates = Object.keys(dataMap).sort()
   
@@ -239,7 +261,7 @@ function updateTrendChart() {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '10%', // Make room for legend
+      bottom: '10%', 
       containLabel: true
     },
     xAxis: {
@@ -253,7 +275,7 @@ function updateTrendChart() {
     series: series
   }
 
-  trendChartInstance.setOption(option, true) // true to merge=false (clear previous)
+  trendChartInstance.setOption(option, true)
 }
 
 function initCharts() {
@@ -281,8 +303,7 @@ watch(() => themeStore.isDark, () => {
 
 onMounted(() => {
   initCharts()
-  loadWordCloud()
-  loadTrend()
+  handleRefresh()
   window.addEventListener('resize', handleResize)
 })
 
@@ -297,35 +318,56 @@ onUnmounted(() => {
 .page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 16px;
+  gap: 12px;
+  padding: 12px;
   height: 100%;
   overflow-y: auto;
+}
+.global-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--el-bg-color-overlay);
+  padding: 12px 16px;
+  border-radius: 6px;
+  box-shadow: var(--el-box-shadow-light);
+}
+.date-picker-wrapper {
+  flex: 1;
+  max-width: 400px;
 }
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   background: var(--el-bg-color-overlay);
-  padding: 16px;
-  border-radius: 8px;
+  padding: 0;
+  border-radius: 6px;
   box-shadow: var(--el-box-shadow-light);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-fill-color-light);
 }
-.controls {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+.header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--el-text-color-primary);
 }
 .chart-container {
   width: 100%;
-  height: 400px;
+  height: 100%;
+  min-height: 200px;
+  padding: 12px;
   position: relative;
+  flex: 1;
+  box-sizing: border-box;
 }
 .chart {
   width: 100%;

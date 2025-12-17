@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -118,7 +119,7 @@ public class AnalysisService {
                 analysisResult.setSessionEnd(executeDto.getSessionEnd());
                 analysisResult.setSessionContent(executeDto.getSessionContent());
                 analysisResult.setStatus(executeDto.getStatus());
-                analysisResult.setCreatedTime(new Date());
+                analysisResult.setCreatedTime(LocalDateTime.now());
                 analysisResultList.add(analysisResult);
 
                 AnalysisTag analysisTag = new AnalysisTag();

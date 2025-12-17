@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -49,6 +49,6 @@ public class AnalysisResult {
     private Integer status;
 
     @Column(name = "created_time")
-    private Date createdTime;
+    private LocalDateTime createdTime;
 
 }

@@ -4,7 +4,9 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.review.agent.common.utils.MailUtils;
-import com.review.agent.entity.pojo.*;
+import com.review.agent.entity.pojo.AnalysisResult;
+import com.review.agent.entity.pojo.ReportData;
+import com.review.agent.entity.pojo.UserInfo;
 import com.review.agent.repository.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -13,10 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -48,37 +51,6 @@ public class ReportService {
     @Resource
     private ChatClient analysisChatClient;
 
-    /**
-     * 生成词云
-     * @param userId 用户ID
-     * @return 词云数据
-     */
-    public Map<String, Integer> generateWordCloud(Long userId) {
-        List<AnalysisResult> analysisResultList = analysisResultRepository.findByUserId(userId);
-        List<Long> analysisResultIdList = analysisResultList.stream().map(AnalysisResult::getId).toList();
-        List<AnalysisTag> analysisTags = analysisTagRepository.findAllByAnalysisResultId(analysisResultIdList);
-        List<MainTag> mainTagList = mainTagRepository.findAllByUserId(userId);
-        List<SubTag> subTagList = subTagRepository.findAllByUserId(userId);
-
-        // <id,name>
-        Map<Long, String> mainTagMap = mainTagList.stream().collect(Collectors.toMap(MainTag::getId, MainTag::getName));
-        Map<Long, String> subTagMap = subTagList.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
-
-        Map<String, Integer> resultMap = new HashMap<>();
-        analysisTags.forEach(analysisTag -> {
-            if (analysisTag.getTagId() != null) {
-                resultMap.merge(mainTagMap.get(analysisTag.getTagId()), 1, Integer::sum);
-            }
-            if (StringUtils.hasText(analysisTag.getSubTagId())) {
-                String[] subTagIds = analysisTag.getSubTagId().split(",");
-                for (String subTagId : subTagIds) {
-                    resultMap.merge(subTagMap.get(Long.valueOf(subTagId)), 1, Integer::sum);
-                }
-            }
-        });
-        return resultMap;
-    }
-
     public void generateDailyReport(Long userId) {
         UserInfo userInfo = userService.findById(userId);
         if (!StringUtils.hasText(userInfo.getEmail())) {
@@ -86,10 +58,8 @@ public class ReportService {
             return;
         }
         // 构建日报范围
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startDate = now.withHour(0).withMinute(0).withSecond(0).withNano(0).minusDays(2);
-        LocalDateTime endDate = now.withHour(23).withMinute(59).withSecond(59).withNano(999999999).minusDays(2);
-        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDate, endDate);
+        LocalDate today = LocalDate.now();
+        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, today.atStartOfDay(), today.atStartOfDay());
 
         if (CollectionUtils.isEmpty(analysisResultList)) {
             log.info("用户 {} 当天没有分析结果，无法生成日报", userId);
@@ -102,8 +72,8 @@ public class ReportService {
         reportData.setUserId(userId);
         reportData.setReportContent(report);
         reportData.setType(1);
-        reportData.setStartDate(Date.from(startDate.toInstant(ZoneOffset.UTC)));
-        reportData.setEndDate(Date.from(endDate.toInstant(ZoneOffset.UTC)));
+        reportData.setStartDate(Date.from(today.atStartOfDay().toInstant(ZoneOffset.UTC)));
+        reportData.setEndDate(Date.from(today.atStartOfDay().toInstant(ZoneOffset.UTC)));
         reportData.setCreateTime(new Date());
         reportDataRepository.save(reportData);
 
@@ -112,10 +82,14 @@ public class ReportService {
     }
 
     public void generateWeeklyReport(Long userId) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startDate = now.withHour(0).withMinute(0).withSecond(0).withNano(0).minusDays(7);
-        LocalDateTime endDate = now.withHour(23).withMinute(59).withSecond(59).withNano(999999999);
-        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDate, endDate);
+        UserInfo userInfo = userService.findById(userId);
+        if (!StringUtils.hasText(userInfo.getEmail())) {
+            log.error("用户 {} 没有绑定邮箱", userId);
+            return;
+        }
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.minusDays(7);
+        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDate.atStartOfDay(), endDate.atStartOfDay());
         String report = buildBasicReport(analysisResultList);
 
         // 存入数据库
@@ -123,13 +97,13 @@ public class ReportService {
         reportData.setUserId(userId);
         reportData.setReportContent(report);
         reportData.setType(2);
-        reportData.setStartDate(Date.from(startDate.toInstant(ZoneOffset.UTC)));
-        reportData.setEndDate(Date.from(endDate.toInstant(ZoneOffset.UTC)));
+        reportData.setStartDate(Date.from(startDate.atStartOfDay().toInstant(ZoneOffset.UTC)));
+        reportData.setEndDate(Date.from(endDate.atStartOfDay().toInstant(ZoneOffset.UTC)));
         reportData.setCreateTime(new Date());
         reportDataRepository.save(reportData);
 
         // 发送邮件
-        MailUtils.sendReport("lhf97777@gmail.com", report);
+        MailUtils.sendReport(userInfo.getEmail(), report);
 
     }
 
