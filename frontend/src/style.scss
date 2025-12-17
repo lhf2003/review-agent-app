@@ -1,0 +1,159 @@
+@import './styles/variables';
+@import './styles/mixins';
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--el-text-color-primary);
+  background-color: var(--el-bg-color);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Global Font Configuration */
+  font-size: 16px; /* Base font size */
+  
+  /* Element Plus Font Overrides (Default base is 14px) */
+  --el-font-size-extra-small: 14px;
+  --el-font-size-small: 14px;
+  --el-font-size-base: 16px;
+  --el-font-size-medium: 18px;
+  --el-font-size-large: 20px;
+  --el-font-size-extra-large: 22px;
+  
+  /* Component Specific Overrides */
+  --el-tag-font-size: 14px; /* Increase tag font size */
+}
+
+/* Global Component Styles */
+.el-table th.el-table__cell {
+  font-size: 18px !important; /* Make table headers larger */
+  font-weight: bold;
+}
+
+/* Increase row height/spacing for all table cells */
+.el-table .el-table__cell {
+  padding: 14px 0 !important; /* More padding for taller rows */
+  font-size: 16px; /* Ensure readable body text */
+}
+
+.el-tag {
+  font-size: 14px !important; /* Force tag font size increase */
+  padding: 0 12px !important; /* Add a bit more padding for balance */
+  height: 28px !important; /* Slightly taller tags */
+  
+  // Apply Glow Effect to Tags
+  @include glow-hover($glow-color-light);
+  cursor: default;
+}
+
+// Tag Type Specific Glows
+.el-tag--success {
+    &:hover {
+        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(103, 194, 58, 0.7) !important;
+    }
+}
+.el-tag--warning {
+    &:hover {
+        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(230, 162, 60, 0.7) !important;
+    }
+}
+.el-tag--danger {
+    &:hover {
+        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(245, 108, 108, 0.7) !important;
+    }
+}
+.el-tag--info {
+    &:hover {
+        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(144, 147, 153, 0.7) !important;
+    }
+}
+
+// Make clickable tags have pointer
+.el-tag.is-hit, .el-tag--dark, .el-tag--plain {
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Modern Button Styles (Optimized with Glow)
+   ========================================================================== */
+
+/* 1. Base Button Enhancement */
+.el-button {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all $glow-transition-duration cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hover Effect: Replace previous shadow with Glow */
+.el-button:not(.is-disabled):not(.is-text):not(.is-link) {
+  @include glow-hover($glow-color-light);
+}
+
+/* 2. Primary Button: Gradient & Glow */
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link) {
+  background: linear-gradient(135deg, #409eff, #337ecc) !important;
+  border: none !important;
+  // Use specific glow for primary if needed, or stick to unified.
+  // User asked for "unified ... default light blue". Primary is blue, so it fits.
+  // Existing code had specific shadows. I will override with the mixin but maybe adjust color slightly if it looks off?
+  // Let's stick to the mixin for consistency first.
+}
+
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link):hover {
+  background: linear-gradient(135deg, #66b1ff, #409eff) !important;
+  // The mixin handles the hover box-shadow
+}
+
+/* 3. Success Button */
+.el-button--success:not(.is-plain):not(.is-text):not(.is-link) {
+  background: linear-gradient(135deg, #67c23a, #529b2e) !important;
+  border: none !important;
+}
+
+.el-button--success:not(.is-plain):not(.is-text):not(.is-link):hover {
+  background: linear-gradient(135deg, #85ce61, #67c23a) !important;
+  // Override glow color for success to match? 
+  // User said "unified ... default light blue", but "coordinated with component main color".
+  // "发光颜色应与组件的主色调协调" (Glow color should coordinate with component main color).
+  // Default is light blue.
+  // So I should pass the color.
+  box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(103, 194, 58, 0.7) !important;
+}
+
+/* 4. Warning Button */
+.el-button--warning:not(.is-plain):not(.is-text):not(.is-link) {
+  background: linear-gradient(135deg, #e6a23c, #cf9236) !important;
+  border: none !important;
+}
+
+.el-button--warning:not(.is-plain):not(.is-text):not(.is-link):hover {
+    // Coordinate with warning color
+    box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(230, 162, 60, 0.7) !important;
+}
+
+/* 5. Danger Button (Adding for completeness) */
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link):hover {
+    box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(245, 108, 108, 0.7) !important;
+}
+
+/* Cards */
+.el-card {
+    transition: all $glow-transition-duration;
+    @include glow-hover($glow-color-light);
+}
+
+/* Dark Mode Adjustments (if .dark class is on html or body) */
+html.dark {
+    .el-button:not(.is-disabled):not(.is-text):not(.is-link):hover,
+    .el-tag:hover,
+    .el-card:hover {
+        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius $glow-color-dark;
+    }
+    
+    // Adjust specific buttons for dark mode if needed
+}
