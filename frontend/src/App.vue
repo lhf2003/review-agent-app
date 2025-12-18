@@ -26,59 +26,56 @@ const md = new MarkdownIt({
 })
 
 /**
- * Preprocess markdown content to ensure proper formatting
- * This handles cases where streaming might have stripped whitespace or
- * where the source content is missing necessary spacing for markdown syntax.
+ * 深度清洗 Markdown 内容 - 表格保护增强版
  */
 function renderMarkdown(content) {
   if (!content) return ''
   let processed = content
-  
-  // 0. Protect code blocks (block and inline)
+
+  // 0. 保护代码块
   const codeBlocks = []
-  // Matches ```...``` OR `...`
   processed = processed.replace(/(```[\s\S]*?```|`[^`\n]+`)/g, (match) => {
     codeBlocks.push(match)
     return `\u0000CODE_BLOCK_${codeBlocks.length - 1}\u0000`
   })
 
-  // 1. Fix Headers: ensure space after # (e.g., "###Title" -> "### Title")
-  processed = processed.replace(/(^|\n)(#{1,6})([^\s#])/g, '$1$2 $3')
-  
-  // 2. Fix Lists: 
-  // a. Ensure space after marker (e.g. "1.Item" -> "1. Item")
-  processed = processed.replace(/(^|\n)(\s*(?:\d+\.|-|\*))([^\s\d\-\*])/g, '$1$2 $3')
-  
-  // b. Remove newline after marker (e.g. "1. \n Item" -> "1. Item")
-  processed = processed.replace(/(^|\n)(\s*(?:\d+\.|-|\*))\s*\n+([^\n])/g, '$1$2 $3')
-
-  // 3. Fix Bold/Italic: remove internal newlines
-  processed = processed.replace(/(\*\*|__)([\s\S]*?)\1/g, (match, marker, inner) => {
-    // Remove newlines and trim extra spaces around them
-    return marker + inner.replace(/\s*\n+\s*/g, '').trim() + marker
+  // 1. 保护表格 (关键步骤！)
+  // 识别逻辑：连续两行以上包含管道符 | 的文本块，视为表格
+  const tableBlocks = []
+  processed = processed.replace(/((?:(?:^|\n)[ \t]*\|.*\|[ \t]*)+)/g, (match) => {
+    tableBlocks.push(match)
+    return `\u0000TABLE_BLOCK_${tableBlocks.length - 1}\u0000`
   })
-  
-  // 4. Fix blockquotes: ensure space after > (e.g., ">Quote" -> "> Quote")
+
+  // 2. 修复列表断行 ("1.\n内容" -> "1. 内容")
+  processed = processed.replace(/(^|\n)([ \t]*)((\d+\.)|[-*])([ \t]*)\n+([ \t]*)(?=\S)/g, '$1$2$3 ')
+
+  // 3. 合并连续空行
+  processed = processed.replace(/\n{3,}/g, '\n\n')
+
+  // 4. 修复标题和引用空格
+  processed = processed.replace(/(^|\n)(#{1,6})([^\s#])/g, '$1$2 $3')
   processed = processed.replace(/(^|\n)(\s*>)([^\s>])/g, '$1$2 $3')
 
-  // 5. General Line Joining (Compact content)
-  // Preserve double newlines (paragraphs)
+  // 5. 优化换行 (保护段落换行，合并单换行)
   processed = processed.replace(/\n\s*\n/g, '\u0000PARAGRAPH_BREAK\u0000')
-  
-  // Join single newlines
-  // Match non-newline/non-placeholder chars
-  const cjk = /[\u4e00-\u9fa5]/
-  processed = processed.replace(/([^\n\u0000])\s*\n\s*([^\n\u0000])/g, (match, p1, p2) => {
-    if (cjk.test(p1) && cjk.test(p2)) {
-      return `${p1}${p2}`
+  const isCJK = (char) => /[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/.test(char)
+  processed = processed.replace(/([^\n\u0000])\s*\n\s*([^\n\u0000])/g, (match, prev, next) => {
+    // 如果前后都是中文/中文标点，直接合并
+    if (isCJK(prev) && isCJK(next)) {
+      return `${prev}${next}`
     }
-    return `${p1} ${p2}`
+    // 否则加空格
+    return `${prev} ${next}`
   })
-
-  // Restore paragraphs
   processed = processed.replace(/\u0000PARAGRAPH_BREAK\u0000/g, '\n\n')
 
-  // Restore code blocks
+  // 6. 还原表格 (关键步骤！)
+  processed = processed.replace(/\u0000TABLE_BLOCK_(\d+)\u0000/g, (match, index) => {
+    return tableBlocks[index]
+  })
+
+  // 7. 还原代码块
   processed = processed.replace(/\u0000CODE_BLOCK_(\d+)\u0000/g, (match, index) => {
     return codeBlocks[index]
   })
@@ -577,39 +574,107 @@ watch(() => auth.isAuthenticated, (val) => {
   max-width: 100%;
   position: relative;
 }
+/* 优化 markdown-body 在聊天气泡中的显示 */
 .markdown-body {
-  font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 15px;
   line-height: 1.6;
+  color: inherit; /* 继承气泡文字颜色 */
+  white-space: normal;
 }
-.markdown-body :deep(p) { margin-bottom: 10px; }
-.markdown-body :deep(p:last-child) { margin-bottom: 0; }
+
+/* 减少段落间距，使其更紧凑 */
+.markdown-body :deep(p) { 
+  margin-top: 0;
+  margin-bottom: 0.6em; 
+}
+.markdown-body :deep(p:last-child) { 
+  margin-bottom: 0; 
+}
+
+/* 优化代码块样式 */
 .markdown-body :deep(pre) { 
-  background-color: #282c34; 
-  color: #abb2bf;
-  border-radius: 8px; 
-  padding: 16px; 
-  overflow: auto;
-  margin-bottom: 16px;
-  font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+  margin: 0.5em 0;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: #282c34;
+  overflow-x: auto;
 }
 .markdown-body :deep(code) {
-  font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  font-family: 'Fira Code', Consolas, monospace;
   background-color: rgba(175, 184, 193, 0.2);
   padding: 0.2em 0.4em;
-  border-radius: 6px;
-  font-size: 85%;
+  border-radius: 4px;
+  font-size: 0.9em;
 }
-.markdown-body :deep(pre code) {
+
+/* 优化列表缩进和间距 */
+.markdown-body :deep(ul), 
+.markdown-body :deep(ol) { 
+  padding-left: 1.2em; 
+  margin-bottom: 0.6em; 
+  margin-top: 0;
+}
+
+/* 修复列表项内的段落间距，避免列表看起来断裂 */
+.markdown-body :deep(li) {
+  margin-bottom: 0.2em;
+}
+.markdown-body :deep(li > p) {
+  margin: 0;
+  display: inline; /* 强制列表项内容紧跟标记 */
+}
+
+/* 标题样式微调 */
+.markdown-body :deep(h1), 
+.markdown-body :deep(h2), 
+.markdown-body :deep(h3) { 
+  margin-top: 1em; 
+  margin-bottom: 0.5em; 
+  font-weight: 600; 
+  line-height: 1.3; 
+  font-size: 1.1em;
+}
+
+/* 表格样式美化 */
+.markdown-body :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  display: block; /* 允许横向滚动 */
+  overflow-x: auto;
+}
+
+.markdown-body :deep(thead) {
+  background-color: var(--el-fill-color-light); /* 适配浅色/深色模式 */
+}
+
+.markdown-body :deep(tr) {
+  border-top: 1px solid var(--el-border-color);
   background-color: transparent;
-  padding: 0;
-  font-size: 14px;
-  color: inherit;
-  font-family: inherit;
 }
-.markdown-body :deep(ul), .markdown-body :deep(ol) { padding-left: 20px; margin-bottom: 10px; }
-.markdown-body :deep(h1), .markdown-body :deep(h2), .markdown-body :deep(h3) { margin-top: 16px; margin-bottom: 8px; font-weight: 600; line-height: 1.25; }
+
+/* 隔行变色 */
+.markdown-body :deep(tr:nth-child(2n)) {
+  background-color: var(--el-fill-color-lighter);
+}
+
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  padding: 8px 12px;
+  border: 1px solid var(--el-border-color);
+  font-size: 14px;
+}
+
+.markdown-body :deep(th) {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 修复表格内的代码块样式 */
+.markdown-body :deep(table code) {
+  white-space: pre-wrap; /* 允许表格内的代码换行 */
+}
 
 .message-row.user .bubble {
   background: var(--el-color-primary);
