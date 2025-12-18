@@ -322,7 +322,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div style="display:flex;flex-direction:column;gap:12px;height:100%;">
+  <div style="display:flex;flex-direction:column;gap:12px;height:calc(100vh - 100px);">
     <!-- Top Row: Search (Left) + Horizontal Tags (Right) -->
     <div style="display: flex; gap: 24px;">
       <div style="width: 200px; flex-shrink: 0; padding-top: 4px;">
@@ -344,7 +344,7 @@ onMounted(() => {
 
     <div style="display:flex;gap:24px;flex:1;min-height:0;">
       <!-- Left Sidebar: Filter Card -->
-      <div style="width:200px; flex-shrink: 0;">
+      <div style="width:200px; flex-shrink: 0; overflow-y: auto;">
         <el-card>
           <div style="font-weight:600;display:flex;justify-content:space-between;align-items:center;">
             <span>标签筛选</span>
@@ -377,46 +377,51 @@ onMounted(() => {
           </div>
         </el-card>
       </div>
-      <div style="flex:1;min-width:0;">
-        <template v-if="filteredCards.length">
-          <div
-            style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));column-gap:70px;row-gap:18px;">
-            <el-card v-for="c in filteredCards" :key="c.id" @click="openDetail(c)" shadow="hover"
-              :class="{ 'recommend-card': c.recommendTags && c.recommendTags.length }"
-              style="position:relative;overflow:visible;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <div
-                  style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:8px;">
-                  {{ c.title.slice(0, 40) }}{{ c.title.length > 40 ? '...' : '' }}
+      <div class="content-area-wrapper">
+        <div class="content-scroll-area">
+          <template v-if="filteredCards.length">
+            <div
+              style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));column-gap:70px;row-gap:18px;">
+              <el-card v-for="c in filteredCards" :key="c.id" @click="openDetail(c)" shadow="hover"
+                :class="{ 'recommend-card': c.recommendTags && c.recommendTags.length }"
+                style="position:relative;overflow:visible;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <div
+                    style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:8px;">
+                    {{ c.title.slice(0, 40) }}{{ c.title.length > 40 ? '...' : '' }}
+                  </div>
+                  <el-button type="primary" link @click.stop="onChat(c)" style="padding: 0 5px;">
+                    对话
+                  </el-button>
                 </div>
-                <el-button type="primary" link @click.stop="onChat(c)" style="padding: 0 5px;">
-                  对话
-                </el-button>
-              </div>
-              <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-                <el-tag v-for="(t, idx) in c.displayTags" :key="idx" size="small"
-                  :color="t.type === 'main' ? tagColorMap[t.name] : ''" :type="t.type === 'main' ? '' : 'info'"
-                  :effect="t.type === 'main' ? 'dark' : 'plain'" :style="t.type === 'main' ? { border: 'none' } : {}">
-                  {{ t.name }}
-                </el-tag>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-                <span>Mastery:</span>
-                <el-progress :percentage="c.mastery" :stroke-width="8" style="flex:1;" />
-              </div>
-              <div v-if="c.recommendTags && c.recommendTags.length" class="recommend-section">
-                <div class="recommend-title">推荐标签</div>
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                  <el-tag v-for="rt in c.recommendTags" :key="rt" size="small" type="warning" effect="plain"
-                    class="recommend-tag-item" @click.stop="handleRecommendTagClick(rt, c)">
-                    + {{ rt }}
+                <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+                  <el-tag v-for="(t, idx) in c.displayTags" :key="idx" size="small"
+                    :color="t.type === 'main' ? tagColorMap[t.name] : ''" :type="t.type === 'main' ? '' : 'info'"
+                    :effect="t.type === 'main' ? 'dark' : 'plain'" :style="t.type === 'main' ? { border: 'none' } : {}">
+                    {{ t.name }}
                   </el-tag>
                 </div>
-              </div>
-            </el-card>
-          </div>
-        </template>
-        <el-empty v-else description="尚未发现任何分析结果" />
+                <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                  <span>Mastery:</span>
+                  <el-progress :percentage="c.mastery" :stroke-width="8" style="flex:1;" />
+                </div>
+                <div v-if="c.recommendTags && c.recommendTags.length" class="recommend-section">
+                  <div class="recommend-title">推荐标签</div>
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <el-tag v-for="rt in c.recommendTags" :key="rt" size="small" type="warning" effect="plain"
+                      class="recommend-tag-item" @click.stop="handleRecommendTagClick(rt, c)">
+                      + {{ rt }}
+                    </el-tag>
+                  </div>
+                </div>
+              </el-card>
+            </div>
+          </template>
+          <el-empty v-else description="尚未发现任何分析结果" />
+        </div>
+        <!-- Blur Overlays -->
+        <div class="scroll-blur top"></div>
+        <div class="scroll-blur bottom"></div>
       </div>
     </div>
   </div>
@@ -652,21 +657,64 @@ onMounted(() => {
   white-space: nowrap;
   border: 1px solid var(--el-border-color);
   border-right: none;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
 
   // Use glow mixin
   @include glow-hover($glow-color-light);
-
-  &:last-child {
-    border-right: 1px solid var(--el-border-color);
-  }
 }
+
+.content-area-wrapper {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.content-scroll-area {
+  height: 100%;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.scroll-blur {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 64px;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
+.scroll-blur.top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--el-bg-color-overlay) 0%, transparent 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, transparent 100%);
+}
+
+.scroll-blur.bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--el-bg-color-overlay) 0%, transparent 100%);
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, transparent 100%);
+}
+.tag-item:last-child {
+  border-right: 1px solid var(--el-border-color);
+}
+
 
 .tag-item:hover {
   background-color: var(--el-fill-color-light);
   color: var(--el-color-primary);
-  z-index: 10;
+  z-index: 20;
   /* Bring to front */
   box-shadow: 0 0 12px 3px rgba(64, 158, 255, 0.5);
+  transform: scale(1.15);
+  border-radius: 4px;
+  border: 1px solid var(--el-color-primary);
 }
 
 .tag-item.active {

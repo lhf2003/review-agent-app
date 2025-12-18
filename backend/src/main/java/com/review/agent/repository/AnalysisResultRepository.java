@@ -65,10 +65,10 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
     /**
      * 根据日期查询分析结果
      * @param userId 用户ID
-     * @param startDate 开始日期
-     * @param endDate 结束日期
+     * @param startDateTime 开始日期
+     * @param endDateTime 结束日期
      * @return 分析结果列表
      */
-    @Query("select a from AnalysisResult a where a.userId = :userId and a.createdTime between :startDate and :endDate")
-    List<AnalysisResult> findAllByDate(Long userId, LocalDateTime startDate, LocalDateTime endDate);
+    @Query("select a from AnalysisResult a where a.userId = :userId and a.createdTime between :startDateTime and :endDateTime")
+    List<AnalysisResult> findAllByDate(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime);
 }

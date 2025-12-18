@@ -9,6 +9,7 @@ const loading = ref(false)
 const reportType = ref(1) // 1: Daily, 2: Weekly
 const rawReports = ref([])
 const expandedReport = ref(null) // Stores the currently expanded report object
+const isFullscreen = ref(false)
 const scrollContainer = ref(null)
 
 const reports = computed(() => {
@@ -35,8 +36,13 @@ const handleCardClick = (report) => {
   expandedReport.value = report
 }
 
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+}
+
 const closeExpanded = () => {
   expandedReport.value = null
+  isFullscreen.value = false
 }
 
 onMounted(() => {
@@ -116,13 +122,29 @@ onMounted(() => {
     <!-- Expanded Dialog -->
     <el-dialog
       v-model="expandedReport"
-      :title="expandedReport ? (expandedReport.type === 1 ? '日报详情' : '周报详情') : ''"
+      :fullscreen="isFullscreen"
+      :show-close="false"
       width="800px"
       align-center
       class="report-dialog"
-      :show-close="true"
       @close="closeExpanded"
     >
+      <template #header="{ close, titleId, titleClass }">
+        <div class="custom-header">
+           <span :id="titleId" :class="titleClass">
+             {{ expandedReport ? (expandedReport.type === 1 ? '日报详情' : '周报详情') : '' }}
+           </span>
+           <div class="header-controls">
+             <el-icon class="header-icon" @click="toggleFullscreen">
+               <FullScreen v-if="!isFullscreen" />
+               <CopyDocument v-else />
+             </el-icon>
+             <el-icon class="header-icon" @click="close">
+               <Close />
+             </el-icon>
+           </div>
+        </div>
+      </template>
       <template v-if="expandedReport">
          <div class="dialog-header-info">
             <div class="date-badge large">
@@ -131,7 +153,7 @@ onMounted(() => {
               <span v-if="expandedReport.startDate !== expandedReport.endDate"> - {{ expandedReport.endDate }}</span>
             </div>
          </div>
-         <div class="dialog-content markdown-body" v-html="expandedReport.reportContent"></div>
+         <div class="dialog-content markdown-body" :class="{ 'is-full': isFullscreen }" v-html="expandedReport.reportContent"></div>
       </template>
     </el-dialog>
   </div>
@@ -337,5 +359,37 @@ onMounted(() => {
 :deep(.markdown-body h1), :deep(.markdown-body h2) {
   border-bottom: none;
   margin-bottom: 0.5em;
+}
+
+/* Custom Header & Fullscreen */
+.custom-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding-right: 0; /* Override if needed */
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icon {
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--el-text-color-secondary);
+  transition: color 0.2s;
+  display: flex; /* Fix icon alignment */
+  align-items: center;
+}
+
+.header-icon:hover {
+  color: var(--el-color-primary);
+}
+
+.dialog-content.is-full {
+  max-height: calc(100vh - 140px);
 }
 </style>

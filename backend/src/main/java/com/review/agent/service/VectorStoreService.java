@@ -28,7 +28,7 @@ public class VectorStoreService {
     public Document searchOne(String request) {
         List<Document> documentList = vectorStore.similaritySearch(SearchRequest.builder()
                 .query(request)
-                .similarityThreshold(0.8)
+                .similarityThreshold(0.9)
                 .build());
         if (documentList.isEmpty()) {
             return null;

@@ -16,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Date;
@@ -113,8 +114,9 @@ public class ReportService {
     public String generateDailyReport(Long userId, ReportData reportData) {
 
         // 构建日报范围
-        LocalDate today = LocalDate.now();
-        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, today.atStartOfDay(), today.atStartOfDay());
+        LocalDateTime startDateTime = LocalDate.now().atStartOfDay();
+        LocalDateTime endDateTime = startDateTime.plusDays(1);
+        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDateTime, endDateTime);
 
         if (CollectionUtils.isEmpty(analysisResultList)) {
             log.info("用户 {} 当天没有分析结果，无法生成日报", userId);
@@ -125,8 +127,8 @@ public class ReportService {
         String report = processReportContent(analysisResultList, dailyReportPrompt);
 
         reportData.setReportContent(report);
-        reportData.setStartDate(Date.from(today.atStartOfDay().toInstant(ZoneOffset.UTC)));
-        reportData.setEndDate(Date.from(today.atStartOfDay().toInstant(ZoneOffset.UTC)));
+        reportData.setStartDate(Date.from(startDateTime.toInstant(ZoneOffset.UTC)));
+        reportData.setEndDate(Date.from(endDateTime.toInstant(ZoneOffset.UTC)));
         return report;
     }
 
@@ -138,10 +140,10 @@ public class ReportService {
      */
     public String generateWeeklyReport(Long userId, ReportData reportData) {
 
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusDays(7);
+        LocalDateTime endDateTime = LocalDate.now().atStartOfDay();
+        LocalDateTime startDateTime = endDateTime.minusDays(7);
 
-        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDate.atStartOfDay(), endDate.atStartOfDay());
+        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDateTime, endDateTime);
         if (CollectionUtils.isEmpty(analysisResultList)) {
             log.info("用户 {} 本周没有分析结果，无法生成周报", userId);
             return "";
@@ -151,8 +153,8 @@ public class ReportService {
         String report = processReportContent(analysisResultList, weeklyReportPrompt);
 
         reportData.setReportContent(report);
-        reportData.setStartDate(Date.from(startDate.atStartOfDay().toInstant(ZoneOffset.UTC)));
-        reportData.setEndDate(Date.from(endDate.atStartOfDay().toInstant(ZoneOffset.UTC)));
+        reportData.setStartDate(Date.from(startDateTime.toInstant(ZoneOffset.UTC)));
+        reportData.setEndDate(Date.from(endDateTime.toInstant(ZoneOffset.UTC)));
         return report;
     }
 
