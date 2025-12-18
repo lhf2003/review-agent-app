@@ -17,11 +17,14 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -38,8 +41,8 @@ public class ChatService {
     @Resource
     private RedisMemoryHook redisMemoryHook;
 
-//    @Resource
-//    private VectorStoreService vectorStoreService;
+    @Resource
+    private VectorStoreService vectorStoreService;
 
     private MemoryStore store = new MemoryStore();
 
@@ -47,16 +50,19 @@ public class ChatService {
      * 闲聊 - 添加缓存命中机制
      */
     public Flux<String> chat(Long userId, String request) throws GraphRunnerException {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         // 匹配相似问题
-//        Document matchResult = vectorStoreService.searchOne(request);
-//        if (matchResult != null) {
-//            log.info("{} 命中缓存", request);
-//            String response = matchResult.getMetadata().get("response").toString();
-//            List<String> fragments = splitContentIntoFragments(response);
-//
-//            return Flux.fromIterable(fragments)
-//                    .delayElements(Duration.ofMillis(50));
-//        }
+        Document matchResult = vectorStoreService.searchOne(request);
+        if (matchResult != null) {
+            log.info("{} 命中缓存", request);
+            String response = matchResult.getMetadata().get("response").toString();
+            List<String> fragments = splitContentIntoFragments(response);
+            stopWatch.stop();
+            log.info("缓存命中耗时: {}s", stopWatch.getTotalTimeSeconds());
+            return Flux.fromIterable(fragments)
+                    .delayElements(Duration.ofMillis(100));
+        }
 
         // 没有相似问题，调用 LLM
         ReactAgent reactAgent = ReactAgent.builder()
@@ -70,30 +76,30 @@ public class ChatService {
         StringBuilder stringBuilder = new StringBuilder();
 
         return Flux.create(emitter ->
-                        stream.subscribe(
-                                // 处理流式输出
-                                output -> {
-                                    if (output instanceof StreamingOutput<?> streamingOutput) {
-                                        String chunk = streamingOutput.message().getText();
-                                        if (chunk != null && !chunk.isEmpty()) {
-                                            emitter.next(chunk);
-                                            System.out.println(chunk);
-                                            stringBuilder.append(chunk);
-                                        }
-                                    }
-                                },
-                                // 处理错误
-                                throwable -> ExceptionUtils.throwLLMConnectionFailed(throwable),
-                                // sse 完成时添加到向量数据库
-                                () -> {
-                                    Document document = Document.builder()
-                                            .metadata(Map.of("userId", userId, "response", stringBuilder.toString()))
-                                            .text(request)
-                                            .build();
-//                            vectorStoreService.addOne(document);
-                                    log.info("添加文档到向量数据库: {}", request);
+                stream.subscribe(
+                        // 处理流式输出
+                        output -> {
+                            if (output instanceof StreamingOutput<?> streamingOutput) {
+                                String chunk = streamingOutput.message().getText();
+                                if (chunk != null && !chunk.isEmpty()) {
+                                    emitter.next(chunk);
+                                    System.out.println(chunk);
+                                    stringBuilder.append(chunk);
                                 }
-                        )
+                            }
+                        },
+                        // 处理错误
+                        throwable -> ExceptionUtils.throwLLMConnectionFailed(throwable),
+                        // sse 完成时添加到向量数据库
+                        () -> {
+                            Document document = new Document(UUID.randomUUID().toString(), request,
+                                    Map.of("response", stringBuilder.toString(),
+                                            "userId", userId.toString()));
+
+                            vectorStoreService.addOne(document);
+                            log.info("添加文档到向量数据库: {}", request);
+                        }
+                )
         );
     }
 
