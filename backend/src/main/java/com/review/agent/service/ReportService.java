@@ -21,6 +21,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import static com.review.agent.common.constant.CommonConstant.DAILY_REPORT;
+import static com.review.agent.common.constant.CommonConstant.WEEKLY_REPORT;
+
 @Slf4j
 @Service
 public class ReportService {
@@ -51,78 +54,126 @@ public class ReportService {
     @Resource
     private ChatClient analysisChatClient;
 
-    public void generateDailyReport(Long userId) {
+    /**
+     * 获取报告列表
+     * @param userId 用户ID
+     * @param type 报告类型
+     * @param date 日期
+     * @return 报告列表
+     */
+    public List<ReportData> getReport(Long userId, Integer type, String date) {
+        List<ReportData> reportDataList = reportDataRepository.findByCondition(userId, type, date);
+        if (CollectionUtils.isEmpty(reportDataList)) {
+            return Collections.emptyList();
+        }
+        return reportDataList;
+    }
+
+    /**
+     * 生成报告
+     * @param userId 用户ID
+     * @param type 报告类型
+     */
+    public void generateReport(Long userId, int type) {
+        // 检查用户是否绑定邮箱
         UserInfo userInfo = userService.findById(userId);
         if (!StringUtils.hasText(userInfo.getEmail())) {
             log.error("用户 {} 没有绑定邮箱", userId);
             return;
         }
+
+        ReportData reportData = new ReportData();
+        reportData.setUserId(userId);
+        reportData.setType(type);
+        reportData.setCreateTime(new Date());
+        String report = switch (type) {
+            case DAILY_REPORT -> generateDailyReport(userId, reportData);
+            case WEEKLY_REPORT -> generateWeeklyReport(userId, reportData);
+            default -> {
+                log.error("未知的报告类型: {}", type);
+                yield null;
+            }
+        };
+        if (report == null) {
+            return;
+        }
+        reportData.setReportContent(report);
+        reportDataRepository.save(reportData);
+
+        // 发送邮件
+        MailUtils.sendReport(userInfo.getEmail(), report);
+    }
+
+    /**
+     * 日报
+     * @param userId 用户ID
+     * @param reportData 报告数据
+     * @return 日报内容
+     */
+    public String generateDailyReport(Long userId, ReportData reportData) {
+
         // 构建日报范围
         LocalDate today = LocalDate.now();
         List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, today.atStartOfDay(), today.atStartOfDay());
 
         if (CollectionUtils.isEmpty(analysisResultList)) {
             log.info("用户 {} 当天没有分析结果，无法生成日报", userId);
-            return;
+            return "";
         }
-        String report = buildBasicReport(analysisResultList);
 
-        // 存入数据库
-        ReportData reportData = new ReportData();
-        reportData.setUserId(userId);
+        String dailyReportPrompt = promptService.getDailyReportPrompt("");
+        String report = processReportContent(analysisResultList, dailyReportPrompt);
+
         reportData.setReportContent(report);
-        reportData.setType(1);
         reportData.setStartDate(Date.from(today.atStartOfDay().toInstant(ZoneOffset.UTC)));
         reportData.setEndDate(Date.from(today.atStartOfDay().toInstant(ZoneOffset.UTC)));
-        reportData.setCreateTime(new Date());
-        reportDataRepository.save(reportData);
-
-        // 发送邮件
-        MailUtils.sendReport(userInfo.getEmail(), report);
+        return report;
     }
 
-    public void generateWeeklyReport(Long userId) {
-        UserInfo userInfo = userService.findById(userId);
-        if (!StringUtils.hasText(userInfo.getEmail())) {
-            log.error("用户 {} 没有绑定邮箱", userId);
-            return;
-        }
-        LocalDate startDate = LocalDate.now();
-        LocalDate endDate = startDate.minusDays(7);
-        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDate.atStartOfDay(), endDate.atStartOfDay());
-        String report = buildBasicReport(analysisResultList);
+    /**
+     * 周报
+     * @param userId 用户ID
+     * @param reportData 报告数据
+     * @return 周报内容
+     */
+    public String generateWeeklyReport(Long userId, ReportData reportData) {
 
-        // 存入数据库
-        ReportData reportData = new ReportData();
-        reportData.setUserId(userId);
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(7);
+
+        List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, startDate.atStartOfDay(), endDate.atStartOfDay());
+        if (CollectionUtils.isEmpty(analysisResultList)) {
+            log.info("用户 {} 本周没有分析结果，无法生成周报", userId);
+            return "";
+        }
+
+        String weeklyReportPrompt = promptService.getWeeklyReportPrompt("");
+        String report = processReportContent(analysisResultList, weeklyReportPrompt);
+
         reportData.setReportContent(report);
-        reportData.setType(2);
         reportData.setStartDate(Date.from(startDate.atStartOfDay().toInstant(ZoneOffset.UTC)));
         reportData.setEndDate(Date.from(endDate.atStartOfDay().toInstant(ZoneOffset.UTC)));
-        reportData.setCreateTime(new Date());
-        reportDataRepository.save(reportData);
-
-        // 发送邮件
-        MailUtils.sendReport(userInfo.getEmail(), report);
-
+        return report;
     }
 
-    private String buildBasicReport(List<AnalysisResult> analysisResultList) {
+    private String processReportContent(List<AnalysisResult> analysisResultList, String systemPrompt) {
+        // 拼接会话
         StringBuilder stringBuilder = new StringBuilder();
         for (AnalysisResult analysisResult : analysisResultList) {
             stringBuilder.append("# ").append(analysisResult.getProblemStatement()).append("\n");
             stringBuilder.append(analysisResult.getSolution()).append("\n");
         }
-        String dailyReportPrompt = promptService.getDailyReportPrompt("");
+
         String response = analysisChatClient.prompt()
-                .system(dailyReportPrompt)
+                .system(systemPrompt)
                 .user(stringBuilder.toString())
                 .call()
                 .content();
+
         if (StringUtils.hasText(response)) {
             response = formatResult(response);
             JSONObject jsonObject = JSON.parseObject(response);
-            return jsonObject.getString("daily_report_html");
+            return jsonObject.getString("report_html");
         }
         return null;
     }
@@ -136,13 +187,5 @@ public class ReportService {
                 .replaceAll("\\s*```\\s*$", "")
                 .replace("\\n", "")// 去除结尾 ```
                 .trim();
-    }
-
-    public List<ReportData> getReport(Long userId, Integer type, String date) {
-        List<ReportData> reportDataList = reportDataRepository.findByCondition(userId, type, date);
-        if (CollectionUtils.isEmpty(reportDataList)) {
-            return Collections.emptyList();
-        }
-        return reportDataList;
     }
 }

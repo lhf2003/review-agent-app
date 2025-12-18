@@ -35,4 +35,10 @@ public class CommonConstant {
      * 分析状态-处理错误
      */
     public static final int ANALYSIS_STATUS_ERROR = 0;
+
+    // endregion
+
+    public static final int DAILY_REPORT = 1;
+    public static final int WEEKLY_REPORT = 2;
+
 }

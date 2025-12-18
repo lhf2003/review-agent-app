@@ -200,12 +200,21 @@ public class PromptService {
     }
 
     /**
-     * 获取会话提取提示词
+     * 获取日报生成提示词
      */
     public String getDailyReportPrompt(String categories) throws PromptProcessingException {
         Map<String, Object> variables = new HashMap<>();
         variables.put("categories", categories);
-        return buildPrompt("Report.报告生成提示词", variables);
+        return buildPrompt("Report.日报生成提示词", variables);
+    }
+
+    /**
+     * 获取周报生成提示词
+     */
+    public String getWeeklyReportPrompt(String categories) throws PromptProcessingException {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("categories", categories);
+        return buildPrompt("Report.周报生成提示词", variables);
     }
 
     // ========== 通用提示词 ==========

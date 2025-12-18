@@ -4,6 +4,7 @@ import com.review.agent.entity.pojo.UserConfig;
 import com.review.agent.service.DataInfoService;
 import com.review.agent.service.ReportService;
 import com.review.agent.service.UserService;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
@@ -16,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+
+import static com.review.agent.common.constant.CommonConstant.DAILY_REPORT;
+import static com.review.agent.common.constant.CommonConstant.WEEKLY_REPORT;
 
 /**
  * 动态定时任务配置类
@@ -44,7 +48,7 @@ public class DynamicScheduledService {
     private final Map<Long, ScheduledFuture<?>> scheduledReportWeeklyMap = new ConcurrentHashMap<>();
 
 
-//    @PostConstruct
+    @PostConstruct
     public void init() {
         reloadAllTasks(taskScheduler);
     }
@@ -131,7 +135,7 @@ public class DynamicScheduledService {
         Runnable task = () -> {
             log.info("开始执行用户: {}, 生成日报任务", config.getUserId());
             // 调用生成日报逻辑
-            reportService.generateDailyReport(config.getUserId());
+            reportService.generateReport(config.getUserId(), DAILY_REPORT);
         };
 
         // 按 fixedDelay 配置周期
@@ -158,7 +162,7 @@ public class DynamicScheduledService {
         Runnable task = () -> {
             log.info("开始执行用户: {}, 生成周报任务", config.getUserId());
             // 调用生成周报逻辑
-            reportService.generateWeeklyReport(config.getUserId());
+            reportService.generateReport(config.getUserId(), WEEKLY_REPORT);
         };
 
         // 按 fixedDelay 配置周期
