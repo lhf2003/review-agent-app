@@ -364,12 +364,15 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   min-height: 200px;
-  padding: 12px;
+  padding: 0px;
   position: relative;
   flex: 1;
   box-sizing: border-box;
 }
 .chart {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }

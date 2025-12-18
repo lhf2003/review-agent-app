@@ -1,4 +1,5 @@
 import forge from 'node-forge'
+import { ElMessage } from 'element-plus'
 const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV
 const isEmbeddedHttp = typeof window !== 'undefined' && window.location && window.location.protocol === 'http:' && window.location.port === '3000'
 // 在开发模式下通过 Vite 代理到后端（/api -> target）
@@ -91,10 +92,12 @@ async function request(path, { method = 'GET', params, body, headers } = {}) {
   })
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`HTTP ${res.status}: ${text}`)
+    const msg = `HTTP ${res.status}: ${text}`
+    ElMessage.error(msg)
+    throw new Error(msg)
   }
   const data = await res.json().catch(() => null)
-  return data
+  return normalizeResponse(data)
 }
 
 export const api = {
@@ -148,6 +151,9 @@ export const api = {
   addTagRelation(params) {
     return request('/tag/add/relation', { method: 'POST', body: params })
   },
+  addRecommendTag(body) {
+    return request('/tag/recommand/add', { method: 'POST', body })
+  },
   deleteTagRelation(params) {
     return request('/tag/delete/relation', { method: 'DELETE', body: params })
   },
@@ -169,7 +175,8 @@ export const api = {
       body: formData,
     }).then(async (res) => {
       if (!res.ok) throw new Error(await res.text())
-      return res.json()
+      const json = await res.json()
+      return normalizeResponse(json)
     })
   },
   updateFileStatus(id, status) {
@@ -243,9 +250,12 @@ export const api = {
   getAnalysisResultByIds(dataId, analysisId) {
     return request('/analysis/result', { params: { dataId, analysisId } })
   },
-  getTagStats(params) {
+  getFileNameList() {
+    return request('/analysis/file-name/list')
+  },
+  getTagStats() {
     // 返回 { tags: [{ id, name, count }] }
-    return request('/analysis/tag/list', { params }).catch(() => ({ tags: [{ id: 1, name: 'React', count: 8 }, { id: 2, name: 'useEffect', count: 5 }, { id: 3, name: 'Python', count: 6 }, { id: 4, name: '错误处理', count: 4 }] }))
+    return request('/analysis/tag/list')
   },
 
   // data page (DataInfo)
@@ -259,11 +269,10 @@ export const api = {
     }
     return request('/data/page', { method: 'POST', params: { page, size }, body })
   },
-  dataImport(file) {
+  dataImport(userId, file) {
     const formData = new FormData()
     formData.append('file', file)
     
-    const userId = getUserId()
     const headers = {}
     if (userId) {
       headers['userId'] = userId
@@ -271,7 +280,8 @@ export const api = {
 
     return fetch(BASE_URL + '/data/import', { method: 'POST', headers, body: formData }).then(async (res) => {
       if (!res.ok) throw new Error(await res.text())
-      return res.json()
+      const json = await res.json()
+      return normalizeResponse(json)
     })
   },
   dataUpdateStatus(id, status) {
@@ -283,10 +293,26 @@ export const api = {
   },
 
   // report
-  getWordReport() {
-    return request('/report/word')
+  getWordReport(startDate, endDate) {
+    return request('/statistic/word-cloud', {
+      method: 'POST',
+      body: { startDate, endDate }
+    })
       .then((resp) => resp?.data || resp)
       .catch(() => ({ 并发: 2, Java: 1, 性能优化: 2, 基础语法: 2, SQL: 1 }))
+  },
+
+  // statistic
+  getDateTagCountTrend(startDate, endDate) {
+    return request('/statistic/tag/trend', {
+      method: 'POST',
+      body: { startDate, endDate }
+    })
+  },
+  getReportList(type = 1, date) {
+    const params = { type }
+    if (date) params.date = date
+    return request('/report/get', { params })
   },
 
   _handleStream(fetchPromise, handlers) {
@@ -355,4 +381,28 @@ export const api = {
     this._handleStream(p, handlers)
     return { cancel: () => controller.abort() }
   },
+ 
+   analysisLogStream(handlers = {}) {
+     const controller = new AbortController()
+     const userId = getUserId()
+     const headers = { Accept: 'text/event-stream' }
+     if (userId) headers['userId'] = userId
+     const p = fetch(BASE_URL + '/analysis/log/stream', { method: 'GET', headers, signal: controller.signal })
+     this._handleStream(p, handlers)
+     return { cancel: () => controller.abort() }
+   },
+}
+
+function normalizeResponse(resp) {
+  if (resp == null) return resp
+  const hasCode = Object.prototype.hasOwnProperty.call(resp, 'code')
+  if (!hasCode) return resp
+  const codeNum = Number(resp.code)
+  if (Number.isNaN(codeNum)) return resp
+  if (codeNum === 0) {
+    return resp.data !== undefined ? resp.data : resp
+  }
+  const msg = resp.message || resp.msg || '请求失败'
+  ElMessage.error(msg)
+  throw new Error(msg)
 }

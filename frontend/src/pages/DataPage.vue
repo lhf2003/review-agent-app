@@ -33,7 +33,7 @@ const drawerTitle = ref('')
 const drawerContent = ref('')
 const logs = ref([])
 const showLogs = ref(false)
-let eventSource = null
+let logStream = null
 
 const md = new markdownit({
   breaks: true,
@@ -98,7 +98,7 @@ async function load() {
     const pageData = resp?.data || resp
     const content = pageData?.content || []
     tableData.value = content
-    total.value = pageData?.totalElements ?? content.length
+    total.value = pageData?.page?.totalElements || 0
   } catch (e) {
     ElMessage.error(`加载失败: ${e.message}`)
   } finally {
@@ -107,7 +107,6 @@ async function load() {
 }
 
 function openImport() { importDialog.value = true }
-function onFileChange(e) { importFile.value = e.target.files?.[0] || null }
 async function doImport() {
   if (!importFile.value) { ElMessage.warning('请选择文件'); return }
   try {
@@ -129,25 +128,24 @@ function onAction(row) {
       logs.value = []
     }
     
-    if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
-
-    } else {
-       const baseUrl = '/api'
-       eventSource = new EventSource(`${baseUrl}/analysis/log/stream?userId=${auth.userId}`)
-       
-       eventSource.addEventListener('log', (event) => {
-         logs.value.push(event.data)
-         // Auto scroll to bottom
-         setTimeout(() => {
-            const logContainer = document.getElementById('log-container')
-            if (logContainer) logContainer.scrollTop = logContainer.scrollHeight
-         }, 0)
-       })
-       
-       eventSource.onerror = () => {
-         eventSource.close()
-       }
+    if (logStream && typeof logStream.cancel === 'function') {
+      logStream.cancel()
     }
+    logStream = api.analysisLogStream({
+      onEvent: (data) => {
+        logs.value.push(data)
+        setTimeout(() => {
+          const logContainer = document.getElementById('log-container')
+          if (logContainer) logContainer.scrollTop = logContainer.scrollHeight
+        }, 0)
+      },
+      onError: () => {
+        if (logStream && typeof logStream.cancel === 'function') logStream.cancel()
+      },
+      onDone: () => {
+        if (logStream && typeof logStream.cancel === 'function') logStream.cancel()
+      }
+    })
 
     // Only trigger startAnalysis if it is NOT already analyzing (status != 1)
     if (row.processedStatus !== 1) {
@@ -162,7 +160,7 @@ function onAction(row) {
           .catch(e => {
             ElMessage.error(`触发失败: ${e.message}`)
             logs.value.push(`错误: ${e.message}`)
-            if(eventSource) eventSource.close()
+            if (logStream && typeof logStream.cancel === 'function') logStream.cancel()
           })
     } else {
         logs.value.push('已重新连接到日志流...')
@@ -214,20 +212,20 @@ onMounted(load)
     <!-- 表格区域 -->
     <div class="table-wrapper">
       <el-table :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" border stripe>
-        <el-table-column :resizable="false" prop="id" label="ID" width="90" align="center" />
-        <el-table-column :resizable="false" prop="fileName" label="文件名" width="350"  align="center" />
+        <el-table-column :resizable="false" prop="id" label="ID" width="80" align="center" />
+        <el-table-column :resizable="false" prop="fileName" label="文件名" min-width="150" align="center" show-overflow-tooltip />
         <el-table-column :resizable="false" prop="sessionCount" label="会话数" width="100" align="center" />
-        <el-table-column :resizable="false" prop="processedStatus" label="状态" width="180" align="center">
+        <el-table-column :resizable="false" prop="processedStatus" label="状态" width="150" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.processedStatus===0" type="info" effect="light">未分析</el-tag>
-            <el-tag type="primary" v-else-if="row.processedStatus===1" effect="light">正在分析</el-tag>
-            <el-tag type="success" v-else-if="row.processedStatus===2" effect="light">已分析</el-tag>
-            <el-tag type="warning" v-else-if="row.processedStatus===3" effect="light">有更新</el-tag>
-            <el-tag type="danger" v-else-if="row.processedStatus===4" effect="light">失败</el-tag>
+            <el-tag class="status-tag" v-if="row.processedStatus===0" type="info" effect="light">未分析</el-tag>
+            <el-tag class="status-tag" type="primary" v-else-if="row.processedStatus===1" effect="light">正在分析</el-tag>
+            <el-tag class="status-tag" type="success" v-else-if="row.processedStatus===2" effect="light">已分析</el-tag>
+            <el-tag class="status-tag" type="warning" v-else-if="row.processedStatus===3" effect="light">有更新</el-tag>
+            <el-tag class="status-tag" type="danger" v-else-if="row.processedStatus===4" effect="light">失败</el-tag>
           </template>
         </el-table-column>
-        <el-table-column :resizable="false" prop="createdTime" label="同步时间" width="280" align="center" />
-        <el-table-column :resizable="false" label="文件内容" width="218" align="center">
+        <el-table-column :resizable="false" prop="createdTime" label="同步时间" width="250" align="center" show-overflow-tooltip />
+        <el-table-column :resizable="false" label="文件内容" width="150" align="center">
           <template #default="{ row }">
             <el-button size="default" type="primary" link @click="openContent(row)">查看内容</el-button>
           </template>
@@ -250,14 +248,13 @@ onMounted(load)
         :page-sizes="[10,20,50,100]"
         layout="total, sizes, prev, pager, next"
         :total="total"
-        background
         @current-change="load"
         @size-change="() => { page = 1; load() }"
       />
     </div>
 
     <!-- 导入文件 -->
-    <el-dialog v-model="showLogs" title="分析日志" width="600px" align-center @close="() => { /* if(eventSource) eventSource.close() */ }">
+    <el-dialog v-model="showLogs" title="分析日志" width="600px" align-center @close="() => { if (logStream && typeof logStream.cancel === 'function') logStream.cancel() }">
       <div id="log-container" style="background:var(--el-fill-color-light);color:var(--el-text-color-primary);padding:12px;border-radius:4px;height:300px;overflow-y:auto;font-family:monospace;border:1px solid var(--el-border-color);">
         <div v-for="(log, idx) in logs" :key="idx" style="margin-bottom:4px;border-bottom:1px dashed var(--el-border-color-lighter);padding-bottom:2px;">
           <span style="color:var(--el-text-color-secondary);margin-right:8px;">[{{ new Date().toLocaleTimeString() }}]</span>
@@ -295,8 +292,8 @@ onMounted(load)
           v-if="importFile"
           :title="`已选择：${importFile.name}`"
           type="info"
-          :closable="false"
           show-icon
+          closeable = "true"
         />
 
         <!-- 按钮组 -->

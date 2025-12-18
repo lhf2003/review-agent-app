@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { Moon, Sunny, FullScreen } from '@element-plus/icons-vue'
 import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
+import { useThemeStore } from './stores/theme'
 import { api } from './api/http'
 import md5 from 'blueimp-md5'
 import MarkdownIt from 'markdown-it'
@@ -87,7 +88,7 @@ function renderMarkdown(content) {
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
-const isDark = ref(true)
+const themeStore = useThemeStore()
 const avatarDialog = ref(false)
 const avatarSizeLarge = ref(false)
 const profileForm = ref({ avatar: '', newPassword: '', confirm: '' })
@@ -102,30 +103,12 @@ onMounted(() => {
   placeholderInterval = setInterval(() => {
     currentPlaceholderIndex.value = (currentPlaceholderIndex.value + 1) % placeholderMessages.length
   }, 4000)
+  themeStore.initTheme()
 })
 
 function toggleTheme(val) {
-  isDark.value = val
-  if (val) {
-    document.documentElement.classList.add('dark')
-    localStorage.setItem('theme', 'dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-    localStorage.setItem('theme', 'light')
-  }
+  themeStore.toggleTheme(val)
 }
-
-onMounted(() => {
-  const savedTheme = localStorage.getItem('theme')
-  if (savedTheme === 'light') {
-    isDark.value = false
-    document.documentElement.classList.remove('dark')
-  } else {
-    isDark.value = true
-    document.documentElement.classList.add('dark')
-    if (!savedTheme) localStorage.setItem('theme', 'dark')
-  }
-})
 
 function openAvatar() { avatarDialog.value = true }
 function toggleAvatarSize() { avatarSizeLarge.value = !avatarSizeLarge.value }
@@ -207,10 +190,17 @@ watch(() => auth.isAuthenticated, (val) => {
             </el-menu-item>
           </template>
         </el-tooltip>
-        <el-tooltip content="词云" placement="right">
+        <el-tooltip content="统计" placement="right">
           <template #default>
             <el-menu-item index="/word-cloud">
               <el-icon><TrendCharts /></el-icon>
+            </el-menu-item>
+          </template>
+        </el-tooltip>
+        <el-tooltip content="报告" placement="right">
+          <template #default>
+            <el-menu-item index="/report">
+              <el-icon><Notebook /></el-icon>
             </el-menu-item>
           </template>
         </el-tooltip>
@@ -240,11 +230,11 @@ watch(() => auth.isAuthenticated, (val) => {
           </div>
         </div>
         <div class="header-right">
-          <div class="theme-switch-wrapper" @click="toggleTheme(!isDark)">
-            <div class="theme-switch" :class="{ 'is-dark': isDark }">
+          <div class="theme-switch-wrapper" @click="toggleTheme(!themeStore.isDark)">
+            <div class="theme-switch" :class="{ 'is-dark': themeStore.isDark }">
               <div class="switch-handle">
                 <el-icon class="switch-icon">
-                  <component :is="isDark ? Moon : Sunny" />
+                  <component :is="themeStore.isDark ? Moon : Sunny" />
                 </el-icon>
               </div>
             </div>

@@ -30,6 +30,26 @@ const subRenameForm = ref({ id: null, name: '' })
 // 过滤
 const searchSub = ref('')
 
+// 预定义一组好看的颜色用于标签左侧
+const tagColors = [
+  '#409EFF', // Primary Blue
+  '#67C23A', // Success Green
+  '#E6A23C', // Warning Orange
+  '#F56C6C', // Danger Red
+  '#909399', // Info Gray
+  '#9C27B0', // Purple
+  '#009688', // Teal
+  '#3F51B5', // Indigo
+  '#FF9800', // Amber
+  '#795548', // Brown
+  '#607D8B', // Blue Grey
+  '#E91E63'  // Pink
+]
+
+function getTagColor(index) {
+  return tagColors[index % tagColors.length]
+}
+
 // 加载方法
 async function loadMain() {
   const resp = await api.getMainTagList(auth.userId)
@@ -205,8 +225,11 @@ onMounted(loadAll)
 
           <div v-loading="loading" class="main-list-wrapper">
             <div v-if="mainTags.length" class="main-list">
-              <div v-for="mt in mainTags" :key="mt.id" :class="['main-item', { active: selectedMainId === mt.id }]"
-                @click="onSelectMain(mt)">
+              <div v-for="(mt, index) in mainTags" 
+                   :key="mt.id" 
+                   :class="['main-item', { active: selectedMainId === mt.id }]"
+                   :style="{ '--tag-color': getTagColor(index) }"
+                   @click="onSelectMain(mt)">
                 <div class="main-name">{{ mt.name }}</div>
                 <div class="main-meta">
                   <el-button text size="small" @click.stop="openRenameMain(mt)">编辑</el-button>
@@ -412,21 +435,35 @@ onMounted(loadAll)
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  padding: 10px 15px;
+  padding: 12px 16px;
   border: 1px solid var(--el-border-color-light);
+  border-left: 6px solid var(--tag-color); /* 使用 CSS 变量控制颜色 */
   border-radius: var(--el-border-radius-base);
-  transition: all 0.2s ease-in-out;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background-color: var(--el-bg-color-overlay);
+  color: var(--el-text-color-primary);
 }
 
 .main-item:hover {
   background-color: var(--el-fill-color-light);
+  transform: translateX(3px); /* 悬停微动效果 */
 }
 
 .main-item.active {
-  border-color: var(--el-color-primary);
-  border-left: 4px solid var(--el-color-primary);
-  background-color: var(--el-color-primary-light-9);
-  padding-left: 12px;
+  /* 仅设置上右下边框颜色，避免覆盖左侧颜色 */
+  border-top-color: var(--el-border-color-light);
+  border-right-color: var(--el-border-color-light);
+  border-bottom-color: var(--el-border-color-light);
+  /* 再次强制指定左侧颜色 */
+  border-left-color: var(--tag-color);
+  
+  /* 高亮悬浮效果 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px) scale(1.01);
+  z-index: 1; /* 确保悬浮在其他元素之上 */
+  background-color: var(--el-bg-color-overlay); /* 保持背景色一致 */
+  /* 使用 color-mix 生成半透明背景色，并渐变消失 */
+  background-image: linear-gradient(to right, color-mix(in srgb, var(--tag-color), transparent 85%) 0%, transparent 55%);
 }
 
 .main-name {
