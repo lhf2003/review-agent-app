@@ -13,7 +13,7 @@ Review Agent 正是为此而生 —— 借助[review-mcp](https://github.com/lhf
 
 🛠️ **目标用户**：频繁使用 AI 编程但希望提升长期能力的开发者。
 
-可视化页面参考：![页面展示](https://github.com/lhf2003/review-agent-app/image)
+可视化页面参考：[页面展示](https://github.com/lhf2003/review-agent-app/image)
 
 ---
 
