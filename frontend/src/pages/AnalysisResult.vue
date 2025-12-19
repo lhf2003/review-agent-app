@@ -402,7 +402,9 @@ onMounted(() => {
                 <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
                   <el-tag v-for="(t, idx) in c.displayTags" :key="idx" size="small"
                     :color="t.type === 'main' ? tagColorMap[t.name] : ''" :type="t.type === 'main' ? '' : 'info'"
-                    :effect="t.type === 'main' ? 'dark' : 'plain'" :style="t.type === 'main' ? { border: 'none' } : {}">
+                    :effect="t.type === 'main' ? 'dark' : 'plain'"
+                    class="mini-tag"
+                    :style="t.type === 'main' ? { border: 'none' } : {}">
                     {{ t.name }}
                   </el-tag>
                 </div>
@@ -669,6 +671,16 @@ onMounted(() => {
   @include glow-hover($glow-color-light);
 }
 
+.mini-tag {
+  height: 20px !important;
+  padding: 0 6px !important;
+  font-size: 11px !important;
+  line-height: 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 .content-area-wrapper {
   flex: 1;
   min-width: 0;
@@ -696,15 +708,15 @@ onMounted(() => {
 .scroll-blur.top {
   top: 0;
   background: linear-gradient(to bottom, var(--el-bg-color-overlay) 0%, transparent 100%);
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, transparent 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 20%, transparent 100%);
 }
 
 .scroll-blur.bottom {
   bottom: 0;
   background: linear-gradient(to top, var(--el-bg-color-overlay) 0%, transparent 100%);
-  mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, transparent 100%);
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 20%, transparent 100%);
 }
 .tag-item:last-child {
   border-right: 1px solid var(--el-border-color);
