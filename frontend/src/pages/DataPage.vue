@@ -4,10 +4,7 @@ import { api } from '../api/http'
 import { useAuthStore } from '../stores/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
-import markdownit from 'markdown-it'
-import DOMPurify from 'dompurify'
-import hljs from 'highlight.js'
-import 'highlight.js/styles/atom-one-dark.css'
+import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -35,59 +32,13 @@ const logs = ref([])
 const showLogs = ref(false)
 let logStream = null
 
-const md = new markdownit({
-  breaks: true,
-  highlight: function (str, lang) {
-    const trimmed = str.trimEnd()
-    let highlighted = ''
-    const lg = (lang || '').trim().toLowerCase()
-    if (lg && hljs.getLanguage(lg)) {
-      try {
-        highlighted = hljs.highlight(trimmed, { language: lg, ignoreIllegals: true }).value
-      } catch (__) {}
-    } else {
-      highlighted = md.utils.escapeHtml(trimmed)
-    }
-    
-    return `<div class="code-block-wrapper"><div class="code-block-header"><span class="code-lang">${lg || 'text'}</span><button class="copy-btn">复制</button></div><div class="code-block-body"><pre><code class="hljs ${lg}">${highlighted}</code></pre></div></div>`
-  }
-})
-
-function handleMdClick(e) {
-  if (e.target.classList.contains('copy-btn')) {
-    const btn = e.target
-    const wrapper = btn.closest('.code-block-wrapper')
-    if (wrapper) {
-      const codeEl = wrapper.querySelector('pre code')
-      if (codeEl) {
-        const text = codeEl.textContent
-        navigator.clipboard.writeText(text).then(() => {
-          const originalText = btn.textContent
-          btn.textContent = '已复制'
-          btn.classList.add('copied')
-          setTimeout(() => {
-            btn.textContent = originalText
-            btn.classList.remove('copied')
-          }, 2000)
-        }).catch(err => {
-          ElMessage.error('复制失败')
-          console.error(err)
-        })
-      }
-    }
-  }
-}
-
-function toMdInput(v) {
-  if (typeof v === 'string') return v
-  if (v == null) return ''
-  try { return '```json\n' + JSON.stringify(v, null, 2) + '\n```' } catch { return String(v) }
-}
-const mdRenderedDrawer = ref('')
 function openContent(row) {
+  if (row.processedStatus === 2) {
+    router.push({ path: `/trace/${row.id}` })
+    return
+  }
   drawerTitle.value = row.fileName ? `内容 - ${row.fileName}` : `内容 #${row.id}`
   drawerContent.value = row.fileContent ?? ''
-  mdRenderedDrawer.value = DOMPurify.sanitize(md.render(toMdInput(drawerContent.value)))
   drawerVisible.value = true
 }
 
@@ -211,7 +162,7 @@ onMounted(load)
 
     <!-- 表格区域 -->
     <div class="table-wrapper">
-      <el-table :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" border stripe>
+      <el-table :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" border stripe size="small">
         <el-table-column :resizable="false" prop="id" label="ID" width="80" align="center" />
         <el-table-column :resizable="false" prop="fileName" label="文件名" min-width="150" align="center" show-overflow-tooltip />
         <el-table-column :resizable="false" prop="sessionCount" label="会话数" width="100" align="center" />
@@ -316,95 +267,14 @@ onMounted(load)
 
     <!-- 文件内容抽屉（Markdown） -->
     <el-drawer v-model="drawerVisible" :title="drawerTitle" direction="rtl" size="50%">
-      <div class="md-content" v-html="mdRenderedDrawer" @click="handleMdClick" style="height:100%;overflow:auto;"></div>
+      <div style="height:100%;overflow:auto;">
+        <MarkdownRenderer :content="drawerContent" />
+      </div>
     </el-drawer>
   </div>
 </template>
 
 <style scoped>
-.md-content :deep(.code-block-wrapper) {
-  margin: 1em 0;
-  border-radius: 8px;
-  background-color: #282c34;
-  overflow: hidden;
-  border: 1px solid #3e4451;
-}
-
-.md-content :deep(.code-block-header) {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background-color: transparent; /* Remove header background to blend in */
-  border-bottom: 1px solid #3e4451;
-  color: #abb2bf;
-  font-size: 12px;
-  user-select: none;
-}
-
-.md-content :deep(.code-block-body) {
-  display: flex;
-  background-color: #282c34;
-  padding: 12px 0;
-}
-
-.md-content :deep(.code-lang) {
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.md-content :deep(.copy-btn) {
-  cursor: pointer;
-  background: transparent;
-  border: 1px solid #5c6370;
-  color: #abb2bf;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 12px;
-  transition: all 0.2s;
-}
-
-.md-content :deep(.copy-btn:hover) {
-  background-color: #3e4451;
-  border-color: #abb2bf;
-  color: #fff;
-}
-
-.md-content :deep(.copy-btn.copied) {
-  border-color: #98c379;
-  color: #98c379;
-}
-
-.md-content :deep(pre) {
-  margin: 0;
-  padding: 0 12px;
-  overflow: auto;
-  background-color: transparent; /* Transparent so it uses wrapper/body bg */
-  border: none;
-  border-radius: 0;
-  flex: 1;
-  line-height: 1.5;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 14px;
-}
-
-.md-content :deep(code) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  background-color: transparent;
-  padding: 0;
-  border-radius: 0;
-  color: #abb2bf;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.md-content :deep(.hljs) {
-  display: block;
-  overflow-x: auto;
-  padding: 0;
-  background: transparent;
-}
-
 /* Page Layout Styles */
 .page-container {
   height: 100%;
@@ -459,5 +329,19 @@ onMounted(load)
 /* Dark mode adjustment */
 html.dark .pagination-bar {
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Compact Table Overrides */
+.table-wrapper :deep(.el-table__header-wrapper th) {
+  font-size: 12px;
+  padding: 4px 0;
+  height: 28px;
+}
+.table-wrapper :deep(.el-table__body-wrapper td) {
+  padding: 4px 0;
+  height: 32px;
+}
+.table-wrapper :deep(.el-table .cell) {
+  line-height: 20px;
 }
 </style>
