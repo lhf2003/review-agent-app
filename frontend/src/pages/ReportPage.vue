@@ -58,7 +58,7 @@ onMounted(() => {
         <p class="subtitle">查看每日和每周的审查结果与建议</p>
       </div>
       <div class="controls">
-        <el-radio-group v-model="reportType" @change="loadReports" size="large">
+        <el-radio-group v-model="reportType" @change="loadReports" size="default">
           <el-radio-button :value="1">日报</el-radio-button>
           <el-radio-button :value="2">周报</el-radio-button>
         </el-radio-group>
@@ -217,7 +217,7 @@ onMounted(() => {
 .stack-card {
   background: var(--el-bg-color-overlay);
   border-radius: 16px;
-  box-shadow: var(--el-box-shadow);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08); /* Custom shadow to reduce top shadow */
   border: 1px solid var(--el-border-color-light);
   overflow: hidden;
   transition: all 0.3s ease;
@@ -228,10 +228,16 @@ onMounted(() => {
   min-height: 400px;
   display: flex;
   flex-direction: column;
+
+  /* Fix for jagged edges/white lines during rotation */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  outline: 1px solid transparent;
 }
 
 .stack-card:hover {
-  box-shadow: var(--el-box-shadow-dark);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12); /* Increased offset for hover state too */
   transform: translateX(30px) rotate(2deg);
 }
 
