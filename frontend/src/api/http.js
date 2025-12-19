@@ -250,6 +250,10 @@ export const api = {
   getAnalysisResultByIds(dataId, analysisId) {
     return request('/analysis/result', { params: { dataId, analysisId } })
   },
+  // session trace
+  getSessionTrace(fileId) {
+    return request('/session-trace/get', { params: { fileId } })
+  },
   getFileNameList() {
     return request('/analysis/file-name/list')
   },

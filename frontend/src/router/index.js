@@ -11,6 +11,7 @@ const SyncHistoryPage = () => import('../pages/SyncHistoryPage.vue')
 const FileDetailPage = () => import('../pages/FileDetailPage.vue')
 const WordCloudPage = () => import('../pages/WordCloudPage.vue')
 const ReportPage = () => import('../pages/ReportPage.vue')
+const SessionTracePage = () => import('../pages/SessionTracePage.vue')
 
 const isFileProtocol = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:'
 const history = isFileProtocol ? createWebHashHistory(import.meta.env.BASE_URL) : createWebHistory(import.meta.env.BASE_URL)
@@ -28,7 +29,8 @@ const router = createRouter({
     { path: '/sync', component: SyncHistoryPage },
     { path: '/analysis/:id', component: FileDetailPage },
     { path: '/word-cloud', component: WordCloudPage },
-    { path: '/report', component: ReportPage }
+    { path: '/report', component: ReportPage },
+    { path: '/trace/:fileId', component: SessionTracePage }
   ],
 })
 
