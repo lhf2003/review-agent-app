@@ -1,0 +1,15 @@
+@import './variables';
+
+@mixin glow-hover($color: $glow-color-light) {
+  transition: box-shadow $glow-transition-duration ease-in-out, transform $glow-transition-duration ease-in-out;
+  
+  &:hover {
+    box-shadow: 0 0 $glow-blur-radius $glow-spread-radius $color;
+    // Optional: Add a slight lift
+    transform: translateY(-1px);
+  }
+}
+
+// Mobile optimization: Use simpler effect or disable if performance is an issue
+// However, box-shadow is generally performant enough on modern mobile devices.
+// We can use media queries if strictly needed, but for now we keep it responsive.
