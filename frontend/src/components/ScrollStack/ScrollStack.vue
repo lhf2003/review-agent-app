@@ -46,6 +46,6 @@ defineExpose({
 
 .scroll-stack-content {
   position: relative;
-  padding-bottom: 100px; /* Extra space for scrolling */
+  /* padding-bottom: 100px; Extra space for scrolling - Removed to prevent overscroll */
 }
 </style>
