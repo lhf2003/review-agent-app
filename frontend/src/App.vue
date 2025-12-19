@@ -402,7 +402,6 @@ watch(() => auth.isAuthenticated, (val) => {
 .chat-trigger-bar:hover {
   background: var(--el-fill-color-light);
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  border-color: var(--el-color-primary-light-5);
   transform: translateY(-1px);
 }
 .trigger-icon { font-size: 18px; margin-right: 10px; color: var(--el-text-color-regular); }
