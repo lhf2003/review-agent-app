@@ -14,9 +14,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 会话提取节点：提取出不同会话的上下文（将一个文件内容提取出不同会话）
@@ -107,7 +108,7 @@ public class SessionExtractionNode implements NodeAction {
             nodeExecute.setUserId(userId);
             nodeExecute.setFileId(fileId);
 
-            handleData(originalContent, nodeExecute);
+            handleSessionContent(originalContent, nodeExecute);
 
             nodeDtoList.add(nodeExecute);
         }
@@ -119,19 +120,27 @@ public class SessionExtractionNode implements NodeAction {
      * @param originalContent 文件内容
      * @param nodeExecute 会话信息对象
      */
-    private void handleData(String originalContent, NodeExecuteDto nodeExecute) {
+    private void handleSessionContent(String originalContent, NodeExecuteDto nodeExecute) {
         Integer startIndex = nodeExecute.getSessionStart();
         Integer endIndex = nodeExecute.getSessionEnd();
-        // 提取指定会话内容
-        String regex = "(?m)^\\s*(?=#\\s+\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2})";
-        String[] blocks = originalContent.split(regex);
-        List<String> blockList = Arrays.stream(blocks).filter(block -> !block.trim().isEmpty()).toList();
+
+        String regex = "(?ms)(^\\s*#\\s+\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}.*?)(?=(?:^\\s*#\\s+\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2})|\\z)";
+
+        Matcher matcher = Pattern.compile(regex).matcher(originalContent);
         StringBuilder stringBuilder = new StringBuilder();
-        for (int i = startIndex - 1; i < endIndex; i++) {
-            stringBuilder.append(blockList.get(i)).append("\n");
+        int count = 0;
+        while (matcher.find()) {
+            count++;
+            String session = matcher.group();
+            if (count == startIndex) {
+                nodeExecute.setSessionStart(matcher.start());
+                stringBuilder.append(session).append("\n");
+            }
+            if (count == endIndex) {
+                nodeExecute.setSessionEnd(matcher.end());
+                stringBuilder.append(session).append("\n");
+            }
         }
-        nodeExecute.setSessionStart(startIndex);
-        nodeExecute.setSessionEnd(endIndex);
         nodeExecute.setSessionContent(stringBuilder.toString());
     }
 
