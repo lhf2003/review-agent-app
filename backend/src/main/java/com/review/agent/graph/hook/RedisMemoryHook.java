@@ -9,7 +9,6 @@ import com.alibaba.cloud.ai.graph.store.Store;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -66,7 +65,6 @@ public class RedisMemoryHook extends ModelHook {
         if (messages.isEmpty()) {
             return CompletableFuture.completedFuture(Map.of());
         }
-//        UserMessage userMessage = (UserMessage) messages.get(0);
         AssistantMessage assistantMessage = (AssistantMessage) messages.get(messages.size() - 1);
         Store store = config.store();
         List<String> namespace = (List<String>) config.metadata("namespace").get();
@@ -75,7 +73,6 @@ public class RedisMemoryHook extends ModelHook {
             StoreItem storeItem = item.get();
             Map<String, Object> value = storeItem.getValue();
             List<Message> contextList = (List<Message>) value.get("context");
-//            contextList.add(userMessage);
             contextList.add(assistantMessage);
         }
         return CompletableFuture.completedFuture(Map.of());

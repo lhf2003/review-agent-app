@@ -38,7 +38,14 @@ public class CommonConstant {
 
     // endregion
 
+    /**
+     * 报告类型-日报
+     */
     public static final int DAILY_REPORT = 1;
+
+     /**
+     * 报告类型-周报
+     */
     public static final int WEEKLY_REPORT = 2;
 
 }

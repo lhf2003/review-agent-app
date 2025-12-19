@@ -117,7 +117,7 @@ public class ChatService {
         // 调用限制
         ModelCallLimitHook modelCallLimitHook = ModelCallLimitHook.builder().runLimit(5).build();
 
-        String applicationContext = "chitchat";
+        String applicationContext = "chat-memory";
         List<String> namespace = List.of(userId.toString(), applicationContext);
 
         // 在此命名空间内搜索记忆，通过内容等价性过滤，按向量相似度排序
@@ -175,5 +175,9 @@ public class ChatService {
         // 实际应用中需要更复杂的分割逻辑，这里仅做简单示例
         // 比如可以按句号、逗号或固定字符数进行分割
         return Arrays.asList(content.split("(?<=[。！？])|(?<=[.!?])"));
+    }
+
+    public void clearContext(Long userId) {
+
     }
 }

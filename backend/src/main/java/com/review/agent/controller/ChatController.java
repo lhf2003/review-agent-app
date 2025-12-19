@@ -1,6 +1,8 @@
 package com.review.agent.controller;
 
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.review.agent.common.exception.BaseResponse;
+import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.service.ChatService;
 import jakarta.annotation.Resource;
 import org.springframework.http.MediaType;
@@ -27,6 +29,15 @@ public class ChatController {
     @PostMapping(path = "/with-analysis", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> chatWithAnalysisResult(@RequestHeader("userId") Long userId, @RequestParam("request") String request) throws GraphRunnerException {
         return chatService.chatWithAnalysisResult(userId, request);
+    }
+
+    /**
+     * 清空上下文
+     */
+    @GetMapping("/clear")
+    public BaseResponse<Void> clearContext(@RequestHeader("userId") Long userId) {
+        chatService.clearContext(userId);
+        return ResultUtil.success();
     }
 
 }
