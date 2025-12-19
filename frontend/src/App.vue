@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { ref, watch, onMounted, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Moon, Sunny, FullScreen } from '@element-plus/icons-vue'
 import { useAuthStore } from './stores/auth'
@@ -92,14 +92,33 @@ const profileForm = ref({ avatar: '', newPassword: '', confirm: '' })
 const chatInput = ref('')
 
 // Chat trigger logic
-const placeholderMessages = ['你需要我的帮助吗？', '发现一个新文件，需要我分析吗？', '输入关键字搜索分析结果...', '试试问我关于代码的问题']
+const placeholderMessages = ref(['你需要我的帮助吗？', '发现一个新文件，需要我分析吗？', '输入关键字搜索分析结果...', '试试问我关于代码的问题'])
 const currentPlaceholderIndex = ref(0)
 let placeholderInterval = null
 
+const displayText = computed(() => {
+  if (chatStore.hasUnreadMessage && chatStore.messages.length > 0) {
+    const lastMsg = chatStore.messages[chatStore.messages.length - 1]
+    if (lastMsg && lastMsg.role === 'assistant') {
+      return lastMsg.content
+    }
+    return '收到一条新消息'
+  }
+  return placeholderMessages.value[currentPlaceholderIndex.value]
+})
+
 onMounted(() => {
+  api.getChatPlaceholders().then(list => {
+    if (Array.isArray(list) && list.length > 0) {
+      placeholderMessages.value = list
+    }
+  })
+
   placeholderInterval = setInterval(() => {
-    currentPlaceholderIndex.value = (currentPlaceholderIndex.value + 1) % placeholderMessages.length
-  }, 4000)
+    if (!chatStore.hasUnreadMessage) {
+      currentPlaceholderIndex.value = (currentPlaceholderIndex.value + 1) % placeholderMessages.value.length
+    }
+  }, 6000)
   themeStore.initTheme()
 })
 
@@ -217,11 +236,11 @@ watch(() => auth.isAuthenticated, (val) => {
           <div class="title">Review Agent</div>
         </div>
         <div class="header-center">
-          <div class="chat-trigger-bar" @click="chatStore.open">
+          <div class="chat-trigger-bar" @click="chatStore.open" :class="{ 'has-unread': chatStore.hasUnreadMessage }">
             <el-icon class="trigger-icon"><ChatLineRound /></el-icon>
             <div class="rolling-text-container">
               <transition name="fade-slide" mode="out-in">
-                <span :key="currentPlaceholderIndex" class="rolling-text">{{ placeholderMessages[currentPlaceholderIndex] }}</span>
+                <span :key="chatStore.hasUnreadMessage ? 'unread' : currentPlaceholderIndex" class="rolling-text">{{ displayText }}</span>
               </transition>
             </div>
           </div>
@@ -367,6 +386,19 @@ watch(() => auth.isAuthenticated, (val) => {
   color: var(--el-text-color-secondary);
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
+
+@keyframes breathe-glow {
+  0% { box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.2); border-color: var(--el-color-primary-light-5); }
+  50% { box-shadow: 0 0 20px 5px rgba(64, 158, 255, 0.6); border-color: var(--el-color-primary); }
+  100% { box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.2); border-color: var(--el-color-primary-light-5); }
+}
+
+.chat-trigger-bar.has-unread {
+  animation: breathe-glow 2s infinite ease-in-out;
+  border-color: var(--el-color-primary);
+  background: var(--el-fill-color-light);
+}
+
 .chat-trigger-bar:hover {
   background: var(--el-fill-color-light);
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);

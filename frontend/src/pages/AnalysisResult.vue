@@ -313,7 +313,12 @@ async function confirmAddTag(type) {
 }
 
 function onChat(card) {
-  chatStore.startAnalysisChat(card)
+  if (typeof chatStore.startAnalysisChat === 'function') {
+    chatStore.startAnalysisChat(card)
+  } else {
+    console.error('chatStore.startAnalysisChat is missing', chatStore)
+    ElMessage.error('聊天功能暂不可用，请刷新页面重试')
+  }
 }
 
 onMounted(() => {

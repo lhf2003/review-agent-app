@@ -381,6 +381,16 @@ export const api = {
     this._handleStream(p, handlers)
     return { cancel: () => controller.abort() }
   },
+  
+  // 埋点：获取聊天框轮播消息列表
+  getChatPlaceholders() {
+    return request('/chat/placeholders').catch(() => [
+      '你需要我的帮助吗？',
+      '发现一个新文件，需要我分析吗？',
+      '输入关键字搜索分析结果...',
+      '试试问我关于代码的问题'
+    ])
+  },
  
    analysisLogStream(handlers = {}) {
      const controller = new AbortController()
