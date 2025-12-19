@@ -51,8 +51,8 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
                                         @Param("tagId") Long tagId,
                                         @Param("userId") Long userId);
 
-    @Query("select a from AnalysisResult a where a.userId = :userId and a.fileId = :dataId order by a.createdTime desc limit 1")
-    AnalysisResult findByUserIdAndDataId(Long userId, Long dataId);
+    @Query("select a from AnalysisResult a where a.userId = :userId and a.fileId = :dataId order by a.createdTime desc")
+    List<AnalysisResult> findByUserIdAndDataId(Long userId, Long dataId);
 
     @Query("""
             select a from AnalysisResult a where a.userId = :userId 

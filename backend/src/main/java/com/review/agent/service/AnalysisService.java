@@ -16,8 +16,10 @@ import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.AnalysisTagRepository;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.document.Document;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -44,10 +46,13 @@ public class AnalysisService {
     private CompiledGraph analysisCompiledGraph;
     @Resource
     private SseService sseService;
+    @Resource
+    private VectorStoreService vectorStoreService;
 
     /**
      * 开始分析
      */
+    @Transactional(rollbackFor = Exception.class)
     public void startAnalysis(Long userId, Long fileId) {
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
@@ -107,26 +112,12 @@ public class AnalysisService {
             }
         }
 
+        // 封装结果
         if (!CollectionUtils.isEmpty(nodeExecuteDtoList)) {
             dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_PROCESSED);
             for (NodeExecuteDto executeDto : nodeExecuteDtoList) {
-                AnalysisResult analysisResult = new AnalysisResult();
-                analysisResult.setUserId(executeDto.getUserId());
-                analysisResult.setFileId(executeDto.getFileId());
-                analysisResult.setProblemStatement(executeDto.getProblemStatement());
-                analysisResult.setSolution(executeDto.getSolution());
-                analysisResult.setSessionStart(executeDto.getSessionStart());
-                analysisResult.setSessionEnd(executeDto.getSessionEnd());
-                analysisResult.setSessionContent(executeDto.getSessionContent());
-                analysisResult.setStatus(executeDto.getStatus());
-                analysisResult.setCreatedTime(LocalDateTime.now());
-                analysisResultList.add(analysisResult);
-
-                AnalysisTag analysisTag = new AnalysisTag();
-                analysisTag.setTagId(executeDto.getTagId());
-                analysisTag.setSubTagId(executeDto.getSubTagId());
-                analysisTag.setRecommends(executeDto.getRecommends());
-                analysisTagList.add(analysisTag);
+                String vectorId = addVectorToRedis(executeDto);
+                buildAnalysisResult(vectorId, executeDto, analysisResultList, analysisTagList);
             }
         } else {
             dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_ERROR);
@@ -143,6 +134,45 @@ public class AnalysisService {
         analysisTagRepository.saveAll(analysisTagList);
 
         log.info("分析结束");
+    }
+
+    /**
+     * 添加到Redis向量数据库
+     * @param executeDto 节点执行结果
+     * @return 向量ID
+     */
+    private String addVectorToRedis(NodeExecuteDto executeDto) {
+        Map<String, Object> metaDataMap = new HashMap<>();
+        metaDataMap.put("userId", executeDto.getUserId().toString());
+        metaDataMap.put("fileId", executeDto.getFileId().toString());
+        metaDataMap.put("solution", executeDto.getSolution());
+        metaDataMap.put("sessionContent", executeDto.getSessionContent());
+
+        String vectorId = UUID.randomUUID().toString();
+        Document document = new Document(vectorId, executeDto.getProblemStatement(), metaDataMap);
+        vectorStoreService.addOne(document);
+        return vectorId;
+    }
+
+    private void buildAnalysisResult(String vectorId, NodeExecuteDto executeDto, List<AnalysisResult> analysisResultList, List<AnalysisTag> analysisTagList) {
+        AnalysisResult analysisResult = new AnalysisResult();
+        analysisResult.setVectorId(vectorId);
+        analysisResult.setUserId(executeDto.getUserId());
+        analysisResult.setFileId(executeDto.getFileId());
+        analysisResult.setProblemStatement(executeDto.getProblemStatement());
+        analysisResult.setSolution(executeDto.getSolution());
+        analysisResult.setSessionStart(executeDto.getSessionStart());
+        analysisResult.setSessionEnd(executeDto.getSessionEnd());
+        analysisResult.setSessionContent(executeDto.getSessionContent());
+        analysisResult.setStatus(executeDto.getStatus());
+        analysisResult.setCreatedTime(LocalDateTime.now());
+        analysisResultList.add(analysisResult);
+
+        AnalysisTag analysisTag = new AnalysisTag();
+        analysisTag.setTagId(executeDto.getTagId());
+        analysisTag.setSubTagId(executeDto.getSubTagId());
+        analysisTag.setRecommends(executeDto.getRecommends());
+        analysisTagList.add(analysisTag);
     }
 
 
