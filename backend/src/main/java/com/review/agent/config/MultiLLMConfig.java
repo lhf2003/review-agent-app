@@ -6,11 +6,19 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
 
 @Configuration
 public class MultiLLMConfig {
+    @Value("${spring.ai.dashscope.api-key}")
+    private String apiKey;
+    @Value("${spring.ai.dashscope.embedding.options.model}")
+    private String embeddingModel;
+    @Value("${spring.ai.dashscope.embedding.options.dimensions}")
+    private Integer dimensions;
 
     // 模型配置常量 - 默认使用百炼模型
     private static final String CHAT_MODEL = "qwen-plus";
@@ -30,7 +38,37 @@ public class MultiLLMConfig {
     private static final int CLASSIFY_MAX_TOKENS = 1000;
     private static final int EXTRACT_MAX_TOKENS = 1000;
 
+    @Bean
+    public DashScopeApi dashScopeApi(@Qualifier("restClient") RestClient.Builder restClient) {
+        return DashScopeApi.builder().apiKey(apiKey).restClientBuilder(restClient).build();
+    }
 
+
+    // region 向量嵌入模型配置
+//    @Bean
+//    public EmbeddingModel dashScopeEmbeddingModel(DashScopeApi dashScopeApi) {
+//        DashScopeEmbeddingOptions dashScopeEmbeddingOptions = DashScopeEmbeddingOptions.builder()
+//                .model(embeddingModel)
+//                .dimensions(dimensions)
+//                .textType(DashScopeModel.EmbeddingTextType.QUERY.getValue())
+//                .build();
+//        return new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED, dashScopeEmbeddingOptions);
+//    }
+
+//    @Bean
+//    public EmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi) {
+//        return OllamaEmbeddingModel.builder()
+//                .ollamaApi(ollamaApi)
+//                .build();
+//    }
+
+    // endregion
+
+    // region 模型配置 - 不同场景下的模型选择
+
+    /**
+     * 闲聊助手专用模型 - 擅长基础对话和问题回答
+     */
     @Bean("chatModel")
     public DashScopeChatModel chatModel(DashScopeApi dashScopeApi) {
         return DashScopeChatModel.builder()
@@ -105,6 +143,9 @@ public class MultiLLMConfig {
     public ChatClient ollamachatClient(@Qualifier("ollamaChatModel") OllamaChatModel ollamaChatModel) {
         return ChatClient.builder(ollamaChatModel).defaultAdvisors(new TokenLoggerAdvisor()).build();
     }
+    // endregion
+
+    // region ChatClient 配置 - 为不同模型创建对应的ChatClient
 
     /**
      * 数据分析助手专用ChatClient
@@ -129,4 +170,5 @@ public class MultiLLMConfig {
     public ChatClient imageChatClient(@Qualifier("extractChatModel") DashScopeChatModel imageChatModel) {
         return ChatClient.builder(imageChatModel).defaultAdvisors(new TokenLoggerAdvisor()).build();
     }
+    // endregion
 }
