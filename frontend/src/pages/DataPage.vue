@@ -20,6 +20,10 @@ const statusFilter = ref(null)
 const importDialog = ref(false)
 const importFile = ref(null)
 const uploadRef = ref(null)
+const importSource = ref(0)
+
+// Filter source
+const sourceFilter = ref(0) // Default to Local (0)
 
 const resultDialog = ref(false)
 const result = ref({ title: '', problemStatement: '', solution: '' })
@@ -45,7 +49,14 @@ function openContent(row) {
 async function load() {
   try {
     loading.value = true
-    const resp = await api.dataPage({ userId: auth.userId, page: page.value - 1, size: pageSize.value, fileName: searchName.value || null, processedStatus: statusFilter.value })
+    const resp = await api.dataPage({ 
+      userId: auth.userId, 
+      page: page.value - 1, 
+      size: pageSize.value, 
+      fileName: searchName.value || null, 
+      processedStatus: statusFilter.value,
+      source: sourceFilter.value 
+    })
     const pageData = resp?.data || resp
     const content = pageData?.content || []
     tableData.value = content
@@ -57,16 +68,22 @@ async function load() {
   }
 }
 
-function openImport() { importDialog.value = true }
-async function doImport() {
-  if (!importFile.value) { ElMessage.warning('请选择文件'); return }
-  try {
-    await api.dataImport(auth.userId, importFile.value)
-    ElMessage.success('导入成功')
-    importDialog.value = false
+function openImport() { 
+    importDialog.value = true 
+    importSource.value = 0
     importFile.value = null
+}
+async function doImport() {
+  try {
+    if (!importFile.value) { ElMessage.warning('请选择文件'); return }
+    await api.dataImport(auth.userId, importFile.value, importSource.value)
+    
+    ElMessage.success('操作成功')
+    importDialog.value = false
+    // Switch to the tab we just imported to
+    sourceFilter.value = importSource.value
     await load()
-  } catch (e) { ElMessage.error(`导入失败: ${e.message}`) }
+  } catch (e) { ElMessage.error(`操作失败: ${e.message}`) }
 }
 
 function onAction(row) {
@@ -123,12 +140,8 @@ function onAction(row) {
 
 async function doDelete(row) {
   try {
-    await ElMessageBox.confirm(`确认删除数据 #${row.id}？`, '提示', { type: 'warning' })
-    const resp = await api.dataDelete(row.id)
-    if (resp?.ok === false) {
-      ElMessage.warning('后端缺少 /data/delete 接口，已占位埋点')
-      return
-    }
+    await ElMessageBox.confirm(`确认删除数据 ${row.fileName || `#${row.id}`}？`, '提示', { type: 'warning' })
+    await api.dataDelete(row.id)
     ElMessage.success('删除成功')
     await load()
   } catch (e) {
@@ -143,6 +156,12 @@ onMounted(load)
   <div class="page-container">
     <!-- 顶部工具栏 -->
     <div class="toolbar">
+      <el-radio-group v-model="sourceFilter" @change="() => { page = 1; load() }" style="margin-right: 12px">
+        <el-radio-button :label="0">本地文件</el-radio-button>
+        <el-radio-button :label="1">Gemini</el-radio-button>
+        <el-radio-button :label="2">ChatGPT</el-radio-button>
+      </el-radio-group>
+
       <el-input v-model="searchName" placeholder="搜索文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="max-width:280px" />
       <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width:160px" @change="() => { page = 1; load() } ">
         <el-option :value="null" label="全部" />
@@ -163,6 +182,9 @@ onMounted(load)
     <!-- 表格区域 -->
     <div class="table-wrapper">
       <el-table :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" border stripe size="small">
+        <template #empty>
+            <el-empty description="暂无数据" :image-size="100" />
+        </template>
         <el-table-column :resizable="false" prop="id" label="ID" width="80" align="center" />
         <el-table-column :resizable="false" prop="fileName" label="文件名" min-width="150" align="center" show-overflow-tooltip />
         <el-table-column :resizable="false" prop="sessionCount" label="会话数" width="100" align="center" />
@@ -183,7 +205,7 @@ onMounted(load)
         </el-table-column>
         <el-table-column :resizable="false" label="操作" width="300" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button size="default" :type="row.processedStatus === 2 ? 'success' : (row.processedStatus === 1 ? 'warning' : 'primary')" @click="onAction(row)">{{ row.processedStatus === 2 ? '查看' : (row.processedStatus === 1 ? '分析中' : '分析') }}</el-button>
+            <el-button size="default" :type="row.processedStatus === 2 ? 'success' : (row.processedStatus === 1 ? 'warning' : 'primary')" @click="onAction(row)">{{ row.processedStatus === 2 ? '结果' : (row.processedStatus === 1 ? '分析中' : '分析') }}</el-button>
             <el-button size="default" type="danger" plain @click="doDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -220,37 +242,49 @@ onMounted(load)
       </template>
     </el-dialog>
 
-    <el-dialog v-model="importDialog" title="导入文件" width="420px" align-center>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <!-- 文件选择 -->
-        <el-upload
-          ref="uploadRef"
-          :auto-upload="false"
-          :show-file-list="false"
-          :on-change="(file) => importFile = file.raw"
-          accept=".md,.txt"
-        >
-          <template #trigger>
-            <el-button type="primary" plain icon="Upload">选择文件</el-button>
-          </template>
-          <span style="margin-left:8px;color:var(--el-text-color-secondary);font-size:var(--el-font-size-small);">
-            支持 txt、md
-          </span>
-        </el-upload>
+    <el-dialog v-model="importDialog" title="导入/新建数据" width="500px" align-center>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        
+        <!-- 数据来源 -->
+        <div>
+            <div style="margin-bottom:8px;font-weight:bold;">数据来源</div>
+            <el-radio-group v-model="importSource">
+                <el-radio :label="0">本地文件</el-radio>
+                <el-radio :label="1">Gemini</el-radio>
+                <el-radio :label="2">ChatGPT</el-radio>
+            </el-radio-group>
+        </div>
 
-        <!-- 已选文件提示 -->
-        <el-alert
-          v-if="importFile"
-          :title="`已选择：${importFile.name}`"
-          type="info"
-          show-icon
-          closeable = "true"
-        />
+        <!-- 统一文件上传 -->
+        <div>
+             <el-upload
+              ref="uploadRef"
+              :auto-upload="false"
+              :show-file-list="false"
+              :on-change="(file) => importFile = file.raw"
+              accept=".md,.txt,.json,.html"
+            >
+              <template #trigger>
+                <el-button type="primary" plain icon="Upload">选择文件</el-button>
+              </template>
+              <span style="margin-left:8px;color:var(--el-text-color-secondary);font-size:var(--el-font-size-small);">
+                支持 txt、md、json、html
+              </span>
+            </el-upload>
+             <el-alert
+              v-if="importFile"
+              :title="`已选择：${importFile.name}`"
+              type="info"
+              show-icon
+              closeable = "true"
+              style="margin-top:8px;"
+            />
+        </div>
 
         <!-- 按钮组 -->
-        <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
           <el-button @click="importDialog=false">取消</el-button>
-          <el-button type="primary" :disabled="!importFile" @click="doImport">导入</el-button>
+          <el-button type="primary" @click="doImport">确认</el-button>
         </div>
       </div>
     </el-dialog>
@@ -267,9 +301,9 @@ onMounted(load)
 
     <!-- 文件内容抽屉（Markdown） -->
     <el-drawer v-model="drawerVisible" :title="drawerTitle" direction="rtl" size="50%">
-      <div style="height:100%;overflow:auto;">
+      <CustomScroll>
         <MarkdownRenderer :content="drawerContent" />
-      </div>
+      </CustomScroll>
     </el-drawer>
   </div>
 </template>
