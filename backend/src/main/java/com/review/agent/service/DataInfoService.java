@@ -42,7 +42,8 @@ public class DataInfoService {
         String fileName = fileRequest.getFileName();
         Date startTime = fileRequest.getStartTime();
         Date endTime = fileRequest.getEndTime();
-        return dataInfoRepository.findByPage(pageable, userId, fileName, processedStatus, startTime, endTime);
+        Integer source = fileRequest.getSource();
+        return dataInfoRepository.findByPage(pageable, userId, fileName, processedStatus, startTime, endTime, source);
     }
 
     public DataInfo findById(Long id) {
@@ -134,9 +135,9 @@ public class DataInfoService {
         if (existingData == null) {
             DataInfo dataInfo = new DataInfo();
             dataInfo.setUserId(userId);
-            dataInfo.setFilePath(filePath);
             dataInfo.setFileName(newFileData.getName());
             dataInfo.setFileContent(content);
+            dataInfo.setSource(DATA_SOURCE_LOCAL);
             dataInfo.setProcessedStatus(FILE_PROCESS_STATUS_NOT_PROCESSED);
             dataInfo.setCreatedTime(new Date());
             dataInfo.setUpdateTime(currentDateTime);
@@ -159,27 +160,42 @@ public class DataInfoService {
         return dataInfoRepository.findByUserId(userId);
     }
 
-    public DataInfo importData(Long userId, String originalFilename, String content) {
+    public DataInfo importData(Long userId, String originalFilename, String content, Integer source) {
         DataInfo existing = dataInfoRepository.findByFileName(originalFilename);
         if (existing == null) {
             DataInfo dataInfo = new DataInfo();
             dataInfo.setUserId(userId);
-            dataInfo.setFilePath(originalFilename);
             dataInfo.setFileName(originalFilename);
             dataInfo.setFileContent(content);
+            dataInfo.setSource(source);
             dataInfo.setProcessedStatus(FILE_PROCESS_STATUS_NOT_PROCESSED);
             dataInfo.setCreatedTime(new Date());
             dataInfo.setUpdateTime(new Date());
             return dataInfoRepository.save(dataInfo);
         } else {
             existing.setFileContent(content);
+            existing.setSource(source);
             existing.setProcessedStatus(FILE_PROCESS_STATUS_UPDATE);
             existing.setUpdateTime(new Date());
             return dataInfoRepository.save(existing);
         }
     }
 
+    public DataInfo createData(DataInfo dataInfo) {
+        dataInfo.setProcessedStatus(FILE_PROCESS_STATUS_NOT_PROCESSED);
+        dataInfo.setCreatedTime(new Date());
+        dataInfo.setUpdateTime(new Date());
+        if (dataInfo.getSource() == null) {
+            dataInfo.setSource(DATA_SOURCE_LOCAL);
+        }
+        return dataInfoRepository.save(dataInfo);
+    }
+
     public void update(DataInfo dataInfo) {
         dataInfoRepository.save(dataInfo);
+    }
+
+    public void delete(Long id) {
+        dataInfoRepository.deleteById(id);
     }
 }

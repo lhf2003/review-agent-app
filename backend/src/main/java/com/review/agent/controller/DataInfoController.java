@@ -60,14 +60,40 @@ public class DataInfoController {
      * @return 导入结果
      */
     @PostMapping("/import")
-    public BaseResponse<DataInfo> importData(@RequestHeader("userId") Long userId, @RequestPart("file") MultipartFile file) throws IOException {
+    public BaseResponse<DataInfo> importData(@RequestHeader("userId") Long userId, 
+                                             @RequestPart("file") MultipartFile file,
+                                             @RequestParam(value = "source", required = false, defaultValue = "0") Integer source) throws IOException {
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null) {
             originalFilename = "upload.txt";
         }
         String content = new String(file.getBytes());
-        DataInfo dataInfo = dataInfoService.importData(userId, originalFilename, content);
+        DataInfo dataInfo = dataInfoService.importData(userId, originalFilename, content, source);
         return ResultUtil.success(dataInfo);
+    }
+
+    /**
+     * 手动创建数据
+     * @param userId 用户ID
+     * @param dataInfo 数据信息
+     * @return 创建结果
+     */
+    @PostMapping("/create")
+    public BaseResponse<DataInfo> create(@RequestHeader("userId") Long userId, @RequestBody DataInfo dataInfo) {
+        dataInfo.setUserId(userId);
+        DataInfo created = dataInfoService.createData(dataInfo);
+        return ResultUtil.success(created);
+    }
+
+    /**
+     * 删除数据
+     * @param id 数据ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/delete")
+    public BaseResponse<Void> delete(@RequestParam("id") Long id) {
+        dataInfoService.delete(id);
+        return ResultUtil.success(null);
     }
 
     /**

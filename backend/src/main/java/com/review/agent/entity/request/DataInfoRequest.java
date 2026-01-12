@@ -29,4 +29,8 @@ public class DataInfoRequest {
      * 结束时间
      */
     private Date endTime;
+    /**
+     * 数据来源
+     */
+    private Integer source;
 }

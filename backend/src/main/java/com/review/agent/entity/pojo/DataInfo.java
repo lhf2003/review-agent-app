@@ -23,11 +23,6 @@ public class DataInfo {
     @Column(name = "user_id")
     private Long userId;
 
-    @Size(max = 255)
-    @NotNull
-    @Column(name = "file_path", nullable = false)
-    private String filePath;
-
     @Size(max = 100)
     @NotNull
     @Column(name = "file_name", nullable = false, length = 100)
@@ -36,6 +31,13 @@ public class DataInfo {
     @Lob
     @Column(name = "file_content")
     private String fileContent;
+
+    /**
+     * 数据来源 (0=LOCAL, 1=GEMINI, 2=CHATGPT)
+     */
+    @ColumnDefault("0")
+    @Column(name = "source")
+    private Integer source;
 
     /**
      * 处理状态（0=未分析, 1=已分析 2=正在分析）

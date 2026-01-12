@@ -48,4 +48,23 @@ public class CommonConstant {
      */
     public static final int WEEKLY_REPORT = 2;
 
+    // region 数据来源
+
+    /**
+     * 数据来源-本地
+     */
+    public static final int DATA_SOURCE_LOCAL = 0;
+
+    /**
+     * 数据来源-Gemini
+     */
+    public static final int DATA_SOURCE_GEMINI = 1;
+
+    /**
+     * 数据来源-ChatGPT
+     */
+    public static final int DATA_SOURCE_CHATGPT = 2;
+
+    // endregion
+
 }
