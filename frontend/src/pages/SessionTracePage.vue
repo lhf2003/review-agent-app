@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { api } from '../api/http'
 import { ElMessage } from 'element-plus'
@@ -18,12 +18,32 @@ const sessions = ref([])
 const activeSessionIndex = ref(-1)
 
 const showSimilarity = ref(false)
+const similarIssues = ref([])
 
 const activeSession = computed(() => {
   if (activeSessionIndex.value > -1 && sessions.value[activeSessionIndex.value]) {
     return sessions.value[activeSessionIndex.value]
   }
   return null
+})
+
+async function fetchSimilarIssues() {
+  if (!activeSession.value) {
+    similarIssues.value = []
+    return
+  }
+  try {
+    // Pass session ID if available
+    const res = await api.getSimilarIssues(activeSession.value.analysisResultId)
+    similarIssues.value = res || []
+  } catch (e) {
+    console.error(e)
+    similarIssues.value = []
+  }
+}
+
+watch(activeSession, () => {
+  fetchSimilarIssues()
 })
 
 async function loadData() {
@@ -36,12 +56,22 @@ async function loadData() {
       content.value = res.content || ''
       sessions.value = res.analysisResultInfoList || []
       
-      // Initialize active session from query or default to 0
-      const queryActive = parseInt(route.query.active)
-      if (!isNaN(queryActive) && sessions.value[queryActive]) {
-        activeSessionIndex.value = queryActive
-      } else if (sessions.value.length > 0) {
-        activeSessionIndex.value = 0
+      // Initialize active session
+      const queryActiveId = route.query.activeId
+      if (queryActiveId) {
+        const idx = sessions.value.findIndex(s => String(s.analysisResultId) === String(queryActiveId))
+        if (idx !== -1) {
+          activeSessionIndex.value = idx
+        }
+      }
+      
+      if (activeSessionIndex.value === -1) {
+        const queryActive = parseInt(route.query.active)
+        if (!isNaN(queryActive) && sessions.value[queryActive]) {
+          activeSessionIndex.value = queryActive
+        } else if (sessions.value.length > 0) {
+          activeSessionIndex.value = 0
+        }
       }
     }
   } catch (e) {
@@ -83,12 +113,15 @@ onMounted(() => {
     <div class="right-panel">
       <AnalysisCard 
         :session="activeSession"
+        :similarity-count="similarIssues.length"
         @show-similarity="showSimilarity = true"
       />
     </div>
 
     <SimilarityModal 
       v-model:visible="showSimilarity"
+      :issues="similarIssues"
+      :current-content="activeSession?.originContent || ''"
     />
   </div>
 </template>

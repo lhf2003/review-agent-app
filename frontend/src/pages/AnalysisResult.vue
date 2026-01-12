@@ -7,6 +7,7 @@ import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
 import { useRoute } from 'vue-router'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
+import CustomScroll from '../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
@@ -313,7 +314,7 @@ onMounted(() => {
         </el-card>
       </div>
       <div class="content-area-wrapper">
-        <div class="content-scroll-area">
+        <CustomScroll class="content-scroll-area">
           <template v-if="filteredCards.length">
             <div
               style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));column-gap:70px;row-gap:18px;">
@@ -355,7 +356,7 @@ onMounted(() => {
             </div>
           </template>
           <el-empty v-else description="尚未发现任何分析结果" />
-        </div>
+        </CustomScroll>
         <!-- Blur Overlays -->
         <div class="scroll-blur top"></div>
         <div class="scroll-blur bottom"></div>
@@ -535,7 +536,6 @@ onMounted(() => {
 
 .content-scroll-area {
   height: 100%;
-  overflow-y: auto;
   padding: 2px;
 }
 

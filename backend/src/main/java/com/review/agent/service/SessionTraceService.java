@@ -33,8 +33,10 @@ public class SessionTraceService {
             List<SessionTraceVo.AnalysisResultInfo> analysisResultInfoList = sessionTraceVo.getAnalysisResultInfoList();
             analysisResultList.forEach(analysisResult -> {
                 SessionTraceVo.AnalysisResultInfo analysisResultInfo = new SessionTraceVo.AnalysisResultInfo();
+                analysisResultInfo.setAnalysisResultId(analysisResult.getId());
                 analysisResultInfo.setProblemStatement(analysisResult.getProblemStatement());
                 analysisResultInfo.setSolution(analysisResult.getSolution());
+                analysisResultInfo.setOriginContent(analysisResult.getSessionContent());
                 analysisResultInfo.setStartIndex(analysisResult.getSessionStart());
                 analysisResultInfo.setEndIndex(analysisResult.getSessionEnd());
                 analysisResultInfoList.add(analysisResultInfo);

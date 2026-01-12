@@ -1,5 +1,6 @@
 <script setup>
 import { ref, provide, onMounted, onUnmounted } from 'vue'
+import CustomScroll from '../CustomScroll.vue'
 
 const props = defineProps({
   itemDistance: { type: Number, default: 100 },
@@ -28,18 +29,18 @@ defineExpose({
 </script>
 
 <template>
-  <div class="scroll-stack-container" ref="containerRef" @scroll="handleScroll">
+  <CustomScroll class="scroll-stack-container" ref="containerRef" @scroll="handleScroll">
     <div class="scroll-stack-content">
       <slot></slot>
     </div>
-  </div>
+  </CustomScroll>
 </template>
 
 <style scoped>
 .scroll-stack-container {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
+  /* overflow-y: auto; Handled by CustomScroll */
   position: relative;
   scroll-behavior: smooth;
 }

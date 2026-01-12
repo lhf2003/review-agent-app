@@ -1,19 +1,28 @@
 <script setup>
+import { ref } from 'vue'
 import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import MarkdownRenderer from '../MarkdownRenderer.vue'
+import AddToCollectionDialog from '../Collection/AddToCollectionDialog.vue'
 
 const props = defineProps({
   session: {
     type: Object,
     default: null
+  },
+  similarityCount: {
+    type: Number,
+    default: 0
   }
 })
 
 const emit = defineEmits(['show-similarity'])
+const collectionDialogRef = ref(null)
 
 function addToCollection() {
-  ElMessage.success('已加入合集 (Mock)')
+  if (props.session && collectionDialogRef.value) {
+    collectionDialogRef.value.open()
+  }
 }
 
 function showSimilarity() {
@@ -23,6 +32,11 @@ function showSimilarity() {
 
 <template>
   <div class="analysis-card" v-if="session">
+    <AddToCollectionDialog 
+      ref="collectionDialogRef" 
+      :session-id="session.analysisResultId || session.id" 
+    />
+    
     <div class="card-header">
       <div class="card-title">分析详情</div>
       <div class="card-actions">
@@ -46,7 +60,7 @@ function showSimilarity() {
 
     <div class="card-footer">
       <el-button type="primary" plain @click="addToCollection">加入合集</el-button>
-      <el-button @click="showSimilarity">查看相似问题 (3)</el-button>
+      <el-button @click="showSimilarity">查看相似问题 ({{ similarityCount }})</el-button>
     </div>
   </div>
   <div class="empty-state" v-else>
@@ -64,12 +78,10 @@ function showSimilarity() {
 }
 
 .card-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--el-border-color);
+  padding: 12px 16px;
   font-weight: 600;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  border-bottom: 1px solid var(--el-border-color);
+  background-color: var(--el-fill-color-light);
 }
 
 .card-content {

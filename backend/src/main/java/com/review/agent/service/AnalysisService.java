@@ -12,6 +12,7 @@ import com.review.agent.entity.projection.AnalysisResultInfo;
 import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisResultVo;
 import com.review.agent.entity.vo.AnalysisTagVo;
+import com.review.agent.entity.vo.SimilarAnalysisResultVo;
 import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.AnalysisTagRepository;
 import jakarta.annotation.Resource;
@@ -150,7 +151,7 @@ public class AnalysisService {
 
         String vectorId = UUID.randomUUID().toString();
         Document document = new Document(vectorId, executeDto.getProblemStatement(), metaDataMap);
-        vectorStoreService.addOne(document);
+        vectorStoreService.addOneAnalysisResult(document);
         return vectorId;
     }
 
@@ -314,5 +315,26 @@ public class AnalysisService {
                 AnalysisResultVo::getFileName,
                 () -> new TreeMap<>(Comparator.reverseOrder()),
                 Collectors.toList()));
+    }
+
+    public List<SimilarAnalysisResultVo> getSimilarity(Long userId, Long analysisId) {
+        AnalysisResult analysisResult = analysisResultRepository.findById(analysisId).orElse(null);
+        if (analysisResult == null) {
+            ExceptionUtils.throwDataNotFound("analysis result not found");
+        }
+
+        List<Document> documentList = vectorStoreService.searchSimilarityAnalysisResult(analysisResult.getProblemStatement(), userId);
+        if (CollectionUtils.isEmpty(documentList)) {
+            return Collections.emptyList();
+        }
+        // 构建相似分析结果VO列表
+        return documentList.stream().map(document -> {
+            SimilarAnalysisResultVo vo = new SimilarAnalysisResultVo();
+            vo.setVectorId(document.getId());
+            vo.setProblemStatement(document.getText());
+            vo.setOriginContent(document.getMetadata().get("sessionContent").toString());
+            vo.setScore((int) (document.getScore() * 100));
+            return vo;
+        }).toList();
     }
 }

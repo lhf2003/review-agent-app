@@ -14,9 +14,10 @@ public class SessionTraceVo {
 
     @Data
     public static class AnalysisResultInfo {
+        private Long analysisResultId;
         private String problemStatement;
         private String solution;
-        private String problem;
+        private String originContent;
         private Integer startIndex;
         private Integer endIndex;
     }

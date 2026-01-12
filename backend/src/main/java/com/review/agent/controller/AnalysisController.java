@@ -6,6 +6,7 @@ import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisResultVo;
 import com.review.agent.entity.vo.AnalysisTagVo;
+import com.review.agent.entity.vo.SimilarAnalysisResultVo;
 import com.review.agent.service.AnalysisService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -78,5 +79,16 @@ public class AnalysisController {
     @GetMapping("/result")
     public BaseResponse<AnalysisResult> getAnalysisResult(@RequestHeader("userId") Long userId, @RequestParam("dataId") Long dataId, @RequestParam("analysisId") Long analysisId) {
         return ResultUtil.success(analysisService.getAnalysisResult(userId, dataId, analysisId));
+    }
+
+    /**
+     * 查看指定会话的相似会话
+     * @param userId 用户ID
+     * @param analysisId 分析ID
+     * @return 相似会话列表
+     */
+    @GetMapping("/similarity")
+    public BaseResponse<List<SimilarAnalysisResultVo>> getSimilarity(@RequestHeader("userId") Long userId, @RequestParam("analysisId") Long analysisId) {
+        return ResultUtil.success(analysisService.getSimilarity(userId, analysisId));
     }
 }

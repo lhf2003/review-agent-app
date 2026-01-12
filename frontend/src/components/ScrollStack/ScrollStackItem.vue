@@ -13,9 +13,10 @@ const offsetTop = ref(0)
 
 onMounted(() => {
   if (itemRef.value && scrollContainer?.value) {
+    const container = scrollContainer.value.$el || scrollContainer.value
     const itemRect = itemRef.value.getBoundingClientRect()
-    const containerRect = scrollContainer.value.getBoundingClientRect()
-    const currentScroll = scrollContainer.value.scrollTop
+    const containerRect = container.getBoundingClientRect()
+    const currentScroll = container.scrollTop
     
     offsetTop.value = itemRect.top - containerRect.top + currentScroll
   }

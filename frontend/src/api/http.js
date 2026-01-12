@@ -261,6 +261,10 @@ export const api = {
     // 返回 { tags: [{ id, name, count }] }
     return request('/analysis/tag/list')
   },
+  getSimilarIssues(analysisResultId) {
+    return request('/analysis/similarity', { params: { analysisId: analysisResultId } })
+      .then((resp) => resp?.data || resp)
+  },
 
   // data page (DataInfo)
   dataPage(params) {
@@ -270,12 +274,17 @@ export const api = {
       userId: getUserId(),
       fileName: params?.fileName ?? null,
       processedStatus: params?.processedStatus ?? null,
+      source: params?.source ?? null
     }
     return request('/data/page', { method: 'POST', params: { page, size }, body })
   },
-  dataImport(userId, file) {
+  dataCreate(body) {
+    return request('/data/create', { method: 'POST', body })
+  },
+  dataImport(userId, file, source) {
     const formData = new FormData()
     formData.append('file', file)
+    if (source !== undefined && source !== null) formData.append('source', source)
     
     const headers = {}
     if (userId) {
@@ -292,8 +301,7 @@ export const api = {
     return request('/data/status', { method: 'PATCH', params: { id, status } })
   },
   dataDelete(id) {
-    // 缺少后端DELETE接口，占位埋点
-    return request('/data/delete', { method: 'DELETE', params: { id } }).catch(() => ({ ok: false, message: '后端未实现 /data/delete' }))
+    return request('/data/delete', { method: 'DELETE', params: { id } })
   },
 
   // report
@@ -405,6 +413,49 @@ export const api = {
      this._handleStream(p, handlers)
      return { cancel: () => controller.abort() }
    },
+   
+  // --- Collection API ---
+  getCollectionList() {
+    return request('/collection/list')
+      .then(data => ({ list: Array.isArray(data) ? data : [] }))
+      .catch(() => ({
+      list: [
+        { id: 1, name: 'React 性能优化', description: '关于 React 渲染与 Hooks 的常见问题', count: 5, updatedAt: '2025-10-01' },
+        { id: 2, name: '后端并发编程', description: 'Java 线程池与锁机制', count: 3, updatedAt: '2025-09-20' }
+      ]
+    }))
+  },
+  createCollection(data) {
+    return request('/collection/add', { method: 'POST', body: data })
+      .then(res => (typeof res === 'number' || typeof res === 'string' ? { id: res } : res))
+  },
+  updateCollection(id, data) {
+    return request('/collection/update', { method: 'PUT', body: data, params: { id } })
+  },
+  deleteCollection(id) {
+    return request('/collection/delete', { method: 'DELETE', params: { id } })
+  },
+  getCollectionDetail(id) {
+    return request('/collection/detail', { params: { id } })
+  },
+  addSessionToCollection(data) {
+    // data: { collectionId, sessionId }
+    const body = { action: 'ADD', analysisIds: [data.sessionId] }
+    return request('/collection/items', { method: 'POST', body, params: { collectionId: data.collectionId } })
+  },
+  removeSessionFromCollection(collectionId, sessionId) {
+    const body = { action: 'REMOVE', analysisIds: [sessionId] }
+    return request('/collection/items', { method: 'POST', body, params: { collectionId } })
+  },
+  generateQuiz(collectionId) {
+    return request('/collection/generate-quiz', { method: 'POST', body: { collectionId } })
+  },
+  submitAnswer(questionId, userAnswer) {
+    return request('/collection/submit-answer', { method: 'POST', body: { questionId, userAnswer } })
+  },
+  resetQuiz(quizId) {
+    return request('/collection/reset', { method: 'POST', body: { quizId } })
+  },
 }
 
 function normalizeResponse(resp) {

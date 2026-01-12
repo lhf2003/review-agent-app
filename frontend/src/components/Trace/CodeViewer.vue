@@ -78,13 +78,16 @@ watch(() => props.activeSessionIndex, async (newVal) => {
 
 <template>
   <div class="code-viewer" ref="viewerRef">
-    <pre><code><template v-for="(chunk, idx) in chunks" :key="idx"><span 
-        v-if="chunk.isHighlight" 
-        class="session-highlight" 
-        :class="{ active: chunk.sessionIndex === activeSessionIndex }"
-        :data-index="chunk.sessionIndex"
-        @click="handleChunkClick(chunk)"
-      >{{ chunk.text }}</span><span v-else>{{ chunk.text }}</span></template></code></pre>
+    <div class="content-wrapper">
+      <div v-if="activeSessionIndex > -1" class="mask-layer"></div>
+      <pre><code><template v-for="(chunk, idx) in chunks" :key="idx"><span 
+          v-if="chunk.isHighlight" 
+          class="session-highlight" 
+          :class="{ active: chunk.sessionIndex === activeSessionIndex }"
+          :data-index="chunk.sessionIndex"
+          @click="handleChunkClick(chunk)"
+        >{{ chunk.text }}</span><span v-else>{{ chunk.text }}</span></template></code></pre>
+    </div>
   </div>
 </template>
 
@@ -94,30 +97,55 @@ watch(() => props.activeSessionIndex, async (newVal) => {
   overflow: auto;
   background-color: #282c34; /* Atom One Dark bg */
   color: #abb2bf;
-  padding: 16px;
   font-family: 'Fira Code', monospace;
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap; /* Wrap long lines */
 }
 
+.content-wrapper {
+  position: relative;
+  min-height: 100%;
+  width: fit-content;
+  min-width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.mask-layer {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
 pre {
   margin: 0;
+  position: relative;
+  z-index: 0;
 }
 
 .session-highlight {
-  background-color: rgba(255, 215, 0, 0.15); /* Subtle yellow */
   cursor: pointer;
-  transition: background-color 0.2s;
-  border-bottom: 1px dashed rgba(255, 215, 0, 0.5);
+  transition: all 0.2s;
+  border-bottom: 1px dashed rgba(171, 178, 191, 0.3);
 }
 
 .session-highlight:hover {
-  background-color: rgba(255, 215, 0, 0.3);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .session-highlight.active {
-  background-color: rgba(255, 215, 0, 0.4);
-  border-bottom: 2px solid #ffd700;
+  position: relative;
+  z-index: 2;
+  background-color: #3e4451;
+  box-shadow: 0 0 0 4px #3e4451;
+  border-radius: 4px;
+  color: #fff;
+  border-bottom: none;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 </style>

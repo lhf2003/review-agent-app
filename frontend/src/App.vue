@@ -185,6 +185,13 @@ watch(() => auth.isAuthenticated, (val) => {
             </el-menu-item>
           </template>
         </el-tooltip>
+                <el-tooltip content="合集" placement="right">
+          <template #default>
+            <el-menu-item index="/collections">
+              <el-icon><Files /></el-icon>
+            </el-menu-item>
+          </template>
+        </el-tooltip>
         <el-tooltip content="分析结果" placement="right">
           <template #default>
             <el-menu-item index="/analysis">
