@@ -140,7 +140,7 @@ function onAction(row) {
 
 async function doDelete(row) {
   try {
-    await ElMessageBox.confirm(`确认删除数据 ${row.fileName || `#${row.id}`}？`, '提示', { type: 'warning' })
+    await ElMessageBox.confirm(`确认删除数据 ${row.fileName || `#${row.id}`}？`, '提示', { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' })
     await api.dataDelete(row.id)
     ElMessage.success('删除成功')
     await load()
@@ -202,13 +202,13 @@ onMounted(load)
         <el-table-column :resizable="false" prop="createdTime" label="同步时间" width="250" align="center" show-overflow-tooltip />
         <el-table-column :resizable="false" label="文件内容" width="150" align="center">
           <template #default="{ row }">
-            <el-button size="default" type="primary" link @click="openContent(row)">查看内容</el-button>
+            <el-button type="primary" link @click="openContent(row)">查看内容</el-button>
           </template>
         </el-table-column>
         <el-table-column :resizable="false" label="操作" width="300" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button size="default" :type="row.processedStatus === 2 ? 'success' : (row.processedStatus === 1 ? 'warning' : 'primary')" @click="onAction(row)">{{ row.processedStatus === 2 ? '结果' : (row.processedStatus === 1 ? '分析中' : '分析') }}</el-button>
-            <el-button size="default" type="danger" plain @click="doDelete(row)">删除</el-button>
+            <el-button :type="row.processedStatus === 2 ? 'success' : (row.processedStatus === 1 ? 'warning' : 'primary')" @click="onAction(row)">{{ row.processedStatus === 2 ? '结果' : (row.processedStatus === 1 ? '分析中' : '分析') }}</el-button>
+            <el-button type="danger" plain @click="doDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

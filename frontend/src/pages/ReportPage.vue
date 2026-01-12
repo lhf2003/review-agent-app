@@ -58,7 +58,7 @@ onMounted(() => {
         <p class="subtitle">查看每日和每周的审查结果与建议</p>
       </div>
       <div class="controls">
-        <el-radio-group v-model="reportType" @change="loadReports" size="default">
+        <el-radio-group v-model="reportType" @change="loadReports" size="large">
           <el-radio-button :value="1">日报</el-radio-button>
           <el-radio-button :value="2">周报</el-radio-button>
         </el-radio-group>
@@ -73,7 +73,7 @@ onMounted(() => {
         :itemStackDistance="60"
         stackPosition="20px"
         :itemScale="0.05"
-        :blurAmount="2"
+        :blurAmount="1"
       >
         <div class="scroll-stack-wrapper">
           <div style="height: 20px;"></div>
@@ -238,7 +238,7 @@ onMounted(() => {
 
 .stack-card:hover {
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12); /* Increased offset for hover state too */
-  transform: translateX(30px) rotate(2deg);
+  transform: translateX(20px) rotate(1deg);
 }
 
 .card-inner {

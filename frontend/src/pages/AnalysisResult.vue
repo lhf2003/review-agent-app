@@ -264,52 +264,66 @@ onMounted(() => {
       <div style="width: 200px; flex-shrink: 0; padding-top: 4px;">
         <el-input v-model="search" placeholder="搜索问题、技术点..." prefix-icon="Search" clearable />
       </div>
-      <div style="flex: 1; min-width: 0;">
+      <div style="flex: 1; min-width: 0; position: relative;">
         <!-- 横向滚动标签栏 -->
-        <div class="horizontal-tags-container" v-if="fileNames.length">
-          <div class="tag-item" :class="{ active: selectedFileName === 'ALL' }" @click="selectedFileName = 'ALL'">
-            全部
+        <div class="tags-scroll-wrapper">
+          <el-button class="scroll-btn left" @click="scrollTags('left')" circle size="small" v-if="showLeftBtn">
+            <el-icon><ArrowLeft /></el-icon>
+          </el-button>
+          
+          <div class="horizontal-tags-container" ref="tagsContainer" @scroll="checkScroll" v-if="fileNames.length">
+            <div class="tag-item" :class="{ active: selectedFileName === 'ALL' }" @click="selectedFileName = 'ALL'">
+              全部
+            </div>
+            <div v-for="name in fileNames" :key="name" class="tag-item" :class="{ active: selectedFileName === name }"
+              @click="selectedFileName = name">
+              {{ name }}
+            </div>
           </div>
-          <div v-for="name in fileNames" :key="name" class="tag-item" :class="{ active: selectedFileName === name }"
-            @click="selectedFileName = name">
-            {{ name }}
-          </div>
+          
+          <el-button class="scroll-btn right" @click="scrollTags('right')" circle size="small" v-if="showRightBtn">
+            <el-icon><ArrowRight /></el-icon>
+          </el-button>
         </div>
       </div>
     </div>
 
     <div style="display:flex;gap:24px;flex:1;min-height:0;">
       <!-- Left Sidebar: Filter Card -->
-      <div style="width:200px; flex-shrink: 0; overflow-y: auto;">
-        <el-card>
-          <div style="font-weight:600;display:flex;justify-content:space-between;align-items:center;">
+      <div style="width:200px; flex-shrink: 0; overflow: hidden;">
+        <el-card style="height: 100%; display: flex; flex-direction: column;">
+          <div style="font-weight:600;display:flex;justify-content:space-between;align-items:center; flex-shrink: 0;">
             <span>标签筛选</span>
             <el-radio-group v-model="tagMode" size="small">
               <el-radio-button label="main">主</el-radio-button>
               <el-radio-button label="sub">子</el-radio-button>
             </el-radio-group>
           </div>
-          <div style="margin-top:12px;">
-            <el-checkbox-group v-model="selectedTags">
-              <div v-for="t in sidebarTags" :key="t.id"
-                style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;">
-                <el-checkbox size="large" :label="t.name">
-                  <span style="font-size: 15px;">{{ t.name }}</span>
-                </el-checkbox>
-                <el-tag size="small" :color="t.type === 'main' ? tagColorMap[t.name] : ''"
-                  :effect="t.type === 'main' ? 'dark' : 'plain'"
-                  :style="{ ...(t.type === 'main' ? { border: 'none' } : {}), width: '32px', height: '18px !important', fontSize: '12px !important', justifyContent: 'center', padding: '0' }">
-                  {{ t.count }}
-                </el-tag>
-              </div>
-            </el-checkbox-group>
+          <div style="margin-top:6px; flex: 1; min-height: 0;">
+            <CustomScroll>
+              <el-checkbox-group v-model="selectedTags">
+                <div v-for="t in sidebarTags" :key="t.id"
+                  style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">
+                  <el-checkbox size="large" :label="t.name">
+                    <span style="font-size: 15px;">{{ t.name }}</span>
+                  </el-checkbox>
+                  <el-tag size="small" :color="t.type === 'main' ? tagColorMap[t.name] : ''"
+                    :effect="t.type === 'main' ? 'dark' : 'plain'"
+                    :style="{ ...(t.type === 'main' ? { border: 'none' } : {}), width: '32px', height: '18px !important', fontSize: '12px !important', justifyContent: 'center', padding: '0' }">
+                    {{ t.count }}
+                  </el-tag>
+                </div>
+              </el-checkbox-group>
+            </CustomScroll>
           </div>
-          <div style="margin-top:16px;">
+          <div style="margin-top:16px; flex-shrink: 0;">
             <div style="font-size:13px;color:var(--el-text-color-secondary);">排序</div>
-            <el-radio-group v-model="sort" size="small" style="margin-top:8px;display:flex;">
-              <el-radio-button label="mastery">最近掌握</el-radio-button>
-              <el-radio-button label="date">日期</el-radio-button>
-            </el-radio-group>
+            <div style="margin-top:8px;">
+              <el-radio-group v-model="sort" size="small">
+                <el-radio-button label="mastery">最近掌握</el-radio-button>
+                <el-radio-button label="date">日期</el-radio-button>
+              </el-radio-group>
+            </div>
           </div>
         </el-card>
       </div>
@@ -595,5 +609,12 @@ onMounted(() => {
   box-shadow: 0 0 8px var(--tag-glow-color);
   transform: scale(1.1);
   z-index: 1;
+}
+
+/* 覆盖 ElCard 默认的 body 样式，使其填充剩余空间 */
+.el-card :deep(.el-card__body) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 </style>

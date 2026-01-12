@@ -1,41 +1,49 @@
 <template>
-  <div class="page">
-    <!-- Global Controls -->
-    <div class="global-controls">
-      <div class="date-picker-wrapper">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          :shortcuts="shortcuts"
-          @change="handleDateChange"
-          style="width: 100%"
-        />
-      </div>
-      <el-button type="primary" @click="handleRefresh" :loading="wordCloudLoading || trendLoading">刷新</el-button>
-    </div>
+  <div class="page-container">
+    <CustomScroll>
+      <div class="page-content">
+        <!-- Global Controls -->
+        <div class="global-controls">
+          <div class="date-picker-wrapper">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
+              end-placeholder="结束日期" :shortcuts="shortcuts" @change="handleDateChange" style="width: 100%" />
+          </div>
+          <el-button type="plain" link size="large" @click="handleRefresh" :loading="wordCloudLoading || trendLoading">
+            <el-icon v-if="!(wordCloudLoading || trendLoading)"><Refresh /></el-icon>
+          </el-button>
+        </div>
 
-    <!-- Word Cloud Section -->
-    <div class="section">
-      <div class="header">
-        <h2>词云</h2>
-      </div>
-      <div v-loading="wordCloudLoading" class="chart-container">
-        <div ref="wordCloudChartRef" class="chart"></div>
-      </div>
-    </div>
+        <!-- Word Cloud Section -->
+        <div class="section" :class="{ 'is-fullscreen': isWordCloudFullscreen }">
+          <div class="header">
+            <h2>词云</h2>
+            <div class="header-actions">
+              <el-button link @click="toggleWordCloudFullscreen">
+                <el-icon><FullScreen /></el-icon>
+              </el-button>
+            </div>
+          </div>
+          <div v-loading="wordCloudLoading" class="chart-container">
+            <div ref="wordCloudChartRef" class="chart"></div>
+          </div>
+        </div>
 
-    <!-- Trend Chart Section -->
-    <div class="section">
-      <div class="header">
-        <h2>标签趋势</h2>
+        <!-- Trend Chart Section -->
+        <div class="section" :class="{ 'is-fullscreen': isTrendFullscreen }">
+          <div class="header">
+            <h2>标签趋势</h2>
+             <div class="header-actions">
+              <el-button link @click="toggleTrendFullscreen">
+                <el-icon><FullScreen /></el-icon>
+              </el-button>
+            </div>
+          </div>
+          <div v-loading="trendLoading" class="chart-container">
+            <div ref="trendChartRef" class="chart"></div>
+          </div>
+        </div>
       </div>
-      <div v-loading="trendLoading" class="chart-container">
-        <div ref="trendChartRef" class="chart"></div>
-      </div>
-    </div>
+    </CustomScroll>
   </div>
 </template>
 
@@ -47,6 +55,8 @@ import { api } from '../api/http'
 import * as echarts from 'echarts'
 import 'echarts-wordcloud'
 import 'echarts/theme/dark'
+
+import CustomScroll from '../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 const themeStore = useThemeStore()
@@ -62,6 +72,10 @@ const trendSource = ref({})
 const trendLoading = ref(false)
 const trendChartRef = ref(null)
 let trendChartInstance = null
+
+// Fullscreen State
+const isWordCloudFullscreen = ref(false)
+const isTrendFullscreen = ref(false)
 
 const end = new Date()
 const start = new Date()
@@ -107,13 +121,13 @@ function formatDate(date) {
 }
 
 function getFormattedDateRange() {
-    if (!dateRange.value || dateRange.value.length !== 2) return null
-    const startDate = formatDate(dateRange.value[0])
-    // Backend treats endDate as exclusive, so add 1 day to include the selected end date
-    const endDateObj = new Date(dateRange.value[1])
-    endDateObj.setDate(endDateObj.getDate() + 1)
-    const endDate = formatDate(endDateObj)
-    return { startDate, endDate }
+  if (!dateRange.value || dateRange.value.length !== 2) return null
+  const startDate = formatDate(dateRange.value[0])
+  // Backend treats endDate as exclusive, so add 1 day to include the selected end date
+  const endDateObj = new Date(dateRange.value[1])
+  endDateObj.setDate(endDateObj.getDate() + 1)
+  const endDate = formatDate(endDateObj)
+  return { startDate, endDate }
 }
 
 async function loadWordCloud() {
@@ -149,12 +163,12 @@ async function loadTrend() {
 }
 
 function handleRefresh() {
-    loadWordCloud()
-    loadTrend()
+  loadWordCloud()
+  loadTrend()
 }
 
 function handleDateChange() {
-    handleRefresh()
+  handleRefresh()
 }
 
 function updateWordCloudChart() {
@@ -213,9 +227,9 @@ function updateTrendChart() {
   if (!trendChartInstance) return
 
   const dataMap = trendSource.value || {}
-  
+
   const dates = Object.keys(dataMap).sort()
-  
+
   // Extract all unique tag names
   const allTags = new Set()
   dates.forEach(date => {
@@ -242,6 +256,7 @@ function updateTrendChart() {
   const option = {
     tooltip: {
       trigger: 'axis',
+      confine: true, // 限制 tooltip 在图表容器内，防止被遮挡或溢出
       formatter: function (params) {
         let result = params[0].axisValueLabel + '<br/>'
         let hasData = false
@@ -261,7 +276,7 @@ function updateTrendChart() {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '10%', 
+      bottom: '10%',
       containLabel: true
     },
     xAxis: {
@@ -293,6 +308,20 @@ function handleResize() {
   trendChartInstance?.resize()
 }
 
+function toggleWordCloudFullscreen() {
+  isWordCloudFullscreen.value = !isWordCloudFullscreen.value
+  nextTick(() => {
+    wordCloudChartInstance?.resize()
+  })
+}
+
+function toggleTrendFullscreen() {
+  isTrendFullscreen.value = !isTrendFullscreen.value
+  nextTick(() => {
+    trendChartInstance?.resize()
+  })
+}
+
 watch(() => themeStore.isDark, () => {
   wordCloudChartInstance?.dispose()
   trendChartInstance?.dispose()
@@ -315,14 +344,21 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.page {
+.page-container {
+  height: 100%;
+  overflow: hidden;
+}
+
+.page-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 12px;
+  /* Ensure content takes up height so scrollbar appears if needed, but flex items don't shrink too much */
   height: 100%;
-  overflow-y: auto;
+  box-sizing: border-box;
 }
+
 .global-controls {
   display: flex;
   justify-content: space-between;
@@ -332,10 +368,12 @@ onUnmounted(() => {
   border-radius: 6px;
   box-shadow: var(--el-box-shadow-light);
 }
+
 .date-picker-wrapper {
   flex: 1;
   max-width: 400px;
 }
+
 .section {
   display: flex;
   flex-direction: column;
@@ -343,23 +381,37 @@ onUnmounted(() => {
   padding: 0;
   border-radius: 6px;
   box-shadow: var(--el-box-shadow-light);
-  flex: 1;
-  min-height: 0;
+  flex: 1; /* 平分剩余空间 */
+  min-height: 0; /* 允许收缩 */
   overflow: hidden;
 }
+
 .header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid var(--el-border-color-lighter);
   background: var(--el-fill-color-light);
 }
+
 .header h2 {
   font-size: 15px;
   font-weight: 600;
   margin: 0;
   color: var(--el-text-color-primary);
 }
+
+.section.is-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2000; /* High enough to cover everything */
+  border-radius: 0;
+}
+
 .chart-container {
   width: 100%;
   height: 100%;
@@ -369,6 +421,7 @@ onUnmounted(() => {
   flex: 1;
   box-sizing: border-box;
 }
+
 .chart {
   position: absolute;
   top: 0;

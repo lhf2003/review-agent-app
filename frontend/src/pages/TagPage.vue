@@ -267,11 +267,11 @@ onMounted(loadAll)
             <CustomScroll>
               <div style="display:flex;flex-direction:column;min-height:100%">
                 <div class="region-body">
-                  <div style="font-weight:600; margin-bottom: 12px;">已关联 ({{ associatedSubTags.length }})</div>
+                  <div style=" margin-bottom: 12px;">已关联 ({{ associatedSubTags.length }})</div>
                   <div v-loading="loading" :class="['sub-list-associated','droppable', { 'droppable--over': isOverAssociated, 'drag-target': draggingFromAvailable, 'empty-container': !associatedSubTags.length }]" @dragover="onDragOverAssociated" @dragenter="onDragEnterAssociated" @dragleave="onDragLeaveAssociated" @drop="onDropToAssociated">
-                    <el-card v-for="st in associatedSubTags" :key="st.id" shadow="never" class="sub-item associated-item" :draggable="true" @dragstart="onDragStartFromAssociated(st, $event)" @dragend="onDragEndFromAssociated">
+                    <div v-for="st in associatedSubTags" :key="st.id" class="sub-item compact-card" :draggable="true" @dragstart="onDragStartFromAssociated(st, $event)" @dragend="onDragEndFromAssociated">
                       <div class="sub-name">{{ st.name }}</div>
-                    </el-card>
+                    </div>
                     <div v-if="draggingFromAvailable" class="drag-hint">关联</div>
                     <el-empty v-if="!associatedSubTags.length" description="尚未关联任何子标签" :image-size="60" class="full-size-empty" />
                   </div>
@@ -280,13 +280,14 @@ onMounted(loadAll)
                 <el-divider />
 
                 <div class="region-footer">
-                  <div style="font-weight:600;margin-bottom:12px;">可用子标签 ({{ availableSubTags.length }})</div>
-                  <el-input v-model="searchSub" placeholder="搜索可用子标签..." prefix-icon="Search" clearable
-                    style="margin-bottom:12px;" />
+                  <div style="font-weight:200;margin-bottom:12px;">可用子标签 ({{ availableSubTags.length }})                  
+                    <el-input v-model="searchSub" placeholder="搜索可用子标签..." prefix-icon="Search" clearablestyle="height:20px; width:45%; margin: 0 auto;" />
+                  </div>
+
                   <div :class="['sub-list','droppable', { 'droppable--over': isOverAvailable, 'drag-target': draggingFromAssociated }]" @dragover="onDragOverAvailable" @dragenter="onDragEnterAvailable" @dragleave="onDragLeaveAvailable" @drop="onDropToAvailable">
-                    <el-card v-for="st in availableSubTags" :key="st.id" shadow="hover" class="sub-item available-item" :draggable="true" @dragstart="onDragStartFromAvailable(st, $event)" @dragend="onDragEndFromAvailable">
+                    <div v-for="st in availableSubTags" :key="st.id" class="sub-item compact-card" :draggable="true" @dragstart="onDragStartFromAvailable(st, $event)" @dragend="onDragEndFromAvailable">
                       <div class="sub-name">{{ st.name }}</div>
-                    </el-card>
+                    </div>
                     <div v-if="draggingFromAssociated" class="drag-hint--cancel">取消关联</div>
                     <el-empty v-if="!availableSubTags.length" description="暂无可用子标签" :image-size="60" />
                   </div>
@@ -451,6 +452,11 @@ onMounted(loadAll)
   flex-grow: 1; /* 让这部分尽可能占据空间 */
 }
 
+.region-footer{
+  min-height: 200px; /* 给予已关联区域一个最小高度，避免太扁 */
+  flex-grow: 1; /* 让这部分尽可能占据空间 */
+}
+
 /* 主标签列表 A 区 */
 .main-list-wrapper {
   height: 100%;
@@ -514,7 +520,7 @@ onMounted(loadAll)
 /* 子标签列表 B, C 区 */
 .sub-list-associated {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 8px;
 }
 
@@ -536,7 +542,7 @@ onMounted(loadAll)
 
 .sub-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 8px;
 }
 
@@ -549,13 +555,32 @@ onMounted(loadAll)
 /* C 区：通用子标签库一行两卡片 */
 .two-per-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(80px, 1fr));
   gap: 8px;
 }
 
-/* 2. 子标签卡片优化 */
-.sub-item {
-  padding: 2px 5px;
+.compact-card {
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 4px;
+  background-color: var(--el-bg-color-overlay);
+  padding: 4px 8px; /* 紧凑的内边距 */
+  cursor: grab;
+  transition: all 0.2s;
+  box-shadow: var(--el-box-shadow-light);
+  height: auto; /* 确保高度自适应 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.compact-card:hover {
+  border-color: var(--el-color-primary-light-5);
+  background-color: var(--el-color-primary-light-9);
+  transform: translateY(-1px);
+}
+
+.compact-card:active {
+  cursor: grabbing;
 }
 
 .sub-item-content {
@@ -568,11 +593,17 @@ onMounted(loadAll)
 .sub-name {
   font-weight: 500;
   flex-grow: 1;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center; /* 文字居中 */
 }
 
 /* C 区：通用子标签库 - 点击文字可编辑 */
 .sub-name.is-editable {
   cursor: pointer;
+  text-align: left; /* 列表模式下靠左 */
 }
 
 .sub-name.is-editable:hover {
@@ -580,23 +611,6 @@ onMounted(loadAll)
   text-decoration: underline;
 }
 
-/* B 区：已关联/可用子标签 (保持不变，因为 B 区的功能是关联/解除关联) */
-.associated-item,
-.available-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-/* 保证卡片内容（el-card__body）为同行布局 */
-.associated-item :deep(.el-card__body),
-.available-item :deep(.el-card__body) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
-}
 .droppable {
   border: 2px dashed transparent;
   border-radius: var(--el-border-radius-base);
@@ -615,7 +629,7 @@ onMounted(loadAll)
   align-items: center;
   justify-content: center;
   font-size: 40px;
-  font-weight: 800;
+  font-weight: 100;
   letter-spacing: 3px;
   color: var(--el-color-primary);
   text-shadow: 0 3px 7px rgba(0,0,0,0.18);
@@ -630,7 +644,7 @@ onMounted(loadAll)
   align-items: center;
   justify-content: center;
   font-size: 40px;
-  font-weight: 800;
+  font-weight: 100;
   letter-spacing: 3px;
   color: var(--el-color-danger);
   text-shadow: 0 3px 7px rgba(0,0,0,0.18);
