@@ -39,121 +39,458 @@
   font-size: 16px; /* Ensure readable body text */
 }
 
+/* ==========================================================================
+   Modern Tag Styles (Apple Style - Translucent & Pill)
+   ========================================================================== */
+
 .el-tag {
-  font-size: 14px !important; /* Force tag font size increase */
-  padding: 0 12px !important; /* Add a bit more padding for balance */
-  height: 28px !important; /* Slightly taller tags */
+  border-radius: 999px !important; /* Pill shape */
+  border: none !important; /* Remove default border */
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  padding: 0 10px !important;
+  height: 24px !important;
+  line-height: 24px !important;
+  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
   
-  // Apply Glow Effect to Tags
-  @include glow-hover($glow-color-light);
-  cursor: default;
+  /* Remove glow mixin, use flat translucent style */
+  box-shadow: none !important; 
 }
 
-// Tag Type Specific Glows
+/* 1. Primary/Blue Tag */
+.el-tag--primary, 
+.el-tag:not([class*="el-tag--"]) { /* Default is usually primary color */
+  background-color: rgba(0, 122, 255, 0.1) !important;
+  color: #007AFF !important;
+}
+
+/* 2. Success/Green Tag */
 .el-tag--success {
-    &:hover {
-        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(103, 194, 58, 0.7) !important;
-    }
-}
-.el-tag--warning {
-    &:hover {
-        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(230, 162, 60, 0.7) !important;
-    }
-}
-.el-tag--danger {
-    &:hover {
-        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(245, 108, 108, 0.7) !important;
-    }
-}
-.el-tag--info {
-    &:hover {
-        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(144, 147, 153, 0.7) !important;
-    }
+  background-color: rgba(52, 199, 89, 0.1) !important;
+  color: #34C759 !important;
 }
 
-// Make clickable tags have pointer
-.el-tag.is-hit, .el-tag--dark, .el-tag--plain {
-    cursor: pointer;
+/* 3. Warning/Orange Tag */
+.el-tag--warning {
+  background-color: rgba(255, 149, 0, 0.1) !important;
+  color: #FF9500 !important;
+}
+
+/* 4. Danger/Red Tag */
+.el-tag--danger {
+  background-color: rgba(255, 59, 48, 0.1) !important;
+  color: #FF3B30 !important;
+}
+
+/* 5. Info/Gray Tag */
+.el-tag--info {
+  background-color: rgba(142, 142, 147, 0.12) !important;
+  color: var(--el-text-color-regular) !important;
+}
+
+/* Hover Effects for Clickable Tags */
+.el-tag.is-hit:hover, 
+.el-tag--dark:hover, 
+.el-tag--plain:hover,
+.el-tag[style*="cursor: pointer"]:hover {
+    opacity: 0.8;
+}
+
+/* Dark Mode Adjustments for Tags */
+html.dark {
+  .el-tag--primary, .el-tag:not([class*="el-tag--"]) {
+    background-color: rgba(10, 132, 255, 0.2) !important;
+    color: #0A84FF !important;
+  }
+  
+  .el-tag--success {
+    background-color: rgba(48, 209, 88, 0.2) !important;
+    color: #30D158 !important;
+  }
+  
+  .el-tag--warning {
+    background-color: rgba(255, 159, 10, 0.2) !important;
+    color: #FF9F0A !important;
+  }
+  
+  .el-tag--danger {
+    background-color: rgba(255, 69, 58, 0.2) !important;
+    color: #FF453A !important;
+  }
+  
+  .el-tag--info {
+    background-color: rgba(142, 142, 147, 0.25) !important;
+    color: #E5E5EA !important;
+  }
 }
 
 /* ==========================================================================
    Modern Button Styles (Optimized with Glow)
    ========================================================================== */
 
-/* 1. Base Button Enhancement */
+/* 1. Base Button Enhancement (Apple Style) */
 .el-button {
-  border-radius: 8px !important;
+  border-radius: 999px !important; /* Fully rounded corners (Pill shape) */
   font-weight: 500 !important;
-  transition: all $glow-transition-duration cubic-bezier(0.4, 0, 0.2, 1) !important;
-  position: relative;
-  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+  border: 1px solid transparent !important; /* Cleaner border handling */
+  box-shadow: none !important; /* Flat by default */
+  
+  /* Subtle letter spacing */
+  letter-spacing: -0.01em;
 }
 
-/* Hover Effect: Replace previous shadow with Glow */
-.el-button:not(.is-disabled):not(.is-text):not(.is-link) {
-  @include glow-hover($glow-color-light);
+/* Hover Effect: Subtle brightness or opacity change, no heavy glow */
+.el-button:not(.is-disabled):not(.is-text):not(.is-link):hover {
+  opacity: 0.85;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important; /* Soft shadow */
 }
 
-/* 2. Primary Button: Gradient & Glow */
+/* Active/Click Effect: Scale down slightly */
+.el-button:active {
+  transform: scale(0.97) !important;
+}
+
+/* 2. Primary Button: Apple Blue */
 .el-button--primary:not(.is-plain):not(.is-text):not(.is-link) {
-  background: linear-gradient(135deg, #409eff, #337ecc) !important;
+  background-color: rgba(0, 122, 255, 0.1) !important; /* Translucent Blue */
+  color: #007AFF !important;
   border: none !important;
-  // Use specific glow for primary if needed, or stick to unified.
-  // User asked for "unified ... default light blue". Primary is blue, so it fits.
-  // Existing code had specific shadows. I will override with the mixin but maybe adjust color slightly if it looks off?
-  // Let's stick to the mixin for consistency first.
 }
 
 .el-button--primary:not(.is-plain):not(.is-text):not(.is-link):hover {
-  background: linear-gradient(135deg, #66b1ff, #409eff) !important;
-  // The mixin handles the hover box-shadow
+  background-color: rgba(0, 122, 255, 0.2) !important;
 }
 
-/* 3. Success Button */
+/* 3. Success Button: Apple Green */
 .el-button--success:not(.is-plain):not(.is-text):not(.is-link) {
-  background: linear-gradient(135deg, #67c23a, #529b2e) !important;
+  background-color: rgba(52, 199, 89, 0.1) !important; /* Translucent Green */
+  color: #34C759 !important;
   border: none !important;
 }
 
 .el-button--success:not(.is-plain):not(.is-text):not(.is-link):hover {
-  background: linear-gradient(135deg, #85ce61, #67c23a) !important;
-  // Override glow color for success to match? 
-  // User said "unified ... default light blue", but "coordinated with component main color".
-  // "发光颜色应与组件的主色调协调" (Glow color should coordinate with component main color).
-  // Default is light blue.
-  // So I should pass the color.
-  box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(103, 194, 58, 0.7) !important;
+  background-color: rgba(52, 199, 89, 0.2) !important;
 }
 
-/* 4. Warning Button */
+/* 4. Warning Button: Apple Orange */
 .el-button--warning:not(.is-plain):not(.is-text):not(.is-link) {
-  background: linear-gradient(135deg, #e6a23c, #cf9236) !important;
+  background-color: rgba(255, 149, 0, 0.1) !important; /* Translucent Orange */
+  color: #FF9500 !important;
   border: none !important;
 }
 
 .el-button--warning:not(.is-plain):not(.is-text):not(.is-link):hover {
-    // Coordinate with warning color
-    box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(230, 162, 60, 0.7) !important;
+  background-color: rgba(255, 149, 0, 0.2) !important;
 }
 
-/* 5. Danger Button (Adding for completeness) */
+/* 5. Danger Button: Apple Red */
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link) {
+  background-color: rgba(255, 59, 48, 0.1) !important; /* Translucent Red */
+  color: #FF3B30 !important;
+  border: none !important;
+}
+
 .el-button--danger:not(.is-plain):not(.is-text):not(.is-link):hover {
-    box-shadow: 0 0 $glow-blur-radius $glow-spread-radius rgba(245, 108, 108, 0.7) !important;
+  background-color: rgba(255, 59, 48, 0.2) !important;
 }
 
-/* Cards */
-.el-card {
-    transition: all $glow-transition-duration;
-    @include glow-hover($glow-color-light);
+/* 6. Default/Plain Button */
+.el-button--default:not(.is-text):not(.is-link),
+.el-button--plain {
+  background-color: rgba(142, 142, 147, 0.12) !important; /* System Gray */
+  color: var(--el-text-color-primary) !important;
+  border: none !important;
 }
 
-/* Dark Mode Adjustments (if .dark class is on html or body) */
+.el-button--default:not(.is-text):not(.is-link):hover,
+.el-button--plain:hover {
+  background-color: rgba(142, 142, 147, 0.2) !important;
+}
+
+/* Dark Mode Adjustments */
 html.dark {
-    .el-button:not(.is-disabled):not(.is-text):not(.is-link):hover,
-    .el-tag:hover,
-    .el-card:hover {
-        box-shadow: 0 0 $glow-blur-radius $glow-spread-radius $glow-color-dark;
-    }
-    
-    // Adjust specific buttons for dark mode if needed
+  /* Increase opacity slightly for dark mode visibility */
+  .el-button--primary:not(.is-plain):not(.is-text):not(.is-link) {
+    background-color: rgba(10, 132, 255, 0.2) !important;
+    color: #0A84FF !important; /* Light Mode Blue -> Dark Mode Blue */
+  }
+  .el-button--primary:not(.is-plain):not(.is-text):not(.is-link):hover {
+    background-color: rgba(10, 132, 255, 0.3) !important;
+  }
+
+  .el-button--success:not(.is-plain):not(.is-text):not(.is-link) {
+    background-color: rgba(48, 209, 88, 0.2) !important;
+    color: #30D158 !important;
+  }
+  .el-button--success:not(.is-plain):not(.is-text):not(.is-link):hover {
+    background-color: rgba(48, 209, 88, 0.3) !important;
+  }
+
+  .el-button--warning:not(.is-plain):not(.is-text):not(.is-link) {
+    background-color: rgba(255, 159, 10, 0.2) !important;
+    color: #FF9F0A !important;
+  }
+  .el-button--warning:not(.is-plain):not(.is-text):not(.is-link):hover {
+    background-color: rgba(255, 159, 10, 0.3) !important;
+  }
+
+  .el-button--danger:not(.is-plain):not(.is-text):not(.is-link) {
+    background-color: rgba(255, 69, 58, 0.2) !important;
+    color: #FF453A !important;
+  }
+  .el-button--danger:not(.is-plain):not(.is-text):not(.is-link):hover {
+    background-color: rgba(255, 69, 58, 0.3) !important;
+  }
+
+  .el-button--default:not(.is-text):not(.is-link),
+  .el-button--plain {
+    background-color: rgba(142, 142, 147, 0.25) !important;
+    color: #ffffff !important;
+  }
+  .el-button--default:not(.is-text):not(.is-link):hover,
+  .el-button--plain:hover {
+    background-color: rgba(142, 142, 147, 0.35) !important;
+  }
+}
+
+/* ==========================================================================
+   Modern Card Styles (Apple Style)
+   ========================================================================== */
+
+.el-card {
+  border: none !important;
+  border-radius: 16px !important; /* Larger, softer corners */
+  background-color: #ffffff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important; /* Soft, diffuse shadow */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  overflow: hidden;
+}
+
+/* Header Styling */
+.el-card__header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+  padding: 16px 20px !important;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--el-text-color-primary);
+  background-color: rgba(255, 255, 255, 0.5); /* Slight transparency */
+  backdrop-filter: blur(10px);
+}
+
+/* Body Styling */
+.el-card__body {
+  padding: 20px !important;
+  color: var(--el-text-color-regular);
+}
+
+/* Hover Effect: Subtle Lift */
+.el-card.is-hover-shadow:hover,
+.el-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Dark Mode Adjustments */
+html.dark {
+  .el-card {
+    background-color: #1c1c1e; /* Apple Dark Mode Background */
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important; /* Subtle border for separation */
+  }
+
+  .el-card__header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background-color: rgba(28, 28, 30, 0.6);
+  }
+
+  .el-card.is-hover-shadow:hover,
+  .el-card:hover {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+    background-color: #2c2c2e; /* Slightly lighter on hover */
+  }
+}
+
+/* ==========================================================================
+   Modern Radio Group Styles (Apple Segmented Control Style)
+   ========================================================================== */
+
+/* The Container (el-radio-group) */
+.el-radio-group {
+  background-color: rgba(118, 118, 128, 0.12); /* Apple System Fill Color */
+  padding: 2px;
+  border-radius: 8px; /* Slightly rounded container */
+  display: inline-flex;
+  border: none !important;
+}
+
+/* The Label Wrapper (el-radio-button) */
+.el-radio-button {
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.el-radio-button__inner {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 6px !important; /* Slightly smaller than container */
+  color: var(--el-text-color-regular);
+  font-weight: 500;
+  font-size: 13px;
+  padding: 6px 12px;
+  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) !important; /* Smooth spring-like transition */
+  box-shadow: none !important;
+}
+
+/* Remove default left borders */
+.el-radio-button:first-child .el-radio-button__inner {
+  border-left: none !important;
+}
+
+/* Hover State (Unselected) */
+.el-radio-button__original-radio:not(:disabled) + .el-radio-button__inner:hover {
+  color: var(--el-text-color-primary);
+  background-color: rgba(255, 255, 255, 0.3); /* Subtle hover highlight */
+}
+
+/* Selected State */
+.el-radio-button.is-active .el-radio-button__inner {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.08) !important; /* Soft shadow lift */
+  transform: scale(1.02); /* Slight jelly pop effect */
+}
+
+/* ==========================================================================
+   Modern Input & Select Styles (Apple Style)
+   ========================================================================== */
+
+/* 1. Input Fields */
+.el-input__wrapper {
+  background-color: rgba(118, 118, 128, 0.12) !important; /* Apple System Gray Fill */
+  border-radius: 10px !important;
+  box-shadow: none !important; /* Remove default border/shadow */
+  padding: 4px 12px !important;
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.el-input__wrapper:hover {
+  background-color: rgba(118, 118, 128, 0.18) !important; /* Darker on hover */
+}
+
+.el-input__wrapper.is-focus {
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3) !important; /* Focus ring */
+}
+
+.el-input__inner {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--el-text-color-primary);
+  font-weight: 400;
+  height: 24px !important;
+}
+
+/* Placeholder color */
+.el-input__inner::placeholder {
+  color: var(--el-text-color-placeholder);
+  opacity: 0.7;
+}
+
+/* 2. Select/Dropdown */
+.el-select {
+  --el-select-border-color-hover: transparent;
+  --el-select-input-focus-border-color: transparent;
+}
+
+/* Force override for Select Wrapper */
+.el-select__wrapper {
+  background-color: rgba(118, 118, 128, 0.12) !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  padding: 4px 12px !important;
+}
+
+.el-select__wrapper.is-focused {
+  background-color: rgba(118, 118, 128, 0.18) !important; 
+  box-shadow: none !important;
+}
+
+.el-select__wrapper:hover {
+  background-color: rgba(118, 118, 128, 0.18) !important;
+}
+
+/* Dropdown Menu (Popper) */
+.el-select__popper.el-popper {
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12) !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.el-select-dropdown__item {
+  border-radius: 6px;
+  margin: 4px 6px;
+  height: 36px;
+  line-height: 36px;
+  font-weight: 400;
+}
+
+.el-select-dropdown__item.selected {
+  color: #007AFF !important;
+  font-weight: 500;
+  background-color: rgba(0, 122, 255, 0.1) !important;
+}
+
+.el-select-dropdown__item.hover, 
+.el-select-dropdown__item:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Dark Mode Adjustments */
+html.dark {
+  /* Input Wrapper */
+  .el-input__wrapper {
+    background-color: rgba(118, 118, 128, 0.24) !important;
+  }
+  
+  /* Select Wrapper */
+  .el-select__wrapper {
+    background-color: rgba(118, 118, 128, 0.24) !important;
+  }
+
+  .el-input__wrapper:hover {
+    background-color: rgba(118, 118, 128, 0.32) !important;
+  }
+  
+  .el-select__wrapper:hover {
+    background-color: rgba(118, 118, 128, 0.32) !important;
+  }
+  
+  .el-input__wrapper.is-focus {
+    background-color: #1c1c1e !important; /* Darker bg on focus */
+    box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.4) !important;
+  }
+
+  /* Dropdown Menu */
+  .el-select__popper.el-popper {
+    background-color: rgba(30, 30, 30, 0.85) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  .el-select-dropdown__item.selected {
+    color: #0A84FF !important;
+    background-color: rgba(10, 132, 255, 0.15) !important;
+  }
+  
+  .el-select-dropdown__item.hover, 
+  .el-select-dropdown__item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
 }
