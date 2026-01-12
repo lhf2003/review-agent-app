@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { api } from '../api/http'
 import { useAuthStore } from '../stores/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import CustomScroll from '../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 const loading = ref(false)
@@ -146,10 +147,14 @@ async function doRenameMain() {
   await loadMain()
 }
 async function doDeleteMain(mt) {
-  await ElMessageBox.confirm(`确认删除主标签「${mt.name}」？`, '提示', { type: 'warning' })
-  await api.deleteMainTag(mt.id)
-  ElMessage.success('删除成功')
-  await loadMain(); await loadRelation()
+  try {
+    await ElMessageBox.confirm(`确认删除主标签「${mt.name}」？`, '提示', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' })
+    await api.deleteMainTag(mt.id)
+    ElMessage.success('删除成功')
+    await loadMain(); await loadRelation()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(`删除失败: ${e.message}`)
+  }
 }
 
 // 子标签操作
@@ -182,10 +187,14 @@ async function deleteSubInDialog() {
   } catch (e) {}
 }
 async function doDeleteSub(st) {
-  await ElMessageBox.confirm(`确认删除子标签「${st.name}」？`, '提示', { type: 'warning' })
-  await api.deleteSubTag(st.id)
-  ElMessage.success('删除成功')
-  await loadSub(); await loadRelation()
+  try {
+    await ElMessageBox.confirm(`确认删除子标签「${st.name}」？`, '提示', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' })
+    await api.deleteSubTag(st.id)
+    ElMessage.success('删除成功')
+    await loadSub(); await loadRelation()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(`删除失败: ${e.message}`)
+  }
 }
 
 // 关联/解除关联
@@ -219,25 +228,29 @@ onMounted(loadAll)
           <template #header>
             <div class="region-header">
               <span class="region-title">🏷️ 主标签</span>
-              <el-button type="primary" size="small" @click="openCreateMain">新增</el-button>
+              <el-button type="plain" link size="large" @click="openCreateMain">
+                <el-icon><Plus /></el-icon>
+              </el-button>
             </div>
           </template>
 
-          <div v-loading="loading" class="main-list-wrapper">
-            <div v-if="mainTags.length" class="main-list">
-              <div v-for="(mt, index) in mainTags" 
-                   :key="mt.id" 
-                   :class="['main-item', { active: selectedMainId === mt.id }]"
-                   :style="{ '--tag-color': getTagColor(index) }"
-                   @click="onSelectMain(mt)">
-                <div class="main-name">{{ mt.name }}</div>
-                <div class="main-meta">
-                  <el-button text size="small" @click.stop="openRenameMain(mt)">编辑</el-button>
-                  <el-button text size="small" type="danger" @click.stop="doDeleteMain(mt)">删除</el-button>
+          <div class="main-list-wrapper" v-loading="loading">
+            <CustomScroll>
+              <div v-if="mainTags.length" class="main-list">
+                <div v-for="(mt, index) in mainTags" 
+                     :key="mt.id" 
+                     :class="['main-item', { active: selectedMainId === mt.id }]"
+                     :style="{ '--tag-color': getTagColor(index) }"
+                     @click="onSelectMain(mt)">
+                  <div class="main-name">{{ mt.name }}</div>
+                  <div class="main-meta">
+                    <el-button text size="small" link @click.stop="openRenameMain(mt)">编辑</el-button>
+                    <el-button text size="small" type="danger" link @click.stop="doDeleteMain(mt)">删除</el-button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <el-empty v-else description="暂无主标签" :image-size="80" />
+              <el-empty v-else description="暂无主标签" :image-size="80" />
+            </CustomScroll>
           </div>
         </el-card>
       </el-col>
@@ -251,31 +264,35 @@ onMounted(loadAll)
           </template>
 
           <div class="region-content-scroll">
-            <div class="region-body">
-              <div style="font-weight:600; margin-bottom: 12px;">已关联 ({{ associatedSubTags.length }})</div>
-              <div v-loading="loading" :class="['sub-list-associated','droppable', { 'droppable--over': isOverAssociated, 'drag-target': draggingFromAvailable }]" @dragover="onDragOverAssociated" @dragenter="onDragEnterAssociated" @dragleave="onDragLeaveAssociated" @drop="onDropToAssociated">
-                <el-card v-for="st in associatedSubTags" :key="st.id" shadow="never" class="sub-item associated-item" :draggable="true" @dragstart="onDragStartFromAssociated(st, $event)" @dragend="onDragEndFromAssociated">
-                  <div class="sub-name">{{ st.name }}</div>
-                </el-card>
-                <div v-if="draggingFromAvailable" class="drag-hint">关联</div>
-                <el-empty v-if="!associatedSubTags.length" description="尚未关联任何子标签" :image-size="60" />
-              </div>
-            </div>
+            <CustomScroll>
+              <div style="display:flex;flex-direction:column;min-height:100%">
+                <div class="region-body">
+                  <div style="font-weight:600; margin-bottom: 12px;">已关联 ({{ associatedSubTags.length }})</div>
+                  <div v-loading="loading" :class="['sub-list-associated','droppable', { 'droppable--over': isOverAssociated, 'drag-target': draggingFromAvailable, 'empty-container': !associatedSubTags.length }]" @dragover="onDragOverAssociated" @dragenter="onDragEnterAssociated" @dragleave="onDragLeaveAssociated" @drop="onDropToAssociated">
+                    <el-card v-for="st in associatedSubTags" :key="st.id" shadow="never" class="sub-item associated-item" :draggable="true" @dragstart="onDragStartFromAssociated(st, $event)" @dragend="onDragEndFromAssociated">
+                      <div class="sub-name">{{ st.name }}</div>
+                    </el-card>
+                    <div v-if="draggingFromAvailable" class="drag-hint">关联</div>
+                    <el-empty v-if="!associatedSubTags.length" description="尚未关联任何子标签" :image-size="60" class="full-size-empty" />
+                  </div>
+                </div>
 
-            <el-divider />
+                <el-divider />
 
-            <div class="region-footer">
-              <div style="font-weight:600;margin-bottom:12px;">可用子标签 ({{ availableSubTags.length }})</div>
-              <el-input v-model="searchSub" placeholder="搜索可用子标签..." prefix-icon="Search" clearable
-                style="margin-bottom:12px;" />
-              <div :class="['sub-list','droppable', { 'droppable--over': isOverAvailable, 'drag-target': draggingFromAssociated }]" @dragover="onDragOverAvailable" @dragenter="onDragEnterAvailable" @dragleave="onDragLeaveAvailable" @drop="onDropToAvailable">
-                <el-card v-for="st in availableSubTags" :key="st.id" shadow="hover" class="sub-item available-item" :draggable="true" @dragstart="onDragStartFromAvailable(st, $event)" @dragend="onDragEndFromAvailable">
-                  <div class="sub-name">{{ st.name }}</div>
-                </el-card>
-                <div v-if="draggingFromAssociated" class="drag-hint--cancel">取消关联</div>
-                <el-empty v-if="!availableSubTags.length" description="暂无可用子标签" :image-size="60" />
+                <div class="region-footer">
+                  <div style="font-weight:600;margin-bottom:12px;">可用子标签 ({{ availableSubTags.length }})</div>
+                  <el-input v-model="searchSub" placeholder="搜索可用子标签..." prefix-icon="Search" clearable
+                    style="margin-bottom:12px;" />
+                  <div :class="['sub-list','droppable', { 'droppable--over': isOverAvailable, 'drag-target': draggingFromAssociated }]" @dragover="onDragOverAvailable" @dragenter="onDragEnterAvailable" @dragleave="onDragLeaveAvailable" @drop="onDropToAvailable">
+                    <el-card v-for="st in availableSubTags" :key="st.id" shadow="hover" class="sub-item available-item" :draggable="true" @dragstart="onDragStartFromAvailable(st, $event)" @dragend="onDragEndFromAvailable">
+                      <div class="sub-name">{{ st.name }}</div>
+                    </el-card>
+                    <div v-if="draggingFromAssociated" class="drag-hint--cancel">取消关联</div>
+                    <el-empty v-if="!availableSubTags.length" description="暂无可用子标签" :image-size="60" />
+                  </div>
+                </div>
               </div>
-            </div>
+            </CustomScroll>
           </div>
         </el-card>
       </el-col>
@@ -285,26 +302,30 @@ onMounted(loadAll)
           <template #header>
             <div class="region-header">
               <span class="region-title">📚 通用子标签库</span>
-              <el-button type="primary" size="small" @click="openCreateSub">新增</el-button>
+              <el-button type="plain" link size="large" @click="openCreateSub">
+                <el-icon><Plus /></el-icon>
+              </el-button>
             </div>
           </template>
           <div class="region-content-scroll">
-            <div v-loading="loading" class="sub-list library-list-wrapper">
-              <!-- 一行两卡片：外层用 grid 控制 -->
-              <div class="two-per-row">
-                <el-card
-                  v-for="st in subTags"
-                  :key="st.id"
-                  shadow="hover"
-                  class="sub-item"
-                >
-                  <div class="sub-item-content">
-                    <div class="sub-name is-editable" @click="openRenameSub(st)">{{ st.name }}</div>
-                  </div>
-                </el-card>
+            <CustomScroll>
+              <div v-loading="loading" class="sub-list library-list-wrapper">
+                <!-- 一行两卡片：外层用 grid 控制 -->
+                <div class="two-per-row">
+                  <el-card
+                    v-for="st in subTags"
+                    :key="st.id"
+                    shadow="hover"
+                    class="sub-item"
+                  >
+                    <div class="sub-item-content">
+                      <div class="sub-name is-editable" @click="openRenameSub(st)">{{ st.name }}</div>
+                    </div>
+                  </el-card>
+                </div>
+                <el-empty v-if="!subTags.length" description="暂无子标签" :image-size="80" />
               </div>
-              <el-empty v-if="!subTags.length" description="暂无子标签" :image-size="80" />
-            </div>
+            </CustomScroll>
           </div>
         </el-card>
       </el-col>
@@ -316,8 +337,9 @@ onMounted(loadAll)
           <el-input v-model="createForm.name" />
         </el-form-item>
         <el-form-item>
-          <el-button @click="createDialog = false">取消</el-button>
-          <el-button type="primary" @click="createMain">创建</el-button>
+          <div style="flex:1"></div>
+          <el-button type="danger" link size="large" @click="createDialog = false">取消</el-button>
+          <el-button type="primary" link size="large" @click="createMain">创建</el-button>
         </el-form-item>
       </el-form>
     </el-dialog>
@@ -328,8 +350,9 @@ onMounted(loadAll)
           <el-input v-model="renameForm.name" />
         </el-form-item>
         <el-form-item>
-          <el-button @click="renameDialog = false">取消</el-button>
-          <el-button type="primary" @click="doRenameMain">保存</el-button>
+          <div style="flex:1"></div>
+          <el-button type="danger" link size="large" @click="renameDialog = false">取消</el-button>
+          <el-button type="primary" link size="large" @click="doRenameMain">保存</el-button>
         </el-form-item>
       </el-form>
     </el-dialog>
@@ -340,8 +363,9 @@ onMounted(loadAll)
           <el-input v-model="subCreateForm.name" />
         </el-form-item>
         <el-form-item>
-          <el-button @click="subCreateDialog = false">取消</el-button>
-          <el-button type="primary" @click="createSub">创建</el-button>
+          <div style="flex:1"></div>
+          <el-button type="danger" link size="large" @click="subCreateDialog = false">取消</el-button>
+          <el-button type="primary" link size="large" @click="createSub">创建</el-button>
         </el-form-item>
       </el-form>
     </el-dialog>
@@ -351,9 +375,9 @@ onMounted(loadAll)
         <el-form-item label="名称">
           <div style="display:flex;align-items:center;gap:8px;width:100%;">
             <el-input v-model="subRenameForm.name" style="max-width:240px" />
-            <el-button type="primary" @click="doRenameSub">保存</el-button>
+            <el-button type="primary" link size="large" @click="doRenameSub">保存</el-button>
             <div style="flex:1"></div>
-            <el-button type="danger" plain @click="deleteSubInDialog">删除</el-button>
+            <el-button type="danger" link size="large" @click="deleteSubInDialog">删除</el-button>
           </div>
         </el-form-item>
       </el-form>
@@ -362,12 +386,12 @@ onMounted(loadAll)
 </template>
 
 <style scoped>
-/* 1. 标签栏长度填充满 (需要父容器支持) */
-/* 假设 tag-page-container 的父级或它本身的高度是确定的（例如 viewport 高度减去头部） */
+
 .tag-page-container {
   padding: 10px;
-  height: calc(100vh - 70px);
-  /* 示例：假设页面高度 - 顶部导航栏高度 */
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .full-height-row {
@@ -391,7 +415,7 @@ onMounted(loadAll)
 }
 
 .region-title { 
-  font-weight:700; 
+  font-weight:600; 
   font-size: 18px;
 }
 
@@ -407,21 +431,31 @@ onMounted(loadAll)
   overflow: hidden;
   /* 确保内容不会溢出卡片 */
   padding: 15px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 允许内容区域滚动 */
 .region-content-scroll {
-  height: 100%;
-  overflow-y: auto;
-  padding-right: 5px;
+  flex-grow: 1; /* 占据卡片剩余空间 */
+  height: 0; /* 配合 flex-grow 生效 */
+  overflow-y: hidden;
   /* 留出滚动条空间 */
+}
+
+/* 区域 body 和 footer */
+.region-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 200px; /* 给予已关联区域一个最小高度，避免太扁 */
+  flex-grow: 1; /* 让这部分尽可能占据空间 */
 }
 
 /* 主标签列表 A 区 */
 .main-list-wrapper {
   height: 100%;
   /* 继承 el-card__body 的高度 */
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 .main-list {
@@ -437,16 +471,16 @@ onMounted(loadAll)
   cursor: pointer;
   padding: 12px 16px;
   border: 1px solid var(--el-border-color-light);
-  border-left: 6px solid var(--tag-color); /* 使用 CSS 变量控制颜色 */
+  border-left: 7px solid var(--tag-color); /* 使用 CSS 变量控制颜色 */
   border-radius: var(--el-border-radius-base);
-  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.75s cubic-bezier(0.25, 0.8, 0.25, 1);
   background-color: var(--el-bg-color-overlay);
   color: var(--el-text-color-primary);
 }
 
 .main-item:hover {
   background-color: var(--el-fill-color-light);
-  transform: translateX(3px); /* 悬停微动效果 */
+  transform: translateX(6px); /* 悬停微动效果 */
 }
 
 .main-item.active {
@@ -459,11 +493,11 @@ onMounted(loadAll)
   
   /* 高亮悬浮效果 */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px) scale(1.01);
+  transform: translateX(10px); /* 大于 .main-item:hover 的位移 */
   z-index: 1; /* 确保悬浮在其他元素之上 */
   background-color: var(--el-bg-color-overlay); /* 保持背景色一致 */
   /* 使用 color-mix 生成半透明背景色，并渐变消失 */
-  background-image: linear-gradient(to right, color-mix(in srgb, var(--tag-color), transparent 85%) 0%, transparent 55%);
+  background-image: linear-gradient(to right, color-mix(in srgb, var(--tag-color), transparent 80%) 0%, transparent 65%);
 }
 
 .main-name {
@@ -482,6 +516,22 @@ onMounted(loadAll)
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 8px;
+}
+
+/* 保证空状态容器撑满父元素 */
+.sub-list-associated.empty-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 200px; /* 给予最小高度 */
+  height: 100%;
+}
+
+.full-size-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .sub-list {
