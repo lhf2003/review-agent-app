@@ -162,20 +162,22 @@ onMounted(load)
         <el-radio-button :label="2">ChatGPT</el-radio-button>
       </el-radio-group>
 
-      <el-input v-model="searchName" placeholder="搜索文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="max-width:280px" />
-      <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width:160px" @change="() => { page = 1; load() } ">
+      <div class="spacer"></div>
+
+      <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="max-width:150px; margin-right: 12px;" />
+      <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width:100px; margin-right: 12px;" @change="() => { page = 1; load() } ">
         <el-option :value="null" label="全部" />
         <el-option :value="0" label="未分析" />
         <el-option :value="2" label="已分析" />
         <el-option :value="3" label="有更新" />
         <el-option :value="4" label="失败" />
       </el-select>
-      <div class="spacer"></div>
-      <el-button type="primary" @click="openImport" icon="Upload">
+      
+      <el-button type="plain" @click="openImport" icon="Upload">
         导入
       </el-button>
-      <el-button @click="load" icon="Refresh">
-        刷新
+      <el-button type="plain" link size="large" @click="load" style="margin-right: 12px;margin-left: 20px;">
+        <el-icon><Refresh /></el-icon>
       </el-button>
     </div>
 
