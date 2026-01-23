@@ -217,11 +217,6 @@ function confirmDelete(e, id) {
   align-items: flex-start;
   gap: 16px;
 
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    border-color: $glow-color-light;
-  }
 }
 
 .card-icon {

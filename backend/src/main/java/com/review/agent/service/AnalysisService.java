@@ -285,9 +285,14 @@ public class AnalysisService {
 
     public Map<String, List<AnalysisResultVo>> getFileNameList(Long userId) {
         List<AnalysisResultInfo> list = analysisResultRepository.findByPage(Pageable.unpaged(), null, null, null, userId);
-
+        if (CollectionUtils.isEmpty(list)) {
+            return Collections.emptyMap();
+        }
         // 构建子标签ID到名称的映射
         List<SubTag> subTagList = tagService.findSubTagList(userId);
+        if (CollectionUtils.isEmpty(subTagList)) {
+            return Collections.emptyMap();
+        }
         Map<Long, String> subTagIdToNameMap = subTagList.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
 
         List<AnalysisResultVo> voList = list.stream().map(item -> {

@@ -3,12 +3,19 @@ package com.review.agent.config;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
+import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.OllamaEmbeddingModel;
+import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.web.client.RestClient;
 
 @Configuration
@@ -45,15 +52,15 @@ public class MultiLLMConfig {
 
 
     // region 向量嵌入模型配置
-//    @Bean
-//    public EmbeddingModel dashScopeEmbeddingModel(DashScopeApi dashScopeApi) {
-//        DashScopeEmbeddingOptions dashScopeEmbeddingOptions = DashScopeEmbeddingOptions.builder()
-//                .model(embeddingModel)
-//                .dimensions(dimensions)
-//                .textType(DashScopeModel.EmbeddingTextType.QUERY.getValue())
-//                .build();
-//        return new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED, dashScopeEmbeddingOptions);
-//    }
+    @Primary
+    @Bean
+    public EmbeddingModel dashScopeEmbeddingModel(DashScopeApi dashScopeApi) {
+        DashScopeEmbeddingOptions dashScopeEmbeddingOptions = DashScopeEmbeddingOptions.builder()
+                .model(embeddingModel)
+                .dimensions(dimensions)
+                .build();
+        return new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED, dashScopeEmbeddingOptions);
+    }
 
 //    @Bean
 //    public EmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi) {

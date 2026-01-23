@@ -130,7 +130,7 @@ public class DataInfoService {
             log.error("❌无法获取修改时间: " + filePath);
         }
         Date currentDateTime = Date.from(Instant.ofEpochMilli(currentModifiedTime));
-        DataInfo existingData = dataInfoRepository.findByFileName(filename);
+        DataInfo existingData = dataInfoRepository.findByUserIdAndFileName(userId, filename);
         // 新增文件
         if (existingData == null) {
             DataInfo dataInfo = new DataInfo();
@@ -161,7 +161,7 @@ public class DataInfoService {
     }
 
     public DataInfo importData(Long userId, String originalFilename, String content, Integer source) {
-        DataInfo existing = dataInfoRepository.findByFileName(originalFilename);
+        DataInfo existing = dataInfoRepository.findByUserIdAndFileName(userId,originalFilename);
         if (existing == null) {
             DataInfo dataInfo = new DataInfo();
             dataInfo.setUserId(userId);

@@ -70,6 +70,12 @@ async function loadAll() {
   try {
     loading.value = true
     await loadMain()
+
+    // 如果主标签为空，则不继续加载子标签和关系
+    if (!mainTags.value || mainTags.value.length === 0) {
+      return
+    }
+
     await Promise.all([loadSub(), loadRelation()])
   } catch (e) {
     ElMessage.error(`加载失败: ${e.message}`)
@@ -284,12 +290,12 @@ onMounted(loadAll)
                     <el-input v-model="searchSub" placeholder="搜索可用子标签..." prefix-icon="Search" clearablestyle="height:20px; width:45%; margin: 0 auto;" />
                   </div>
 
-                  <div :class="['sub-list','droppable', { 'droppable--over': isOverAvailable, 'drag-target': draggingFromAssociated }]" @dragover="onDragOverAvailable" @dragenter="onDragEnterAvailable" @dragleave="onDragLeaveAvailable" @drop="onDropToAvailable">
+                  <div :class="['sub-list','droppable', { 'droppable--over': isOverAvailable, 'drag-target': draggingFromAssociated, 'empty-container': !availableSubTags.length }]" @dragover="onDragOverAvailable" @dragenter="onDragEnterAvailable" @dragleave="onDragLeaveAvailable" @drop="onDropToAvailable">
                     <div v-for="st in availableSubTags" :key="st.id" class="sub-item compact-card" :draggable="true" @dragstart="onDragStartFromAvailable(st, $event)" @dragend="onDragEndFromAvailable">
                       <div class="sub-name">{{ st.name }}</div>
                     </div>
                     <div v-if="draggingFromAssociated" class="drag-hint--cancel">取消关联</div>
-                    <el-empty v-if="!availableSubTags.length" description="暂无可用子标签" :image-size="60" />
+                    <el-empty v-if="!availableSubTags.length" description="暂无可用子标签" :image-size="60" class="full-size-empty" />
                   </div>
                 </div>
               </div>
@@ -525,7 +531,8 @@ onMounted(loadAll)
 }
 
 /* 保证空状态容器撑满父元素 */
-.sub-list-associated.empty-container {
+.sub-list-associated.empty-container,
+.sub-list.empty-container {
   display: flex;
   flex-direction: column;
   flex-grow: 1;

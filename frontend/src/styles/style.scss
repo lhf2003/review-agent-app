@@ -29,7 +29,7 @@
 
 /* Global Component Styles */
 .el-table th.el-table__cell {
-  font-size: 18px !important; /* Make table headers larger */
+  font-size: 17px !important; /* Make table headers larger */
   font-weight: bold;
 }
 
@@ -342,7 +342,7 @@ html.dark {
   font-weight: 500;
   font-size: 13px;
   padding: 6px 12px;
-  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) !important; /* Smooth spring-like transition */
+  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) !important; /* Smooth spring-like el-form  */
   box-shadow: none !important;
 }
 

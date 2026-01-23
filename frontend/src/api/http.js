@@ -2,8 +2,7 @@ import forge from 'node-forge'
 import { ElMessage } from 'element-plus'
 const isDev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV
 const isEmbeddedHttp = typeof window !== 'undefined' && window.location && window.location.protocol === 'http:' && window.location.port === '3000'
-// 在开发模式下通过 Vite 代理到后端（/api -> target）
-const BASE_URL = 'http://localhost:8002'
+const BASE_URL = "/api"
 const AES_KEY_STR = 'ReviewAgentSecureKey20250101!!!!';
 
 async function encryptPassword(password) {
@@ -70,7 +69,10 @@ function getUserId() {
 }
 
 async function request(path, { method = 'GET', params, body, headers } = {}) {
-  let url = BASE_URL + path
+  // 统一添加 /api 前缀，触发代理
+  const baseUrl = '/api'
+  let url = path.startsWith('http') ? path : (baseUrl + path)
+  
   if (params) {
     const usp = new URLSearchParams(params)
     url += `?${usp.toString()}`
@@ -373,7 +375,7 @@ export const api = {
     const userId = getUserId()
     const headers = { Accept: 'text/event-stream' }
     if (userId) headers['userId'] = userId
-    const url = new URL(BASE_URL + '/chat')
+    const url = new URL('/chat')
     url.searchParams.set('request', requestText || '')
     
     const p = fetch(url.toString(), { method: 'GET', headers, signal: controller.signal })

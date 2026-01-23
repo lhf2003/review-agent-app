@@ -1,7 +1,7 @@
 server:
   port: 8080
   servlet:
-    context-path: /api
+    context-path: /
 
 spring:
   application:
@@ -42,23 +42,31 @@ spring:
   
   # Spring AI Alibaba配置
   ai:
+    # 模型配置（多客户端情况，需要指定embedding默认提供商）
+    model:
+      embedding: dashscope
     dashscope:
       # 替换为你自己的 DashScope API Key
       api-key: ${DASHSCOPE_API_KEY}
       chat:
         model: qwen-plus
       embedding:
-        model: text-embedding-v3
+        options:
+          model: text-embedding-v4
+          dimensions: 1536
+    # Ollama配置
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://127.0.0.1:11434}
       chat:
         model: ${OLLAMA_CHAT_MODEL:qwen2.5:14b}
       embedding:
         model: bge-m3:latest
-#    vectorstore:
-#      redis:
-#        initialize-schema: true
+    # 向量数据库配置
+    vectorstore:
+      redis:
+        initialize-schema: true
 #        index-name: review_agent
+#        prefix: review
 
 # 日志配置
 logging:

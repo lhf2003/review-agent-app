@@ -1,0 +1,66 @@
+services:
+  # --- 1. 数据库服务 MySQL ---
+  mysql:
+    image: mysql:8.0
+    container_name: agent-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456" # 对应 application.yml 中的密码
+      MYSQL_DATABASE: review_agent  # 对应数据库名
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    volumes:
+      # 数据持久化，防止重启容器丢失数据
+      - ./mysql-data:/var/lib/mysql
+      # 自动初始化 SQL (如果有 init.sql)
+      - ./backend/src/main/resources/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # --- 2. 缓存服务 Redis ---
+  redis:
+    image: redis:latest
+    container_name: agent-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # --- 3. 后端服务 ---
+  backend:
+    build: ./backend
+    container_name: agent-backend
+    ports:
+      - "8001:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    dns:
+      - 223.5.5.5
+      - 8.8.8.8
+    environment:
+      # 覆盖 application.yml 中的配置
+      # 在 Docker 内部，"localhost" 指的是容器自己，访问其他容器要用服务名
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/review_agent?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATA_REDIS_HOST: redis
+      # 阿里云 DashScope API Key (你需要在这里填入真实的 Key，或者在系统环境变量里设置)
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      # 如果你有 Ollama，这里配置 Ollama 的地址
+      # 如果 Ollama 运行在宿主机，请使用 http://host.docker.internal:11434
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+
+  # --- 4. 前端服务 ---
+  frontend:
+    build: ./frontend
+    container_name: agent-frontend
+    ports:
+      - "80:80" # 浏览器访问端口
+    depends_on:
+      - backend

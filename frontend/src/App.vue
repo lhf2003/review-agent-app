@@ -6,7 +6,6 @@ import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
 import { useThemeStore } from './stores/theme'
 import { api } from './api/http'
-import md5 from 'blueimp-md5'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/atom-one-dark.css'
@@ -347,15 +346,8 @@ watch(() => auth.isAuthenticated, (val) => {
   <el-dialog v-model="avatarDialog" width="380px" align-center>
     <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
       <el-avatar class="dialog-avatar" :size="128" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" @click="toggleAvatarSize"/>
-      <div style="width:100%;">
-        <el-form label-width="100px">
-          <el-form-item label="用户名">
-            <el-input :model-value="auth.username" disabled />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="danger" @click="onLogout">退出登录</el-button>
-          </el-form-item>
-        </el-form>
+      <div style="width:100%;display:flex;justify-content:center;">
+        <el-button type="danger" @click="onLogout">退出登录</el-button>
       </div>
     </div>
   </el-dialog>

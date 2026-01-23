@@ -400,6 +400,7 @@ async function onSubmit() {
     height: 52px;
     font-size: 16px;
     font-weight: 600;
+    color: #ffffff;
     border-radius: 12px;
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     border: none;

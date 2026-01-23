@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { api } from '../api/http'
 import { useAuthStore } from '../stores/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { useRouter } from 'vue-router'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 
@@ -216,16 +217,18 @@ onMounted(load)
 
     <!-- 分页导航 -->
     <div class="pagination-bar">
-      <el-pagination
-        small
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :page-sizes="[10,20,50,100]"
-        layout="total, sizes, prev, pager, next"
-        :total="total"
-        @current-change="load"
-        @size-change="() => { page = 1; load() }"
-      />
+      <el-config-provider :locale="zhCn">
+        <el-pagination
+          small
+          v-model:current-page="page"
+          v-model:page-size="pageSize"
+          :page-sizes="[10,20,50,100]"
+          layout="total, sizes, prev, pager, next"
+          :total="total"
+          @current-change="load"
+          @size-change="() => { page = 1; load() }"
+        />
+      </el-config-provider>
     </div>
 
     <!-- 导入文件 -->

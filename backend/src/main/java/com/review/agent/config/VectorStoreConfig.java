@@ -27,7 +27,6 @@ public class VectorStoreConfig {
 
     @Bean(name = "chatVectorStore")
     public RedisVectorStore chatVectorStore(JedisPooled jedisPooled, EmbeddingModel dashscopeEmbeddingModel) {
-        System.out.println(dashscopeEmbeddingModel.dimensions());
         List<RedisVectorStore.MetadataField> metadataFieldList = new ArrayList<>();
         metadataFieldList.add(RedisVectorStore.MetadataField.tag("userId"));
         metadataFieldList.add(RedisVectorStore.MetadataField.text("response"));
@@ -42,7 +41,6 @@ public class VectorStoreConfig {
     }
     @Bean(name = "analysisResultVectorStore")
     public RedisVectorStore analysisResultVectorStore(JedisPooled jedisPooled, EmbeddingModel ollamaEmbeddingModel) {
-        System.out.println(ollamaEmbeddingModel.dimensions());
         List<RedisVectorStore.MetadataField> metadataFieldList = new ArrayList<>();
         metadataFieldList.add(RedisVectorStore.MetadataField.tag("userId"));
         metadataFieldList.add(RedisVectorStore.MetadataField.text("solution"));
