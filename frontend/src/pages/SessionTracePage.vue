@@ -93,30 +93,30 @@ onMounted(() => {
 
 <template>
   <div class="trace-page" v-loading="loading">
-    <div class="left-panel">
+    <aside class="left-panel">
       <SessionList 
         :sessions="sessions" 
         :active-session-index="activeSessionIndex"
         @select="handleSessionSelect"
       />
-    </div>
+    </aside>
     
-    <div class="center-panel">
+    <main class="center-panel">
       <CodeViewer 
         :content="content"
         :sessions="sessions"
         :active-session-index="activeSessionIndex"
         @select-session="handleSessionSelect"
       />
-    </div>
+    </main>
     
-    <div class="right-panel">
+    <aside class="right-panel">
       <AnalysisCard 
         :session="activeSession"
         :similarity-count="similarIssues.length"
         @show-similarity="showSimilarity = true"
       />
-    </div>
+    </aside>
 
     <SimilarityModal 
       v-model:visible="showSimilarity"
@@ -132,26 +132,76 @@ onMounted(() => {
   display: flex;
   overflow: hidden;
   background-color: var(--el-bg-color-page);
+  gap: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 1024px) {
+  .trace-page {
+    flex-direction: column;
+    padding: 12px;
+    gap: 12px;
+    overflow-y: auto;
+  }
+}
+
+.left-panel,
+.center-panel,
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--el-bg-color);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--el-border-color-light);
+  box-shadow: var(--el-box-shadow-light);
+}
+
+:global(html.dark) .left-panel,
+:global(html.dark) .center-panel,
+:global(html.dark) .right-panel {
+  border-color: var(--el-border-color-darker);
+  box-shadow: none;
 }
 
 .left-panel {
-  width: 250px; /* Approx 15% of 1920, but fixed is better for sidebar */
+  width: 240px;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
+}
+
+@media (max-width: 1024px) {
+  .left-panel {
+    width: 100%;
+    height: 240px;
+    flex-shrink: 0;
+  }
 }
 
 .center-panel {
   flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
+  min-width: 0; /* Prevent flex overflow */
+}
+
+@media (max-width: 1024px) {
+  .center-panel {
+    height: 500px;
+    flex: none;
+  }
 }
 
 .right-panel {
-  width: 400px; /* Approx 30% */
+  width: 440px;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
+}
+
+@media (max-width: 1024px) {
+  .right-panel {
+    width: 100%;
+    height: 400px;
+    flex: none;
+  }
 }
 </style>

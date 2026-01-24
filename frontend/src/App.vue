@@ -1,7 +1,8 @@
 <script setup>
-import { ref, watch, onMounted, nextTick, computed } from 'vue'
+import { ref, watch, onMounted, nextTick, computed, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Moon, Sunny, FullScreen } from '@element-plus/icons-vue'
+import { Moon, Sunny, FullScreen, Menu as MenuIcon } from '@element-plus/icons-vue'
 import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
 import { useThemeStore } from './stores/theme'
@@ -24,9 +25,7 @@ const md = new MarkdownIt({
   }
 })
 
-/**
- * 深度清洗 Markdown 内容 - 表格保护增强版
- */
+// ... (renderMarkdown function remains unchanged)
 function renderMarkdown(content) {
   if (!content) return ''
   let processed = content
@@ -39,7 +38,6 @@ function renderMarkdown(content) {
   })
 
   // 1. 保护表格 (关键步骤！)
-  // 识别逻辑：连续两行以上包含管道符 | 的文本块，视为表格
   const tableBlocks = []
   processed = processed.replace(/((?:(?:^|\n)[ \t]*\|.*\|[ \t]*)+)/g, (match) => {
     tableBlocks.push(match)
@@ -60,11 +58,9 @@ function renderMarkdown(content) {
   processed = processed.replace(/\n\s*\n/g, '\u0000PARAGRAPH_BREAK\u0000')
   const isCJK = (char) => /[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/.test(char)
   processed = processed.replace(/([^\n\u0000])\s*\n\s*([^\n\u0000])/g, (match, prev, next) => {
-    // 如果前后都是中文/中文标点，直接合并
     if (isCJK(prev) && isCJK(next)) {
       return `${prev}${next}`
     }
-    // 否则加空格
     return `${prev} ${next}`
   })
   processed = processed.replace(/\u0000PARAGRAPH_BREAK\u0000/g, '\n\n')
@@ -90,6 +86,14 @@ const avatarSizeLarge = ref(false)
 const profileForm = ref({ avatar: '', newPassword: '', confirm: '' })
 const chatInput = ref('')
 
+// Responsive State
+const isMobile = ref(false)
+const drawerVisible = ref(false)
+
+function checkMobile() {
+  isMobile.value = window.innerWidth <= 768
+}
+
 // Chat trigger logic
 const placeholderMessages = ref(['你需要我的帮助吗？', '发现一个新文件，需要我分析吗？', '输入关键字搜索分析结果...', '试试问我关于代码的问题'])
 const currentPlaceholderIndex = ref(0)
@@ -106,7 +110,15 @@ const displayText = computed(() => {
   return placeholderMessages.value[currentPlaceholderIndex.value]
 })
 
+const route = useRoute()
+const isAuthPage = computed(() => {
+  return ['/login', '/register'].includes(route.path)
+})
+
 onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+
   api.getChatPlaceholders().then(list => {
     if (Array.isArray(list) && list.length > 0) {
       placeholderMessages.value = list
@@ -119,6 +131,11 @@ onMounted(() => {
     }
   }, 6000)
   themeStore.initTheme()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+  if (placeholderInterval) clearInterval(placeholderInterval)
 })
 
 function toggleTheme(val) {
@@ -166,17 +183,18 @@ watch(() => auth.isAuthenticated, (val) => {
 </script>
 
 <template>
-  <div v-if="['/login','/register'].includes($route.path)" style="height:100vh;">
+  <div v-if="isAuthPage" style="height:100vh; width: 100%;">
     <router-view />
   </div>
   <el-container v-else style="height:100vh;">
-    <el-aside width="65px" class="app-aside">
+    <!-- Desktop Sidebar -->
+    <el-aside width="65px" class="app-aside" v-if="!isMobile">
       <div class="aside-avatar">
         <el-tooltip content="个人中心" placement="right">
-          <el-avatar class="user-avatar" :size="50" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" @click="openAvatar"/>
+          <el-avatar class="user-avatar" :size="48" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" @click="openAvatar"/>
         </el-tooltip>
       </div>
-      <el-menu router :default-active="$route.path" class="aside-menu">
+      <el-menu router :default-active="$route.path" class="aside-menu" :collapse="true">
         <el-tooltip content="数据" placement="right">
           <template #default>
             <el-menu-item index="/data">
@@ -236,15 +254,62 @@ watch(() => auth.isAuthenticated, (val) => {
         </el-tooltip>
       </el-menu>
     </el-aside>
+
+    <!-- Mobile Drawer Sidebar -->
+    <el-drawer v-model="drawerVisible" direction="ltr" size="240px" :with-header="false">
+      <div class="mobile-menu-content">
+        <div class="mobile-user-info" @click="openAvatar">
+           <el-avatar class="user-avatar" :size="50" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" />
+           <span style="margin-left: 12px; font-weight: 600;">{{ auth.username }}</span>
+        </div>
+        <el-menu router :default-active="$route.path" class="mobile-menu">
+            <el-menu-item index="/data" @click="drawerVisible = false">
+              <el-icon><List /></el-icon>
+              <span>数据</span>
+            </el-menu-item>
+            <el-menu-item index="/collections" @click="drawerVisible = false">
+              <el-icon><Files /></el-icon>
+              <span>合集</span>
+            </el-menu-item>
+            <el-menu-item index="/analysis" @click="drawerVisible = false">
+              <el-icon><Folder /></el-icon>
+              <span>分析结果</span>
+            </el-menu-item>
+            <el-menu-item index="/tags" @click="drawerVisible = false">
+              <el-icon><PriceTag /></el-icon>
+              <span>标签</span>
+            </el-menu-item>
+            <el-menu-item index="/sync" @click="drawerVisible = false">
+              <el-icon><Clock /></el-icon>
+              <span>同步记录</span>
+            </el-menu-item>
+            <el-menu-item index="/word-cloud" @click="drawerVisible = false">
+              <el-icon><TrendCharts /></el-icon>
+              <span>统计</span>
+            </el-menu-item>
+            <el-menu-item index="/report" @click="drawerVisible = false">
+              <el-icon><Notebook /></el-icon>
+              <span>报告</span>
+            </el-menu-item>
+            <el-menu-item index="/config" @click="drawerVisible = false">
+              <el-icon><Setting /></el-icon>
+              <span>配置</span>
+            </el-menu-item>
+        </el-menu>
+      </div>
+    </el-drawer>
+
     <el-container>
       <el-header class="app-header">
         <div class="header-left">
-          <div class="title">Review Agent</div>
+          <el-button v-if="isMobile" @click="drawerVisible = true" link style="margin-right: 12px; font-size: 20px;">
+            <el-icon><MenuIcon /></el-icon>
+          </el-button>
         </div>
         <div class="header-center">
           <div class="chat-trigger-bar" @click="chatStore.open" :class="{ 'has-unread': chatStore.hasUnreadMessage }">
             <el-icon class="trigger-icon"><ChatLineRound /></el-icon>
-            <div class="rolling-text-container">
+            <div class="rolling-text-container" v-if="!isMobile">
               <transition name="fade-slide" mode="out-in">
                 <span :key="chatStore.hasUnreadMessage ? 'unread' : currentPlaceholderIndex" class="rolling-text">{{ displayText }}</span>
               </transition>
@@ -268,6 +333,7 @@ watch(() => auth.isAuthenticated, (val) => {
       </el-main>
     </el-container>
   </el-container>
+
 
   <transition name="chat-expand">
     <div v-if="chatStore.isOpen" class="chat-wrapper">
@@ -354,21 +420,49 @@ watch(() => auth.isAuthenticated, (val) => {
 </template>
 
 <style scoped>
-.app-aside { border-right: 1px solid var(--el-border-color); display:flex; flex-direction:column; background: var(--el-bg-color); }
-.app-header { display:flex; align-items:center; justify-content:space-between; gap: 20px; }
-.header-left { display:flex; align-items:center; min-width: 150px; }
+/* Removed .app-aside and .app-header styles from here as they are moved to global styles */
+.header-left { display:flex; align-items:center; min-width: 60px; }
 .header-center { flex:1; display:flex; justify-content:center; }
-.header-right { display:flex; align-items:center; justify-content:flex-end; min-width: 150px; }
+.header-right { display:flex; align-items:center; justify-content:flex-end; min-width: 60px; }
 .title { font-weight:bold; }
 .app-main { padding:16px; }
-.aside-avatar { display:flex; align-items:center; justify-content:center; padding:16px 8px; border-bottom: 1px solid var(--el-border-color); }
-.aside-menu { flex:1; display:flex; flex-direction:column; }
-.menu-spacer { flex:1; }
+.aside-avatar { 
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  height: 60px;
+  box-sizing: border-box;
+  border-bottom: none; 
+}
+  .aside-menu { flex:1; display:flex; flex-direction:column; padding-top: 8px; border-right: none !important; background-color: transparent !important; }
+  .aside-menu :deep(.el-menu) {
+    border-right: none !important;
+    background-color: transparent !important;
+  }
+  .aside-menu :deep(.el-menu-item) { 
+    justify-content: center; 
+    height: 48px;
+    margin: 4px 8px;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .aside-menu :deep(.el-menu-item:hover) {
+    background-color: rgba(0, 0, 0, 0.04);
+    transform: scale(1.04);
+  }
+  .aside-menu :deep(.el-menu-item.is-active) {
+    background-color: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  .aside-menu :deep(.el-icon) {
+    font-size: 20px;
+  }
+  .menu-spacer { flex:1; }
 .user-avatar { cursor: pointer; transition: transform 200ms ease; }
 .user-avatar:hover { transform: scale(1.05); }
 .dialog-avatar { cursor: zoom-in; transition: transform 200ms ease; }
 .dialog-avatar:hover { transform: scale(1.03); }
-.aside-menu :deep(.el-menu-item) { justify-content: center; }
 
 /* Chat Trigger Bar */
 .chat-trigger-bar {
@@ -386,16 +480,10 @@ watch(() => auth.isAuthenticated, (val) => {
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
 
-@keyframes breathe-glow {
-  0% { box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.2); border-color: var(--el-color-primary-light-5); }
-  50% { box-shadow: 0 0 20px 5px rgba(64, 158, 255, 0.6); border-color: var(--el-color-primary); }
-  100% { box-shadow: 0 0 0 0 rgba(64, 158, 255, 0.2); border-color: var(--el-color-primary-light-5); }
-}
-
 .chat-trigger-bar.has-unread {
-  animation: breathe-glow 2s infinite ease-in-out;
   border-color: var(--el-color-primary);
-  background: var(--el-fill-color-light);
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
 }
 
 .chat-trigger-bar:hover {
@@ -403,7 +491,7 @@ watch(() => auth.isAuthenticated, (val) => {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   transform: translateY(-1px);
 }
-.trigger-icon { font-size: 18px; margin-right: 10px; color: var(--el-text-color-regular); }
+.trigger-icon { font-size: 18px; margin-right: 10px; color: inherit; }
 .rolling-text-container { flex:1; overflow:hidden; position:relative; height: 20px; display:flex; align-items:center; }
 .rolling-text { font-size: 14px; white-space:nowrap; }
 
@@ -749,90 +837,79 @@ watch(() => auth.isAuthenticated, (val) => {
 @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
 .chat-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--el-border-color-light);
+  padding: 20px 24px;
   background: var(--el-bg-color);
+  /* Remove top border for a cleaner look */
+  border-top: none;
 }
 .chat-input-area :deep(.el-textarea__inner) {
   box-shadow: none !important;
   background: transparent !important;
-  padding: 0;
+  padding: 2px 0; /* Slight padding fix */
   resize: none;
+  min-height: 24px !important;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 .input-container {
   display: flex; gap: 12px; align-items: flex-end;
-  /* background: var(--el-fill-color-light); */
-  padding: 10px 14px;
-  border-radius: 24px;
+  background: var(--el-fill-color-blank);
+  padding: 12px 16px;
+  border-radius: 18px; /* Modern curvature */
   border: 1px solid var(--el-border-color);
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  z-index: 0;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* Subtle depth */
 }
 
-.input-container:hover,
-.input-container.has-content {
-  border-color: transparent;
+.input-container:hover {
+  border-color: var(--el-border-color-darker);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
 }
 
-.input-container::before {
-  content: '';
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 100vmax; height: 100vmax;
-  transform: translate(-50%, -50%);
-  background: conic-gradient(
-    from 0deg,
-    #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000
-  );
-  animation: rotate-border-centered 4s linear infinite;
-  z-index: -2;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.input-container:hover::before,
-.input-container.has-content::before {
-  opacity: 1;
-}
-
-@keyframes rotate-border-centered {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-.input-container::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
+.input-container.has-content,
+.input-container:focus-within {
+  border-color: var(--el-color-primary);
   background: var(--el-bg-color);
-  border-radius: 22px;
-  z-index: -1;
+  box-shadow: 0 0 0 3px var(--el-color-primary-light-9), 0 8px 24px rgba(0,0,0,0.08);
 }
 
 .send-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--el-color-primary);
   border: none;
-  transition: transform 0.2s, opacity 0.2s;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px var(--el-color-primary-light-5);
 }
 .send-btn:hover:not(:disabled) {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(118, 75, 162, 0.4);
+  transform: scale(1.1) rotate(-10deg);
+  box-shadow: 0 6px 16px var(--el-color-primary-light-3);
+  background: var(--el-color-primary-light-3);
+}
+.send-btn:active:not(:disabled) {
+  transform: scale(0.92);
 }
 .send-btn:disabled {
   background: var(--el-fill-color-darker);
-  opacity: 0.6;
+  box-shadow: none;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
-.chat-input-area :deep(.el-textarea__inner) {
-  box-shadow: none !important;
-  background: transparent;
-  padding: 8px 0;
-  min-height: 24px !important;
-  resize: none;
+.send-btn .el-icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
 }
-.send-btn { flex-shrink: 0; width: 40px; height: 40px; margin-bottom: 2px; }
+.send-btn:hover:not(:disabled) .el-icon {
+  transform: translateX(2px) translateY(-2px);
+}
 
 </style>

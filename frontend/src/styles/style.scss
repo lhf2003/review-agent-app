@@ -1,12 +1,27 @@
 @import 'variables';
 @import 'mixins';
 
+/* Global Reset */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: var(--el-text-color-primary);
-  background-color: var(--el-bg-color);
+  /* Apple Light Mode Background */
+  background-color: #F5F5F7; 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -27,16 +42,121 @@
   --el-tag-font-size: 14px; /* Increase tag font size */
 }
 
+/* Global Layout Styles (Moved from App.vue for better scoping control) */
+.app-aside { 
+  /* Light Mode: No border, shadow separation only */
+  border-right: none; 
+  display:flex; 
+  flex-direction:column; 
+  background: rgba(255, 255, 255, 0.8); /* Slightly more opaque for better contrast */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 200; /* Higher than header */
+  position: relative;
+  /* Add shadow for separation instead of border */
+  box-shadow: 1px 0 16px rgba(0, 0, 0, 0.05);
+}
+
+.app-header { 
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  gap: 20px; 
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 60px;
+  box-sizing: border-box;
+}
+
+/* Ensure Dark Mode Background is Correct */
+html.dark {
+  background-color: #000000;
+  
+  /* Dark Mode App Layout Colors (Override Global Layout Styles) */
+  .app-aside {
+    /* Dark Mode: No border, shadow separation only */
+    border-right: none;
+    background: rgba(0, 0, 0, 0.3); /* Much darker and more transparent */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 1px 0 20px rgba(0, 0, 0, 0.3); /* Stronger shadow for dark mode */
+  }
+
+  .app-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.3); /* Much darker and more transparent */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Dark Mode App Layout Colors Variables (Deprecated but kept for ref) */
+
+  body {
+    background-color: #000000;
+  }
+}
+
 /* Global Component Styles */
+.el-table {
+  --el-table-bg-color: #ffffff; /* Ensure fixed columns have background */
+  background-color: var(--el-table-bg-color) !important;
+  --el-table-header-bg-color: #F9FAFB; /* Light gray header */
+  --el-table-row-hover-bg-color: #F2F2F7 !important;
+  --el-table-border-color: rgba(0, 0, 0, 0.06);
+  /* Fix white flash on theme switch - Optimized for smoothness */
+  transition: background-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+/* Ensure all table parts transition smoothly */
+.el-table th.el-table__cell,
+.el-table td.el-table__cell,
+.el-table tr {
+  transition: background-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
 .el-table th.el-table__cell {
-  font-size: 17px !important; /* Make table headers larger */
-  font-weight: bold;
+  font-size: 13px !important; /* Standard Apple Table Header */
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+  background-color: rgba(249, 250, 251, 0.8) !important; /* Translucent header */
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+html.dark .el-table {
+  --el-table-bg-color: #1c1c1e !important;
+  --el-table-tr-bg-color: transparent !important;
+  --el-table-row-striped-bg-color: rgba(255, 255, 255, 0.02) !important;
+  --el-table-header-bg-color: #1C1C1E;
+  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.08) !important;
+  --el-table-border-color: rgba(255, 255, 255, 0.1);
+  color: #E5E5EA;
+}
+
+html.dark .el-table th.el-table__cell {
+  background-color: rgba(28, 28, 30, 0.8) !important;
+  color: #98989D; /* Apple Gray Text */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .el-table .el-table__cell {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #E5E5EA;
 }
 
 /* Increase row height/spacing for all table cells */
 .el-table .el-table__cell {
-  padding: 10.5px 0 !important; /* More padding for taller rows */
-  font-size: 16px; /* Ensure readable body text */
+  padding: 16px 0 !important; /* Generous padding */
+  font-size: 15px; /* Standard Body Text */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 
 /* ==========================================================================
@@ -264,25 +384,26 @@ html.dark {
   border: none !important;
   border-radius: 16px !important; /* Larger, softer corners */
   background-color: #ffffff;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important; /* Soft, diffuse shadow */
+  /* Enhanced shadow for separation from #F5F5F7 background */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 10px 24px rgba(0,0,0,0.05), 0 20px 48px -8px rgba(0,0,0,0.04) !important;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
   overflow: hidden;
 }
 
 /* Header Styling */
 .el-card__header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
-  padding: 16px 20px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  padding: 16px 24px !important;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--el-text-color-primary);
-  background-color: rgba(255, 255, 255, 0.5); /* Slight transparency */
-  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.8); /* More transparency */
+  backdrop-filter: blur(20px);
 }
 
 /* Body Styling */
 .el-card__body {
-  padding: 20px !important;
+  padding: 24px !important;
   color: var(--el-text-color-regular);
 }
 
@@ -290,27 +411,30 @@ html.dark {
 .el-card.is-hover-shadow:hover,
 .el-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Dark Mode Adjustments */
 html.dark {
   .el-card {
     background-color: #1c1c1e; /* Apple Dark Mode Background */
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2) !important;
-    border: 1px solid rgba(255, 255, 255, 0.05) !important; /* Subtle border for separation */
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important; /* Subtle border for separation */
   }
 
   .el-card__header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-    background-color: rgba(28, 28, 30, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(28, 28, 30, 0.8);
+    color: #FFFFFF;
   }
 
   .el-card.is-hover-shadow:hover,
   .el-card:hover {
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6) !important;
     background-color: #2c2c2e; /* Slightly lighter on hover */
   }
+  
+  /* Table Dark Mode Overrides - Removed here as they are now global above */
 }
 
 /* ==========================================================================

@@ -288,9 +288,9 @@ onMounted(() => {
       </div>
     </div>
 
-    <div style="display:flex;gap:24px;flex:1;min-height:0;">
+    <div class="analysis-layout">
       <!-- Left Sidebar: Filter Card -->
-      <div style="width:200px; flex-shrink: 0; overflow: hidden;">
+      <div class="filter-sidebar">
         <el-card style="height: 100%; display: flex; flex-direction: column;">
           <div style="font-weight:600;display:flex;justify-content:space-between;align-items:center; flex-shrink: 0;">
             <span>标签筛选</span>
@@ -330,8 +330,7 @@ onMounted(() => {
       <div class="content-area-wrapper">
         <CustomScroll class="content-scroll-area">
           <template v-if="filteredCards.length">
-            <div
-              style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));column-gap:70px;row-gap:18px;">
+            <div class="cards-grid">
               <el-card v-for="c in filteredCards" :key="c.id" @click="openDetail(c)" shadow="hover"
                 :class="{ 'recommend-card': c.recommendTags && c.recommendTags.length }"
                 style="position:relative;overflow:visible;">
@@ -566,14 +565,14 @@ onMounted(() => {
 
 .scroll-blur.top {
   top: 0;
-  background: linear-gradient(to bottom, var(--el-bg-color-overlay) 0%, transparent 100%);
+  /* Removed white gradient background to avoid fog effect on gray page */
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 20%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 10%, transparent 100%);
 }
 
 .scroll-blur.bottom {
   bottom: 0;
-  background: linear-gradient(to top, var(--el-bg-color-overlay) 0%, transparent 100%);
+  /* Removed white gradient background */
   mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 40%, transparent 100%);
   -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 20%, transparent 100%);
 }
@@ -616,5 +615,44 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.analysis-layout {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+.filter-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(300px,1fr));
+  column-gap: 70px;
+  row-gap: 18px;
+}
+
+@media (max-width: 768px) {
+  .analysis-layout {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filter-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 200px; /* Limit height on mobile */
+    flex-shrink: 0;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr; /* Single column on mobile */
+    column-gap: 0;
+  }
 }
 </style>

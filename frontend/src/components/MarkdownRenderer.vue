@@ -134,6 +134,7 @@ function handleClick(e) {
   background-color: #282c34;
   overflow: hidden;
   border: 1px solid #3e4451;
+  max-width: 100%; /* Prevent overflow */
 }
 
 .markdown-renderer :deep(.code-block-header) {

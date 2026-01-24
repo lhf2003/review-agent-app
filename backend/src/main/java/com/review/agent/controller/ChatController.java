@@ -9,11 +9,19 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/chat")
 public class ChatController {
     @Resource
     private ChatService chatService;
+
+    @GetMapping("/placeholders")
+    public BaseResponse<List<String>> placeholders() {
+        return ResultUtil.success(List.of("你需要我的帮助吗？", "发现一个新文件，需要我分析吗？",
+                "输入关键字搜索分析结果...", "试试问我关于代码的问题"));
+    }
 
     /**
      * 闲聊

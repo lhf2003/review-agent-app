@@ -9,7 +9,7 @@ export const useThemeStore = defineStore('theme', () => {
     if (saved) {
       isDark.value = saved === 'dark'
     } else {
-      isDark.value = true // Default to dark
+      light.value = true // Default to light
     }
     applyTheme()
   }
@@ -27,6 +27,6 @@ export const useThemeStore = defineStore('theme', () => {
       document.documentElement.classList.remove('dark')
     }
   }
-
+  
   return { isDark, initTheme, toggleTheme }
 })

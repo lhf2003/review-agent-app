@@ -185,7 +185,7 @@ async function onSubmit() {
  * ==================================== */
 .register-page {
     position: relative;
-    width: 100vw;
+    width: 100%;
     height: 100vh;
     overflow: hidden;
     background-color: #0f172a;
@@ -411,22 +411,39 @@ async function onSubmit() {
     height: 52px;
     font-size: 16px;
     font-weight: 600;
-    color: #ffffff;
+    letter-spacing: 0.5px;
+    color: #ffffff !important;
+    --el-button-text-color: #ffffff;
+    --el-button-hover-text-color: #ffffff;
+    --el-button-active-text-color: #ffffff;
     border-radius: 12px;
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    border: none;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 4px 12px rgba(37, 99, 235, 0.4),
+        0 1px 0 rgba(255, 255, 255, 0.1) inset;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.submit-btn :deep(span),
+.submit-btn :deep(.el-icon) {
+    color: #ffffff !important;
 }
 
 .submit-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.5);
+    box-shadow: 
+        0 8px 24px rgba(37, 99, 235, 0.5),
+        0 1px 0 rgba(255, 255, 255, 0.2) inset;
     background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .submit-btn:active {
     transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .secondary-actions {

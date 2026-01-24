@@ -5,7 +5,10 @@ import { useAuthStore } from '../stores/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { useRouter } from 'vue-router'
+import { Document, Select, UploadFilled, Close } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
+import GeminiIcon from '../../public/icons/gemini-color.svg'
+import OpenAIIcon from '../../public/icons/openai.svg'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -157,7 +160,7 @@ onMounted(load)
   <div class="page-container">
     <!-- 顶部工具栏 -->
     <div class="toolbar">
-      <el-radio-group v-model="sourceFilter" @change="() => { page = 1; load() }" style="margin-right: 12px">
+      <el-radio-group v-model="sourceFilter" @change="() => { page = 1; load() }">
         <el-radio-button :label="0">本地文件</el-radio-button>
         <el-radio-button :label="1">Gemini</el-radio-button>
         <el-radio-button :label="2">ChatGPT</el-radio-button>
@@ -165,8 +168,8 @@ onMounted(load)
 
       <div class="spacer"></div>
 
-      <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="max-width:150px; margin-right: 12px;" />
-      <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width:100px; margin-right: 12px;" @change="() => { page = 1; load() } ">
+      <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="width: 200px" />
+      <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 120px" @change="() => { page = 1; load() } ">
         <el-option :value="null" label="全部" />
         <el-option :value="0" label="未分析" />
         <el-option :value="2" label="已分析" />
@@ -177,14 +180,14 @@ onMounted(load)
       <el-button type="plain" @click="openImport" icon="Upload">
         导入
       </el-button>
-      <el-button type="plain" link size="large" @click="load" style="margin-right: 12px;margin-left: 20px;">
+      <el-button type="plain" link size="large" @click="load">
         <el-icon><Refresh /></el-icon>
       </el-button>
     </div>
 
     <!-- 表格区域 -->
     <div class="table-wrapper">
-      <el-table :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" border stripe size="small">
+      <el-table :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" size="small" class="glass-table">
         <template #empty>
             <el-empty description="暂无数据" :image-size="100" />
         </template>
@@ -247,49 +250,82 @@ onMounted(load)
       </template>
     </el-dialog>
 
-    <el-dialog v-model="importDialog" title="导入/新建数据" width="500px" align-center>
-      <div style="display:flex;flex-direction:column;gap:16px;">
+    <el-dialog v-model="importDialog" title="导入/新建数据" width="640px" align-center class="import-dialog">
+      <div class="import-container">
         
         <!-- 数据来源 -->
-        <div>
-            <div style="margin-bottom:8px;font-weight:bold;">数据来源</div>
-            <el-radio-group v-model="importSource">
-                <el-radio :label="0">本地文件</el-radio>
-                <el-radio :label="1">Gemini</el-radio>
-                <el-radio :label="2">ChatGPT</el-radio>
-            </el-radio-group>
+        <div class="section-block">
+            <div class="section-label">数据来源</div>
+            <div class="source-cards">
+                <div class="source-card" :class="{ active: importSource === 0 }" @click="importSource = 0">
+                    <div class="card-icon-wrapper local"><el-icon><Document /></el-icon></div>
+                    <div class="card-info">
+                        <div class="card-title">本地文件</div>
+                        <div class="card-desc">上传本地文档</div>
+                    </div>
+                    <div class="check-mark" v-if="importSource === 0"><el-icon><Select /></el-icon></div>
+                </div>
+                <div class="source-card" :class="{ active: importSource === 1 }" @click="importSource = 1">
+                    <div class="card-icon-wrapper gemini">
+                        <img :src="GeminiIcon" class="svg-icon" alt="Gemini" />
+                    </div>
+                    <div class="card-info">
+                        <div class="card-title">Gemini</div>
+                        <div class="card-desc">对话记录导入</div>
+                    </div>
+                    <div class="check-mark" v-if="importSource === 1"><el-icon><Select /></el-icon></div>
+                </div>
+                <div class="source-card" :class="{ active: importSource === 2 }" @click="importSource = 2">
+                    <div class="card-icon-wrapper chatgpt">
+                        <img :src="OpenAIIcon" class="svg-icon" alt="ChatGPT" />
+                    </div>
+                    <div class="card-info">
+                        <div class="card-title">ChatGPT</div>
+                        <div class="card-desc">对话记录导入</div>
+                    </div>
+                    <div class="check-mark" v-if="importSource === 2"><el-icon><Select /></el-icon></div>
+                </div>
+            </div>
         </div>
 
         <!-- 统一文件上传 -->
-        <div>
+        <div class="section-block">
+             <div class="section-label">文件上传</div>
              <el-upload
+              class="upload-area"
+              drag
               ref="uploadRef"
               :auto-upload="false"
               :show-file-list="false"
               :on-change="(file) => importFile = file.raw"
               accept=".md,.txt,.json,.html"
             >
-              <template #trigger>
-                <el-button type="primary" plain icon="Upload">选择文件</el-button>
+              <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+              <div class="el-upload__text">
+                将文件拖到此处，或 <em>点击上传</em>
+              </div>
+              <template #tip>
+                <div class="el-upload__tip">
+                  支持 .txt, .md, .json, .html 格式文件
+                </div>
               </template>
-              <span style="margin-left:8px;color:var(--el-text-color-secondary);font-size:var(--el-font-size-small);">
-                支持 txt、md、json、html
-              </span>
             </el-upload>
-             <el-alert
-              v-if="importFile"
-              :title="`已选择：${importFile.name}`"
-              type="info"
-              show-icon
-              closeable = "true"
-              style="margin-top:8px;"
-            />
+             
+             <transition name="el-fade-in">
+                 <div v-if="importFile" class="file-preview">
+                    <el-icon class="file-icon"><Document /></el-icon>
+                    <span class="file-name">{{ importFile.name }}</span>
+                    <el-icon class="remove-file" @click.stop="importFile = null"><Close /></el-icon>
+                 </div>
+             </transition>
         </div>
 
         <!-- 按钮组 -->
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
-          <el-button @click="importDialog=false">取消</el-button>
-          <el-button type="primary" @click="doImport">确认</el-button>
+        <div class="dialog-footer">
+          <el-button size="large" @click="importDialog=false">取消</el-button>
+          <el-button size="large" type="primary" @click="doImport" :disabled="!importFile">
+            开始导入
+          </el-button>
         </div>
       </div>
     </el-dialog>
@@ -319,18 +355,44 @@ onMounted(load)
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 16px; /* Increased gap for better separation */
   /* Ensure it takes full height of parent */
   min-height: 0;
+  padding: 0 4px; /* Add slight side padding */
 }
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 1px;
+  gap: 16px;
   flex-shrink: 0;
-  background: var(--el-bg-color);
+  background: transparent; /* Transparent to show page bg */
   padding: 4px 0;
+  flex-wrap: wrap; /* Allow wrapping on small screens */
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    gap: 8px;
+  }
+  
+  .toolbar .el-input {
+    width: 100% !important; /* Full width search on mobile */
+    order: 3; /* Move search to next line */
+  }
+  
+  .toolbar .el-select {
+    width: 120px !important;
+    order: 2;
+  }
+  
+  .toolbar .el-radio-group {
+    order: 1;
+  }
+  
+  .spacer {
+    display: none; /* Hide spacer on mobile to let flex-wrap work better */
+  }
 }
 
 .spacer {
@@ -340,17 +402,70 @@ onMounted(load)
 .table-wrapper {
   flex: 1;
   min-height: 0; /* Crucial for scrolling */
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
+  border-radius: 16px; /* Apple-style rounded corners */
   overflow: hidden;
-  background: var(--el-bg-color);
-  box-shadow: var(--el-box-shadow-light);
+  
+  /* Glass Effect */
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
-.table-wrapper :deep(.el-table__body-wrapper) {
-  overflow: hidden !important;
+
+/* Dark Mode Table Wrapper */
+html.dark .table-wrapper {
+  background: rgba(28, 28, 30, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
-.table-wrapper :deep(.el-scrollbar__wrap) {
-  overflow: hidden !important;
+
+/* Glass Table Overrides */
+.glass-table {
+  --el-table-border-color: transparent;
+  --el-table-header-bg-color: rgba(255, 255, 255, 0.3);
+  --el-table-tr-bg-color: transparent;
+  --el-table-row-hover-bg-color: rgba(0, 0, 0, 0.02);
+  background-color: transparent !important;
+}
+
+html.dark .glass-table {
+  --el-table-header-bg-color: rgba(0, 0, 0, 0.2);
+  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.05);
+  --el-table-bg-color: transparent;
+}
+
+:deep(.el-table), :deep(.el-table__expanded-cell) {
+  background-color: transparent !important;
+}
+
+:deep(.el-table tr) {
+  background-color: transparent !important;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background-color: var(--el-table-header-bg-color) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+html.dark :deep(.el-table th.el-table__cell) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+:deep(.el-table td.el-table__cell) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.02) !important;
+}
+
+html.dark :deep(.el-table td.el-table__cell) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02) !important;
+}
+
+:deep(.el-table__inner-wrapper::before) {
+  display: none;
 }
 
 .pagination-bar {
@@ -358,29 +473,199 @@ onMounted(load)
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding: 2px 10px;
-  background: var(--el-bg-color);
-  border-top: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  padding: 12px 20px;
+  background: #ffffff;
+  border-top: none;
+  border-radius: 16px; /* Pill shape */
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  margin-bottom: 4px;
+  transition: background-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 /* Dark mode adjustment */
 html.dark .pagination-bar {
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+  background: #1c1c1e;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Compact Table Overrides */
-.table-wrapper :deep(.el-table__header-wrapper th) {
+/* Import Dialog Styles */
+.import-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 4px;
+}
+
+.section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-left: 2px;
+}
+
+.source-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.source-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  text-align: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.source-card:hover {
+  border-color: var(--el-color-primary-light-5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.source-card.active {
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  box-shadow: 0 0 0 1px var(--el-color-primary);
+}
+
+.card-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 4px;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-regular);
+  transition: all 0.2s;
+}
+
+.source-card.active .card-icon-wrapper.local {
+  background: var(--el-color-primary);
+  color: white;
+}
+
+.source-card.active .card-icon-wrapper.gemini,
+.source-card.active .card-icon-wrapper.chatgpt {
+  background: var(--el-bg-color);
+  box-shadow: 0 0 0 1px var(--el-color-primary-light-5);
+}
+
+.svg-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.card-desc {
   font-size: 12px;
-  padding: 4px 0;
-  height: 28px;
+  color: var(--el-text-color-secondary);
+  transform: scale(0.9);
 }
-.table-wrapper :deep(.el-table__body-wrapper td) {
-  padding: 4px 0;
-  height: 32px;
+
+.check-mark {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  color: var(--el-color-primary);
+  font-size: 16px;
 }
-.table-wrapper :deep(.el-table .cell) {
-  line-height: 20px;
+
+/* Upload Area Customization */
+.upload-area :deep(.el-upload-dragger) {
+  width: 100%;
+  height: 160px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  transition: all 0.2s;
+}
+
+.upload-area :deep(.el-upload-dragger:hover) {
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.el-upload__text {
+  margin-top: 8px;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-lighter);
+  margin-top: 12px;
+}
+
+.file-icon {
+  font-size: 20px;
+  color: var(--el-color-primary);
+}
+
+.file-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-file {
+  cursor: pointer;
+  color: var(--el-text-color-secondary);
+  transition: color 0.2s;
+}
+
+.remove-file:hover {
+  color: var(--el-color-danger);
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 </style>

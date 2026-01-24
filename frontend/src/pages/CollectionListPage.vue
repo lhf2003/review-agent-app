@@ -190,6 +190,8 @@ function confirmDelete(e, id) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
+  flex-wrap: wrap; /* Wrap on mobile */
+  gap: 16px; /* Gap when wrapped */
 
   h1 {
     font-size: 24px;
@@ -204,19 +206,31 @@ function confirmDelete(e, id) {
   }
 }
 
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  
+  .title-area {
+    width: 100%;
+  }
+}
+
 .collection-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 12px;
+  background: #ffffff;
+  border: none;
+  border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
   display: flex;
   align-items: flex-start;
   gap: 16px;
-
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 }
 
 .card-icon {
@@ -296,8 +310,23 @@ function confirmDelete(e, id) {
 }
 
 .collection-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+
   .action-btn {
     opacity: 1;
   }
+}
+
+/* Dark Mode Support */
+html.dark .collection-card {
+  background: #1c1c1e;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+html.dark .collection-card:hover {
+  background: #2c2c2e;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 }
 </style>

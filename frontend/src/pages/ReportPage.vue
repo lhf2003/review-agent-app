@@ -215,12 +215,14 @@ onMounted(() => {
 }
 
 .stack-card {
-  background: var(--el-bg-color-overlay);
-  border-radius: 16px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08); /* Custom shadow to reduce top shadow */
-  border: 1px solid var(--el-border-color-light);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); /* Softer, wider shadow */
+  border: 1px solid rgba(255, 255, 255, 0.4); /* Glass border */
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   cursor: pointer;
   
   /* Increased height to fill visual space and allow overlap effect */
@@ -236,17 +238,29 @@ onMounted(() => {
   outline: 1px solid transparent;
 }
 
+html.dark .stack-card {
+  background: rgba(30, 30, 35, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
 .stack-card:hover {
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12); /* Increased offset for hover state too */
-  transform: translateX(20px) rotate(1deg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12); /* Increased offset for hover state too */
+  transform: translateY(-5px) scale(1.02);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+html.dark .stack-card:hover {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .card-inner {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 24px;
-  background: var(--el-bg-color-overlay);
+  padding: 30px;
+  background: transparent;
 }
 
 .report-header {
@@ -255,8 +269,12 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
+}
+
+html.dark .report-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .date-badge {
@@ -266,23 +284,17 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 600;
   color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
+  background: rgba(var(--el-color-primary-rgb), 0.1);
   padding: 6px 12px;
   border-radius: 8px;
-}
-
-.date-badge.large {
-  font-size: 18px;
-  padding: 8px 16px;
-  margin-bottom: 20px;
-  width: fit-content;
+  backdrop-filter: blur(4px);
 }
 
 .report-type-tag {
   font-size: 14px;
   color: var(--el-text-color-secondary);
   font-weight: 500;
-  background: var(--el-fill-color);
+  background: rgba(128, 128, 128, 0.1);
   padding: 4px 10px;
   border-radius: 4px;
 }
@@ -305,26 +317,36 @@ onMounted(() => {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 120px; /* Taller gradient for better fade */
-  background: linear-gradient(to bottom, transparent, var(--el-bg-color-overlay) 80%);
+  height: 140px; /* Taller gradient for better fade */
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9) 80%);
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 10px;
+  padding-bottom: 20px;
   color: var(--el-color-primary);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14px;
   pointer-events: none; /* Let click pass through to card */
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+html.dark .read-more-overlay {
+  background: linear-gradient(to bottom, transparent, rgba(30, 30, 35, 0.9) 80%);
 }
 
 .card-footer {
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px dashed var(--el-border-color-lighter);
+  border-top: 1px dashed rgba(0, 0, 0, 0.05);
   font-size: 12px;
   color: var(--el-text-color-secondary);
   text-align: right;
   flex-shrink: 0;
+}
+
+html.dark .card-footer {
+  border-top: 1px dashed rgba(255, 255, 255, 0.05);
 }
 
 /* Hints */
