@@ -120,6 +120,12 @@ export const api = {
   updateConfig(body) {
     return request('/user/config/update', { method: 'POST', body })
   },
+  getUserModelConfig() {
+    return request('/user/config/model/get')
+  },
+  updateUserModelConfig(userId, list) {
+    return request('/user/config/model/update', { method: 'POST', body: list })
+  },
 
   // tag controller endpoints
   getMainTagList() {
@@ -327,6 +333,25 @@ export const api = {
     const params = { type }
     if (date) params.date = date
     return request('/report/get', { params })
+  },
+
+  // llm model
+  connectLlmProvider(provider) {
+    return request('/llm/model/connect', { method: 'POST', body: provider })
+  },
+  getLlmModels(provider) {
+    return request('/llm/model/list', { method: 'POST', body: provider })
+  },
+  
+  // User Selected Models
+  getSelectedModelList(providerId) {
+    return request('/user/config/model/list', { method: 'POST', params: { providerId } })
+  },
+  activeSelectedModel(selectedModel) {
+    return request('/user/config/model/active', { method: 'POST', body: selectedModel })
+  },
+  deactiveSelectedModel(selectedModel) {
+    return request('/user/config/model/deactive', { method: 'POST', body: selectedModel })
   },
 
   _handleStream(fetchPromise, handlers) {

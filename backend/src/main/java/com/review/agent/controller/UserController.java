@@ -4,10 +4,12 @@ import com.review.agent.common.constant.UserConstant;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.AesUtil;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.entity.pojo.SelectedModel;
 import com.review.agent.entity.pojo.UserConfig;
 import com.review.agent.entity.pojo.UserInfo;
-import com.review.agent.entity.request.UserConfigUpdateRequest;
-import com.review.agent.entity.request.updatePasswordRequest;
+import com.review.agent.entity.pojo.UserLlmConfig;
+import com.review.agent.entity.request.BasicConfigUpdateRequest;
+import com.review.agent.entity.request.UpdatePasswordRequest;
 import com.review.agent.entity.vo.UserInfoFilterVo;
 import com.review.agent.service.UserService;
 import jakarta.annotation.Resource;
@@ -16,6 +18,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 用户信息接口
@@ -110,11 +114,11 @@ public class UserController {
      * 更新用户密码
      */
     @PostMapping("/info/update/password")
-    public BaseResponse<?> updateUserPassword(@RequestHeader("userId") Long userId, @RequestBody updatePasswordRequest request) {
+    public BaseResponse<?> updateUserPassword(@RequestHeader("userId") Long userId, @RequestBody UpdatePasswordRequest request) {
         request.setOldPassword(AesUtil.decrypt(request.getOldPassword()));
         request.setNewPassword(AesUtil.decrypt(request.getNewPassword()));
         userService.updatePassword(userId, request);
-        return ResultUtil.success("update success");
+        return ResultUtil.success();
     }
 
     // endregion 用户信息接口
@@ -122,7 +126,7 @@ public class UserController {
     // region 用户配置接口
 
     /**
-     * 获取用户配置
+     * 获取用户基本配置
      */
     @GetMapping("/config/get")
     public BaseResponse<UserConfig> getUserConfig(@RequestHeader("userId") Long userId) {
@@ -136,13 +140,58 @@ public class UserController {
     }
 
     /**
-     * 更新用户配置
+     * 更新用户基本配置
      */
     @PostMapping("/config/update")
-    public BaseResponse<?> updateUserConfig(@RequestBody UserConfigUpdateRequest updateRequest, @RequestHeader(value = "userId", required = false) Long userId) {
+    public BaseResponse<?> updateUserConfig(@RequestHeader(value = "userId") Long userId, @RequestBody BasicConfigUpdateRequest updateRequest) {
         userService.updateUserConfig(userId, updateRequest);
         return ResultUtil.success("update success");
     }
+
+    /**
+     * 获取用户模型服务商配置
+     */
+    @GetMapping("/config/model/get")
+    public BaseResponse<List<UserLlmConfig>> getUserModelConfig(@RequestHeader("userId") Long userId) {
+        // 校验用户是否存在
+        UserInfo userInfo = userService.findById(userId);
+        if (userInfo == null) {
+            return ResultUtil.error("user not found");
+        }
+
+        return ResultUtil.success(userService.getUserLlmProviderConfig(userId));
+    }
+
+    /**
+     * 更新用户模型服务商配置
+     */
+    @PostMapping("/config/model/update")
+    public BaseResponse<?> updateUserModelConfig(@RequestHeader(value = "userId") Long userId, @RequestBody List<UserLlmConfig> modeConfigList) {
+        userService.updateModelConfig(userId, modeConfigList);
+        return ResultUtil.success("update success");
+    }
+
+    @PostMapping("/config/model/active")
+    public BaseResponse<?> activeSelectedModel(@RequestHeader(value = "userId") Long userId, @RequestBody SelectedModel selectedModel) {
+        selectedModel.setUserId(userId);
+        userService.activeSelectedModel(selectedModel);
+        return ResultUtil.success();
+    }
+
+    @PostMapping("/config/model/deactive")
+    public BaseResponse<?> deactiveSelectedModel(@RequestHeader(value = "userId") Long userId, @RequestBody SelectedModel selectedModel) {
+        selectedModel.setUserId(userId);
+        userService.deactiveSelectedModel(selectedModel);
+        return ResultUtil.success();
+    }
+
+    @PostMapping("/config/model/list")
+    public BaseResponse<?> getSelectedModel(@RequestHeader(value = "userId") Long userId, @RequestParam("providerId") Integer providerId) {
+        List<SelectedModel> selectedModelList = userService.getSelectedModel(userId, providerId);
+        return ResultUtil.success(selectedModelList);
+    }
+
+
     // endregion 用户配置接口
 
 }

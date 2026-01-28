@@ -1,21 +1,26 @@
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 import { api } from '../api/http'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
-import { User, Monitor, Bell, Cpu, Lock, Check, Close, Connection } from '@element-plus/icons-vue'
+import { User, Monitor, Bell, Cpu, Lock, Check, Close, Connection, Plus, Delete, Edit } from '@element-plus/icons-vue'
+import ModelConfig from '../components/ModelConfig.vue'
 
 const auth = useAuthStore()
 const loading = ref(false)
-const testingModel = ref('')
+const originalForm = ref(null)
+
 const form = ref({
   scanDirectory: '',
   autoScanEnabled: true,
   scanIntervalHours: 1,
-  llmProvider: 'openai',
-  openaiApiKey: '',
-  geminiApiKey: '',
-  ollamaBaseUrl: 'http://localhost:11434',
+  llmProvider: 'deepseek', // Default to deepseek
+  openaiApiKey: '', // Legacy
+  geminiApiKey: '', // Legacy
+  bailianApiKey: '', // Legacy
+  glmApiKey: '', // Legacy
+  ollamaBaseUrl: 'http://localhost:11434', // Legacy
   dailyEnabled: false,
   dailyTime: null,
   weeklyEnabled: false,
@@ -23,13 +28,9 @@ const form = ref({
   weeklyTime: null
 })
 
-const models = [
-  { id: 'openai', name: 'OpenAI', icon: '/icons/openai.svg', placeholder: '输入APIKEY' },
-  { id: 'gemini', name: 'Gemini', icon: '/icons/gemini-color.svg', placeholder: '输入APIKEY' },
-  { id: 'bailian', name: '百炼', icon: '/icons/bailian-color.svg', placeholder: '输入APIKEY' },
-  { id: 'GLM', name: 'GLM', icon: '/icons/chatglm-color.svg', placeholder: '输入APIKEY' },
-  { id: 'ollama', name: 'Ollama', icon: '/icons/ollama.svg', placeholder: 'http://localhost:11434' },
-]
+const providers = ref([])
+const providerForms = ref({}) // { [providerId]: { apiKey: '', requestUrl: '', models: [] } }
+const verifiedProviders = ref({}) // { [providerId]: boolean }
 
 const userInfoForm = ref({
   username: '',
@@ -46,64 +47,54 @@ const passwordDialog = ref(false)
 const passwordForm = ref({ oldPassword: '', newPassword: '', confirm: '' })
 
 const activeSection = ref('basic')
+let scrollContainer = null
 
 // 监听滚动事件，更新 activeSection
 const onScroll = () => {
   const sections = ['basic', 'scan', 'push', 'model']
+  // 触发阈值：视口高度的 40%
+  // 只要元素的顶部到了屏幕上方 40% 的位置，就认为它已经“占据”了视野
+  const threshold = window.innerHeight * 0.4
+  
+  let current = sections[0]
+  
   for (const section of sections) {
     const el = document.getElementById(section)
     if (el) {
       const rect = el.getBoundingClientRect()
-      // 这里的 100 是一个阈值，表示元素顶部距离视口顶部的距离
-      // 当元素顶部接近视口顶部时（在视口顶部下方 100px 以内），或者元素已经在视口中时，认为该 section 是活跃的
-      // 注意：由于 sticky header 或者 padding 的存在，可能需要调整这个阈值
-      // 简单的逻辑是：找到第一个 top > 0 的元素的前一个元素，或者第一个 top 在某个范围内（比如 0 到 视口高度的一半）的元素
-      // 这里采用一种简单的策略：检查每个 section 的位置，取离视口顶部最近且未完全滚出视口的那个
-      if (rect.top >= 0 && rect.top < 300) {
-        activeSection.value = section
-        break
-      } else if (rect.top < 0 && rect.bottom > 100) {
-        // 如果当前 section 顶部已经滚上去，但底部还在视口内（留有 100px 余量），它仍然是活跃的
-        activeSection.value = section
-        // 继续检查下一个，因为可能下一个的顶部也已经进来了，但通常我们希望高亮最上面的那个
-        // 但在自上而下的遍历中，如果当前这个满足条件，它就是当前视口中最主要的 section
-        break
+      // 找到最后一个满足条件的 section (它的顶部在阈值线之上)
+      if (rect.top < threshold) {
+        current = section
       }
     }
   }
+  activeSection.value = current
 }
 
 onMounted(() => {
   if (auth.userId) loadConfig()
-  window.addEventListener('scroll', onScroll, true)
+  
+  // 查找滚动容器 (Element Plus 的 el-main 通常是 .app-main)
+  scrollContainer = document.querySelector('.app-main') || window
+  scrollContainer.addEventListener('scroll', onScroll, true)
+  
+  // 初始执行一次
+  onScroll()
 })
 
-// 注意：如果滚动是在 window 上，直接监听 window 即可。
-// 如果是在某个 div 上（比如 .content-wrapper），则需要监听那个 div。
-// 根据模板结构，滚动应该是发生在 body/html 上（因为 .content-wrapper 没有设置 overflow: auto 且 height 不是固定的），
-// 或者是由父级容器控制。
-// 让我们检查一下 App.vue 的布局。通常是 window 滚动。
-// 但为了保险，我们在 onMounted 里添加监听，并在 onUnmounted 里移除。
-
 import { onUnmounted } from 'vue'
+import { id } from 'element-plus/es/locale/index.mjs'
 onUnmounted(() => {
-  window.removeEventListener('scroll', onScroll, true)
+  if (scrollContainer) {
+    scrollContainer.removeEventListener('scroll', onScroll, true)
+  }
 })
 
 const scrollTo = (id) => {
   activeSection.value = id
   const el = document.getElementById(id)
   if (el) {
-    // 使用 scrollIntoView 时，可能会因为 sticky header 遮挡。
-    // 可以手动计算位置并 window.scrollTo
-    const offset = 20 // 顶部留白
-    const elementPosition = el.getBoundingClientRect().top + window.pageYOffset
-    const offsetPosition = elementPosition - offset
-
-    window.scrollTo({
-      top: offsetPosition,
-      behavior: "smooth"
-    })
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
@@ -116,9 +107,7 @@ async function loadConfig() {
     form.value.autoScanEnabled = !!cfg?.autoScanEnabled
     const seconds = cfg?.scanIntervalSeconds ?? 3600
     form.value.scanIntervalHours = Math.max(1, Math.min(12, Math.round(seconds / 3600)))
-    form.value.llmProvider = cfg?.llmProvider || 'openai'
-    // Load OpenAI Key if available (decrypted or masked)
-    form.value.openaiApiKey = cfg?.openaiApiKeyEncrypted || ''
+    form.value.llmProvider = cfg?.llmProvider || 'deepseek'
 
     form.value.dailyEnabled = !!cfg?.dailyEnabled
 
@@ -175,43 +164,54 @@ async function loadConfig() {
       userInfoForm.value.phone = user.phone || ''
     }
 
-    ElMessage.success('配置已加载')
+    // Load Model Config
+    try {
+      const modelResp = await api.getUserModelConfig(auth.userId)
+      const modelList = modelResp?.data || modelResp
+      
+      // Update providers list based on backend response
+      if (Array.isArray(modelList)) {
+        // Create providers array from modelList
+        providers.value = modelList.map(m => ({
+          id: m.name,
+          name: m.name,
+          defaultUrl: m.url,
+          isCustom: false,
+          dbId: m.id
+        }))
+        
+        // Initialize providerForms
+        modelList.forEach(m => {
+          providerForms.value[m.name] = {
+             id: m.id || '',
+             activeModels: [], // Store active model names (Array)
+             apiKey: m.apiKey || '',
+             requestUrl: m.url || '',
+             models: []
+          }
+          
+          // Initialize verified status from backend
+          if (m.isConnected) {
+              verifiedProviders.value[m.name] = true
+              // fetchModels(m.name) // fetchModels moved to component, but we need to trigger it?
+              // Or maybe component will fetch on mount if connected?
+              // In component: we can watch for verifiedProviders or init on mount.
+              // Actually, fetchModels was called here. Now it's not.
+              // We might need to expose a ref to component to call fetchModels, or let component handle it.
+              // Better: component watches providers/verifiedProviders and fetches if needed.
+          }
+        })
+      }
+    } catch (e) {
+      console.error('Failed to load model config', e)
+    }
+
+    // Save original form for change detection
+    originalForm.value = JSON.parse(JSON.stringify(form.value))
   } catch (e) {
     ElMessage.error(`加载失败: ${e.message}`)
   } finally {
     loading.value = false
-  }
-}
-
-async function testModel(modelId) {
-  testingModel.value = modelId
-  try {
-    // 简单的连接测试：发送一个 Hello 消息
-    // 注意：这里测试的是当前保存的配置，如果用户修改了 Key 但没保存，可能测试不通过
-    // 这是一个模拟检测，实际应该由后端提供专门的 test 接口
-    const handlers = {
-      onEvent: (text) => { }, // 忽略输出
-      onDone: () => {
-        ElMessage.success(`${modelId} 连接成功`)
-        testingModel.value = ''
-      },
-      onError: (e) => {
-        ElMessage.error(`${modelId} 连接失败: ${e.message}`)
-        testingModel.value = ''
-      }
-    }
-    // 我们暂时无法指定测试哪个模型，只能测试当前生效的 LLM
-    // 如果要支持多模型测试，后端需要支持在请求中指定 provider
-    if (form.value.llmProvider !== modelId) {
-      ElMessage.warning(`请先将 LLM 提供商切换为 ${modelId} 并保存，再进行测试`)
-      testingModel.value = ''
-      return
-    }
-
-    api.chatStream('Hello', handlers)
-  } catch (e) {
-    testingModel.value = ''
-    ElMessage.error('测试请求失败')
   }
 }
 
@@ -254,7 +254,6 @@ async function saveConfig() {
       autoScanEnabled: form.value.autoScanEnabled,
       scanIntervalSeconds: form.value.scanIntervalHours * 3600,
       llmProvider: form.value.llmProvider,
-      openaiApiKeyEncrypted: form.value.openaiApiKey, // 仅保存 OpenAI Key
       dailyEnabled: form.value.dailyEnabled,
       dailyAnalysisTime: form.value.dailyTime ? formatTime(form.value.dailyTime) : null,
       weeklyEnabled: form.value.weeklyEnabled,
@@ -262,7 +261,29 @@ async function saveConfig() {
       weeklyAnalysisTime: form.value.weeklyTime ? formatTime(form.value.weeklyTime) : null
     }
 
+    // Save Config
     await api.updateConfig(body)
+
+    // Save Model Config
+    const modelList = []
+    for (const [key, value] of Object.entries(providerForms.value)) {
+      if (value.apiKey || value.requestUrl) {
+        modelList.push({
+          id: value.id,
+          userId: Number(auth.userId),
+          name: key,
+          apiKey: value.apiKey,
+          url: value.requestUrl,
+          isConnected: !!verifiedProviders.value[key]
+        })
+      }
+    }
+
+    await api.updateUserModelConfig(Number(auth.userId), modelList)
+
+    // Update original form
+    originalForm.value = JSON.parse(JSON.stringify(form.value))
+
     ElMessage.success('配置已保存')
   } catch (e) {
     ElMessage.error(`保存失败: ${e.message}`)
@@ -306,7 +327,47 @@ async function updatePassword() {
   }
 }
 
+// Navigation Guard
+onBeforeRouteLeave((to, from, next) => {
+  if (!originalForm.value) {
+    next()
+    return
+  }
 
+  const normalize = (f) => {
+    const c = JSON.parse(JSON.stringify(f))
+    return JSON.stringify(c)
+  }
+
+  if (normalize(form.value) !== JSON.stringify(originalForm.value)) {
+    ElMessageBox.confirm(
+      '您有未保存的更改，确定要离开吗？',
+      '未保存更改',
+      {
+        confirmButtonText: '保存并离开',
+        cancelButtonText: '放弃修改',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      }
+    )
+      .then(async () => {
+        // Save and leave
+        await saveConfig()
+        next()
+      })
+      .catch((action) => {
+        if (action === 'cancel') {
+          // Discard and leave
+          next()
+        } else {
+          // Stay (close dialog)
+          next(false)
+        }
+      })
+  } else {
+    next()
+  }
+})
 </script>
 
 <template>
@@ -473,54 +534,16 @@ async function updatePassword() {
           </div>
         </div>
 
-        <!-- 模型配置 -->
+        <!-- 模型配置 (New UI) -->
+        <el-divider />
         <div id="model" class="settings-group">
-          <div class="group-header">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <h3>模型配置</h3>
-              <el-tag type="warning" size="small" effect="plain" round class="beta-tag">Beta</el-tag>
-            </div>
-            <p>选择并配置用于分析的 AI 模型</p>
-          </div>
-          <div class="group-content">
-
-            <div v-for="model in models" :key="model.id">
-              <div class="model-row" :class="{ active: form.llmProvider === model.id }">
-                <div class="model-info" @click="form.llmProvider = model.id">
-                  <div class="model-icon-wrapper">
-                    <img v-if="model.id !== 'ollama'" :src="model.icon" class="model-icon" />
-                    <el-icon v-else class="model-icon-fallback">
-                      <Cpu />
-                    </el-icon>
-                  </div>
-                  <div class="model-name">
-                    <span>{{ model.name }}</span>
-                    <el-icon v-if="form.llmProvider === model.id" class="check-icon">
-                      <Check />
-                    </el-icon>
-                  </div>
-                </div>
-
-                <div class="model-config">
-                  <el-input v-if="model.id === 'openai'" v-model="form.openaiApiKey" type="password" show-password
-                    :placeholder="model.placeholder" class="apple-input key-input" />
-                  <el-input v-else-if="model.id === 'gemini'" v-model="form.geminiApiKey" type="password" show-password
-                    :placeholder="model.placeholder" class="apple-input key-input" />
-                  <el-input v-else v-model="form.ollamaBaseUrl" :placeholder="model.placeholder"
-                    class="apple-input key-input" />
-
-                  <el-button circle plain class="test-btn" :loading="testingModel === model.id"
-                    @click="testModel(model.id)">
-                    <el-icon>
-                      <Connection />
-                    </el-icon>
-                  </el-button>
-                </div>
-              </div>
-              <el-divider v-if="model.id !== 'ollama'" />
-            </div>
-
-          </div>
+          <ModelConfig
+            v-model="form.llmProvider"
+            :providers="providers"
+            :provider-forms="providerForms"
+            v-model:verified-providers="verifiedProviders"
+            @save="saveConfig"
+          />
         </div>
 
         <div class="floating-save-bar">
@@ -550,6 +573,7 @@ async function updatePassword() {
       </div>
     </template>
   </el-dialog>
+
 </template>
 
 <style scoped>
@@ -734,7 +758,9 @@ async function updatePassword() {
 .floating-save-bar {
   position: fixed;
   bottom: 24px;
-  right: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: fit-content;
   z-index: 100;
 }
 
@@ -754,77 +780,5 @@ async function updatePassword() {
 :deep(.el-divider--horizontal) {
   margin: 16px 0;
   border-top-color: var(--el-border-color-lighter);
-}
-
-/* Model Config Specific */
-.beta-tag {
-  background-color: #FFF8E1;
-  border-color: #FFD54F;
-  color: #F57F17;
-  font-weight: 600;
-}
-
-.model-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 0;
-  gap: 20px;
-}
-
-.model-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  flex: 0 0 160px;
-}
-
-.model-icon-wrapper {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--el-fill-color-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.model-icon {
-  width: 24px;
-  height: 24px;
-}
-
-.model-icon-fallback {
-  font-size: 20px;
-  color: var(--el-text-color-secondary);
-}
-
-.model-name {
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.check-icon {
-  color: var(--el-color-primary);
-  font-size: 16px;
-}
-
-.model-config {
-  flex: 1;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.key-input {
-  flex: 1;
-}
-
-.test-btn {
-  flex-shrink: 0;
 }
 </style>

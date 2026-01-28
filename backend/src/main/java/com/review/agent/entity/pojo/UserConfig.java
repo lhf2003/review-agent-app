@@ -28,18 +28,6 @@ public class UserConfig {
     @Column(name = "scan_interval_seconds")
     private Integer scanIntervalSeconds;
 
-    @Column(name = "llm_provider")
-    private String llmProvider;
-
-    @Column(name = "tag_llm_provider")
-    private String tagLlmProvider;
-
-    @Column(name = "session_llm_provider")
-    private String sessionLlmProvider;
-
-    @Column(name = "openai_api_key_encrypted")
-    private String openaiApiKeyEncrypted;
-
     @Column(name = "update_time")
     private Date updateTime;
 

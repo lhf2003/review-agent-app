@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class updatePasswordRequest {
+public class UpdatePasswordRequest {
     @NotNull(message = "oldPassword is required")
     private String oldPassword;
     @NotNull(message = "newPassword is required")

@@ -1,5 +1,6 @@
 package com.review.agent.service;
 
+import com.review.agent.common.utils.ExceptionUtils;
 import com.review.agent.entity.pojo.DataInfo;
 import com.review.agent.entity.pojo.SyncRecord;
 import com.review.agent.entity.pojo.UserConfig;
@@ -63,7 +64,7 @@ public class DataInfoService {
         if (!file.exists()) {
             boolean mkdirsed = file.mkdirs();
             if (!mkdirsed) {
-                throw new IOException("directory is not exists");
+                ExceptionUtils.throwDataNotFound("scan directory is not exists");
             }
         }
 

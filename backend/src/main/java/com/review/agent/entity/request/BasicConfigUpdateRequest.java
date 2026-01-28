@@ -9,20 +9,12 @@ import java.time.LocalTime;
  * 用户配置更新请求
  */
 @Data
-public class UserConfigUpdateRequest {
+public class BasicConfigUpdateRequest {
     private String scanDirectory;
 
     private Boolean autoScanEnabled;
 
     private Integer scanIntervalSeconds;
-
-    private String llmProvider;
-
-    private String tagLlmProvider;
-
-    private String sessionLlmProvider;
-
-    private String openaiApiKeyEncrypted;
 
     /**
      * 是否启用每日分析
