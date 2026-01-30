@@ -22,4 +22,11 @@ public interface SubTagRepository extends JpaRepository<SubTag, Long> {
      */
     @Query("select t from SubTag t where t.userId = ?1")
     List<SubTag> findAllByUserId(Long userId);
+
+    /**
+     * 统计用户的子标签数量
+     * @param userId 用户ID
+     * @return 子标签数量
+     */
+    long countByUserId(Long userId);
 }

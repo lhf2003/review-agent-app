@@ -38,4 +38,11 @@ public interface DataInfoRepository extends JpaRepository<DataInfo, Long> {
 
     @Query("select d from DataInfo d where d.userId = :userId and d.fileName = :fileName")
     DataInfo findByUserIdAndFileName(Long userId, String fileName);
+
+    /**
+     * 统计用户的文件数量
+     * @param userId 用户ID
+     * @return 文件数量
+     */
+    long countByUserId(Long userId);
 }

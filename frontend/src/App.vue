@@ -1,8 +1,8 @@
 <script setup>
 import { ref, watch, onMounted, nextTick, computed, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Moon, Sunny, FullScreen, Menu as MenuIcon } from '@element-plus/icons-vue'
+import { Moon, Sunny, FullScreen, Menu as MenuIcon, User } from '@element-plus/icons-vue'
 import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
 import { useThemeStore } from './stores/theme'
@@ -81,9 +81,6 @@ function renderMarkdown(content) {
 const auth = useAuthStore()
 const chatStore = useChatStore()
 const themeStore = useThemeStore()
-const avatarDialog = ref(false)
-const avatarSizeLarge = ref(false)
-const profileForm = ref({ avatar: '', newPassword: '', confirm: '' })
 const chatInput = ref('')
 
 // Responsive State
@@ -100,7 +97,7 @@ const currentPlaceholderIndex = ref(0)
 let placeholderInterval = null
 
 const displayText = computed(() => {
-  if (chatStore.hasUnreadMessage && chatStore.messages.length > 0) {
+  if (chatStore.messages && chatStore.messages.length > 0 && chatStore.hasUnreadMessage) {
     const lastMsg = chatStore.messages[chatStore.messages.length - 1]
     if (lastMsg && lastMsg.role === 'assistant') {
       return lastMsg.content
@@ -111,6 +108,7 @@ const displayText = computed(() => {
 })
 
 const route = useRoute()
+const router = useRouter()
 const isAuthPage = computed(() => {
   return ['/login', '/register'].includes(route.path)
 })
@@ -142,14 +140,17 @@ function toggleTheme(val) {
   themeStore.toggleTheme(val)
 }
 
-function openAvatar() { avatarDialog.value = true }
-function toggleAvatarSize() { avatarSizeLarge.value = !avatarSizeLarge.value }
+function navigateTo(path) {
+  router.push(path)
+}
 
 // Scroll chat to bottom when messages update
 watch(() => chatStore.messages, () => {
   nextTick(() => {
     const box = document.querySelector('.chat-messages')
-    if (box) box.scrollTop = box.scrollHeight
+    if (box && chatStore.messages && chatStore.messages.length > 0) {
+      box.scrollTop = box.scrollHeight
+    }
   })
 }, { deep: true })
 
@@ -161,25 +162,6 @@ function sendChat() {
   chatStore.sendMessage(text)
   chatInput.value = ''
 }
-
-async function saveAvatar() {
-  if (!auth.userId || !profileForm.value.avatar) { ElMessage.warning('缺少用户ID或头像URL'); return }
-  try {
-    await api.updateUserInfo({ id: Number(auth.userId), avatar: profileForm.value.avatar })
-    ElMessage.success('头像已更新')
-  } catch (e) { ElMessage.error(`更新失败: ${e.message}`) }
-}
-
-function onLogout() {
-  avatarDialog.value = false
-  auth.logout()
-}
-
-watch(() => auth.isAuthenticated, (val) => {
-  if (!val) {
-    avatarDialog.value = false
-  }
-})
 </script>
 
 <template>
@@ -187,82 +169,72 @@ watch(() => auth.isAuthenticated, (val) => {
     <router-view />
   </div>
   <el-container v-else style="height:100vh;">
-    <!-- Desktop Sidebar -->
-    <el-aside width="65px" class="app-aside" v-if="!isMobile">
-      <div class="aside-avatar">
-        <el-tooltip content="个人中心" placement="right">
-          <el-avatar class="user-avatar" :size="48" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" @click="openAvatar"/>
-        </el-tooltip>
+    <!-- Desktop Sidebar - Left Vertical Dock -->
+    <div class="vertical-dock-container" v-if="!isMobile">
+      <div class="dock-wrapper">
+         <div class="dock-item" @click="navigateTo('/profile')">
+           <el-avatar class="dock-avatar" :size="48" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" />
+         </div>
+        <router-link to="/data" class="dock-item">
+          <div class="dock-icon" :class="{ 'is-active': route.path === '/data' }">
+            <el-icon><List /></el-icon>
+            <span class="dock-text">数据</span>
+          </div>
+        </router-link>
+        <router-link to="/collections" class="dock-item">
+          <div class="dock-icon" :class="{ 'is-active': route.path === '/collections' }">
+            <el-icon><Files /></el-icon>
+            <span class="dock-text">合集</span>
+          </div>
+        </router-link>
+        <router-link to="/analysis" class="dock-item">
+          <div class="dock-icon" :class="{ 'is-active': route.path === '/analysis' }">
+            <el-icon><Folder /></el-icon>
+            <span class="dock-text">分析结果</span>
+          </div>
+        </router-link>
+        <router-link to="/tags" class="dock-item">
+          <div class="dock-icon" :class="{ 'is-active': route.path === '/tags' }">
+            <el-icon><PriceTag /></el-icon>
+            <span class="dock-text">标签</span>
+          </div>
+        </router-link>
+        <router-link to="/word-cloud" class="dock-item">
+          <div class="dock-icon" :class="{ 'is-active': route.path === '/word-cloud' }">
+            <el-icon><TrendCharts /></el-icon>
+            <span class="dock-text">统计</span>
+          </div>
+        </router-link>
+        <router-link to="/report" class="dock-item">
+          <div class="dock-icon" :class="{ 'is-active': route.path === '/report' }">
+            <el-icon><Notebook /></el-icon>
+            <span class="dock-text">报告</span>
+          </div>
+        </router-link>
+        <div class="dock-spacer"></div>
+        <router-link to="/config" class="dock-item">
+          <div class="dock-icon" :class="{ 'is-active': route.path === '/config' }">
+            <el-icon><Setting /></el-icon>
+            <span class="dock-text">配置</span>
+          </div>
+        </router-link>
       </div>
-      <el-menu router :default-active="$route.path" class="aside-menu" :collapse="true">
-        <el-tooltip content="数据" placement="right">
-          <template #default>
-            <el-menu-item index="/data">
-              <el-icon><List /></el-icon>
-            </el-menu-item>
-          </template>
-        </el-tooltip>
-                <el-tooltip content="合集" placement="right">
-          <template #default>
-            <el-menu-item index="/collections">
-              <el-icon><Files /></el-icon>
-            </el-menu-item>
-          </template>
-        </el-tooltip>
-        <el-tooltip content="分析结果" placement="right">
-          <template #default>
-            <el-menu-item index="/analysis">
-              <el-icon><Folder /></el-icon>
-            </el-menu-item>
-          </template>
-        </el-tooltip>
-        <el-tooltip content="标签" placement="right">
-          <template #default>
-            <el-menu-item index="/tags">
-              <el-icon><PriceTag /></el-icon>
-            </el-menu-item>
-          </template>
-        </el-tooltip> 
-        <el-tooltip content="同步记录" placement="right">
-          <template #default>
-            <el-menu-item index="/sync">
-              <el-icon><Clock /></el-icon>
-            </el-menu-item>
-          </template>
-        </el-tooltip>
-        <el-tooltip content="统计" placement="right">
-          <template #default>
-            <el-menu-item index="/word-cloud">
-              <el-icon><TrendCharts /></el-icon>
-            </el-menu-item>
-          </template>
-        </el-tooltip>
-        <el-tooltip content="报告" placement="right">
-          <template #default>
-            <el-menu-item index="/report">
-              <el-icon><Notebook /></el-icon>
-            </el-menu-item>
-          </template>
-        </el-tooltip>
-        <div class="menu-spacer"></div>
-        <el-tooltip content="配置" placement="right">
-          <template #default>
-            <el-menu-item index="/config">
-              <el-icon><Setting /></el-icon>
-            </el-menu-item>
-          </template>
-        </el-tooltip>
-      </el-menu>
-    </el-aside>
+    </div>
 
     <!-- Mobile Drawer Sidebar -->
     <el-drawer v-model="drawerVisible" direction="ltr" size="240px" :with-header="false">
       <div class="mobile-menu-content">
-        <div class="mobile-user-info" @click="openAvatar">
+        <div class="mobile-user-info" @click="navigateTo('/profile')">
            <el-avatar class="user-avatar" :size="50" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" />
            <span style="margin-left: 12px; font-weight: 600;">{{ auth.username }}</span>
         </div>
+        <el-divider />
         <el-menu router :default-active="$route.path" class="mobile-menu">
+            <el-menu-item index="/profile" @click="drawerVisible = false">
+              <el-icon><User /></el-icon>
+              <span>个人中心</span>
+            </el-menu-item>
+            <el-divider />
             <el-menu-item index="/data" @click="drawerVisible = false">
               <el-icon><List /></el-icon>
               <span>数据</span>
@@ -278,10 +250,6 @@ watch(() => auth.isAuthenticated, (val) => {
             <el-menu-item index="/tags" @click="drawerVisible = false">
               <el-icon><PriceTag /></el-icon>
               <span>标签</span>
-            </el-menu-item>
-            <el-menu-item index="/sync" @click="drawerVisible = false">
-              <el-icon><Clock /></el-icon>
-              <span>同步记录</span>
             </el-menu-item>
             <el-menu-item index="/word-cloud" @click="drawerVisible = false">
               <el-icon><TrendCharts /></el-icon>
@@ -425,42 +393,147 @@ watch(() => auth.isAuthenticated, (val) => {
 .header-center { flex:1; display:flex; justify-content:center; }
 .header-right { display:flex; align-items:center; justify-content:flex-end; min-width: 60px; }
 .title { font-weight:bold; }
-.app-main { padding:16px; }
-.aside-avatar { 
-  display:flex; 
-  align-items:center; 
-  justify-content:center; 
-  height: 60px;
+.app-main {
+  padding: 24px 24px 24px 100px;
+  max-width: 100%;
+  margin: 0 auto;
+  width: 100%;
+  height: 100%;
   box-sizing: border-box;
-  border-bottom: none; 
+  transition: padding 0.3s ease;
 }
-  .aside-menu { flex:1; display:flex; flex-direction:column; padding-top: 8px; border-right: none !important; background-color: transparent !important; }
-  .aside-menu :deep(.el-menu) {
-    border-right: none !important;
-    background-color: transparent !important;
-  }
-  .aside-menu :deep(.el-menu-item) { 
-    justify-content: center; 
-    height: 48px;
-    margin: 4px 8px;
-    border-radius: 12px;
-    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .aside-menu :deep(.el-menu-item:hover) {
-    background-color: rgba(0, 0, 0, 0.04);
-    transform: scale(1.04);
-  }
-  .aside-menu :deep(.el-menu-item.is-active) {
-    background-color: var(--el-color-primary-light-9);
-    color: var(--el-color-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-  .aside-menu :deep(.el-icon) {
-    font-size: 20px;
-  }
-  .menu-spacer { flex:1; }
-.user-avatar { cursor: pointer; transition: transform 200ms ease; }
-.user-avatar:hover { transform: scale(1.05); }
+
+/* Vertical Left Dock Sidebar */
+.vertical-dock-container {
+  position: fixed;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  padding: 16px 8px;
+  transition: all 0.3s ease;
+}
+
+.dock-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.dock-item {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  width: 100%;
+}
+
+.dock-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.dock-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.dock-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--el-text-color-primary);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: visible;
+}
+
+.dock-icon .el-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.dock-text {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateX(-10px) translateY(-50%);
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: -1;
+}
+
+.dock-icon:hover {
+  background: var(--el-fill-color-light);
+  transform: translateX(10px);
+}
+
+.dock-icon:hover .dock-text {
+  opacity: 1;
+  transform: translateX(0) translateY(-50%);
+}
+
+.dock-icon.is-active {
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.dock-icon.is-active:hover {
+  background: var(--el-color-primary-light-8);
+  transform: translateX(10px);
+}
+
+.dock-icon.is-active .dock-text {
+  color: var(--el-color-primary);
+}
+
+.dock-spacer {
+  width: 40px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+  margin: 8px 0;
+  border-radius: 1px;
+}
+
+/* Dark mode adaptation */
+html.dark .dock-wrapper {
+  background: rgba(30, 30, 30, 0.75);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+html.dark .dock-spacer {
+  background: rgba(255, 255, 255, 0.1);
+}
 .dialog-avatar { cursor: zoom-in; transition: transform 200ms ease; }
 .dialog-avatar:hover { transform: scale(1.03); }
 
@@ -910,6 +983,135 @@ watch(() => auth.isAuthenticated, (val) => {
 }
 .send-btn:hover:not(:disabled) .el-icon {
   transform: translateX(2px) translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 1600px) {
+  .app-main {
+    padding: 24px 24px 24px 100px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 1400px) {
+  .app-main {
+    padding: 24px 24px 24px 90px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .app-main {
+    padding: 20px 20px 20px 80px;
+  }
+
+  .vertical-dock-container {
+    left: 16px;
+  }
+
+  .dock-wrapper {
+    padding: 14px 10px;
+    gap: 6px;
+  }
+
+  .dock-icon,
+  .dock-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .dock-icon .el-icon {
+    font-size: 22px;
+  }
+
+  .dock-text {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .app-main {
+    padding: 20px 20px 20px 70px;
+  }
+
+  .vertical-dock-container {
+    left: 12px;
+  }
+
+  .dock-wrapper {
+    padding: 12px 8px;
+    border-radius: 20px;
+  }
+
+  .dock-icon,
+  .dock-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .dock-icon .el-icon {
+    font-size: 20px;
+  }
+
+  .dock-text {
+    font-size: 13px;
+  }
+
+  .chat-trigger-bar {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding: 16px 16px 16px 16px;
+  }
+}
+
+/* Small screens adjustment */
+@media (max-width: 480px) {
+  .app-main {
+    padding: 12px 12px 12px 12px;
+  }
+
+  .chat-trigger-bar {
+    width: calc(100vw - 32px);
+  }
+
+  .chat-trigger-bar .rolling-text-container {
+    max-width: calc(100% - 40px);
+  }
+
+  .chat-trigger-bar .rolling-text {
+    font-size: 13px;
+  }
+
+  .theme-switch {
+    width: 60px;
+    height: 30px;
+  }
+
+  .switch-handle {
+    width: 24px;
+    height: 24px;
+    left: 3px;
+  }
+
+  .theme-switch.is-dark .switch-handle {
+    transform: translateX(30px);
+  }
+
+  .switch-icon {
+    font-size: 16px;
+  }
+}
+
+/* Large screens optimization */
+@media (min-width: 1920px) {
+  .app-main {
+    padding: 32px 32px 32px 120px;
+    max-width: 1600px;
+  }
 }
 
 </style>

@@ -1,12 +1,14 @@
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { api } from '../api/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
-import { User, Monitor, Bell, Cpu, Lock, Check, Close, Connection, Plus, Delete, Edit } from '@element-plus/icons-vue'
-import ModelConfig from '../components/ModelConfig.vue'
+ import { User, Monitor, Bell, Cpu, Lock, Check, Close, Connection, Plus, Delete, Edit, InfoFilled, ArrowRight } from '@element-plus/icons-vue'
+import AboutUs from './AboutUs.vue'
 
+const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const loading = ref(false)
 const originalForm = ref(null)
@@ -15,12 +17,12 @@ const form = ref({
   scanDirectory: '',
   autoScanEnabled: true,
   scanIntervalHours: 1,
-  llmProvider: 'deepseek', // Default to deepseek
-  openaiApiKey: '', // Legacy
-  geminiApiKey: '', // Legacy
-  bailianApiKey: '', // Legacy
-  glmApiKey: '', // Legacy
-  ollamaBaseUrl: 'http://localhost:11434', // Legacy
+  llmProvider: 'deepseek',
+  openaiApiKey: '',
+  geminiApiKey: '',
+  bailianApiKey: '',
+  glmApiKey: '',
+  ollamaBaseUrl: 'http://localhost:11434',
   dailyEnabled: false,
   dailyTime: null,
   weeklyEnabled: false,
@@ -28,41 +30,51 @@ const form = ref({
   weeklyTime: null
 })
 
-const providers = ref([])
-const providerForms = ref({}) // { [providerId]: { apiKey: '', requestUrl: '', models: [] } }
-const verifiedProviders = ref({}) // { [providerId]: boolean }
-
 const userInfoForm = ref({
   username: '',
   email: '',
   phone: ''
 })
+
 const editing = ref({
   username: false,
   email: false,
   phone: false
 })
 
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirm: ''
+})
+
 const passwordDialog = ref(false)
-const passwordForm = ref({ oldPassword: '', newPassword: '', confirm: '' })
 
 const activeSection = ref('basic')
 let scrollContainer = null
 
+const handleNavClick = (section) => {
+  if (route.path !== '/config') {
+    router.push('/config').then(() => {
+      setTimeout(() => scrollTo(section), 100)
+    })
+  } else {
+    scrollTo(section)
+  }
+}
+
 // 监听滚动事件，更新 activeSection
 const onScroll = () => {
-  const sections = ['basic', 'scan', 'push', 'model']
+  const sections = ['basic', 'scan', 'push']
   // 触发阈值：视口高度的 40%
-  // 只要元素的顶部到了屏幕上方 40% 的位置，就认为它已经“占据”了视野
   const threshold = window.innerHeight * 0.4
-  
+
   let current = sections[0]
-  
+
   for (const section of sections) {
     const el = document.getElementById(section)
     if (el) {
       const rect = el.getBoundingClientRect()
-      // 找到最后一个满足条件的 section (它的顶部在阈值线之上)
       if (rect.top < threshold) {
         current = section
       }
@@ -72,18 +84,27 @@ const onScroll = () => {
 }
 
 onMounted(() => {
-  if (auth.userId) loadConfig()
-  
-  // 查找滚动容器 (Element Plus 的 el-main 通常是 .app-main)
+  if (auth.userId) {
+    loadConfig()
+  }
+
+  // 查找滚动容器 (Element Plus 的 el-main 通常是 .app-main')
   scrollContainer = document.querySelector('.app-main') || window
   scrollContainer.addEventListener('scroll', onScroll, true)
-  
+
   // 初始执行一次
   onScroll()
 })
 
+// 监听路由变化，更新激活的子部分
+watch(() => route.path, (newPath) => {
+  if (newPath === '/config') {
+    // 主配置页面，根据滚动更新激活项
+    nextTick(() => onScroll())
+  }
+}, { immediate: true })
+
 import { onUnmounted } from 'vue'
-import { id } from 'element-plus/es/locale/index.mjs'
 onUnmounted(() => {
   if (scrollContainer) {
     scrollContainer.removeEventListener('scroll', onScroll, true)
@@ -164,48 +185,6 @@ async function loadConfig() {
       userInfoForm.value.phone = user.phone || ''
     }
 
-    // Load Model Config
-    try {
-      const modelResp = await api.getUserModelConfig(auth.userId)
-      const modelList = modelResp?.data || modelResp
-      
-      // Update providers list based on backend response
-      if (Array.isArray(modelList)) {
-        // Create providers array from modelList
-        providers.value = modelList.map(m => ({
-          id: m.name,
-          name: m.name,
-          defaultUrl: m.url,
-          isCustom: false,
-          dbId: m.id
-        }))
-        
-        // Initialize providerForms
-        modelList.forEach(m => {
-          providerForms.value[m.name] = {
-             id: m.id || '',
-             activeModels: [], // Store active model names (Array)
-             apiKey: m.apiKey || '',
-             requestUrl: m.url || '',
-             models: []
-          }
-          
-          // Initialize verified status from backend
-          if (m.isConnected) {
-              verifiedProviders.value[m.name] = true
-              // fetchModels(m.name) // fetchModels moved to component, but we need to trigger it?
-              // Or maybe component will fetch on mount if connected?
-              // In component: we can watch for verifiedProviders or init on mount.
-              // Actually, fetchModels was called here. Now it's not.
-              // We might need to expose a ref to component to call fetchModels, or let component handle it.
-              // Better: component watches providers/verifiedProviders and fetches if needed.
-          }
-        })
-      }
-    } catch (e) {
-      console.error('Failed to load model config', e)
-    }
-
     // Save original form for change detection
     originalForm.value = JSON.parse(JSON.stringify(form.value))
   } catch (e) {
@@ -263,23 +242,6 @@ async function saveConfig() {
 
     // Save Config
     await api.updateConfig(body)
-
-    // Save Model Config
-    const modelList = []
-    for (const [key, value] of Object.entries(providerForms.value)) {
-      if (value.apiKey || value.requestUrl) {
-        modelList.push({
-          id: value.id,
-          userId: Number(auth.userId),
-          name: key,
-          apiKey: value.apiKey,
-          url: value.requestUrl,
-          isConnected: !!verifiedProviders.value[key]
-        })
-      }
-    }
-
-    await api.updateUserModelConfig(Number(auth.userId), modelList)
 
     // Update original form
     originalForm.value = JSON.parse(JSON.stringify(form.value))
@@ -375,35 +337,54 @@ onBeforeRouteLeave((to, from, next) => {
     <!-- 左侧导航 -->
     <div class="sidebar-wrapper">
       <div class="nav-menu">
-        <div class="nav-item" :class="{ active: activeSection === 'basic' }" @click="scrollTo('basic')">
+        <!-- 一级目录：基础配置 -->
+        <div class="nav-group-title">通用设置</div>
+        <div class="nav-item" :class="{ active: route.path === '/config' && activeSection === 'basic' }" @click="handleNavClick('basic')">
           <el-icon class="nav-icon">
             <User />
           </el-icon>
           <span>基本信息</span>
         </div>
-        <div class="nav-item" :class="{ active: activeSection === 'scan' }" @click="scrollTo('scan')">
+        <div class="nav-item" :class="{ active: route.path === '/config' && activeSection === 'scan' }" @click="handleNavClick('scan')">
           <el-icon class="nav-icon">
             <Monitor />
           </el-icon>
           <span>扫描配置</span>
         </div>
-        <div class="nav-item" :class="{ active: activeSection === 'push' }" @click="scrollTo('push')">
+        <div class="nav-item" :class="{ active: route.path === '/config' && activeSection === 'push' }" @click="handleNavClick('push')">
           <el-icon class="nav-icon">
             <Bell />
           </el-icon>
           <span>推送配置</span>
         </div>
-        <div class="nav-item" :class="{ active: activeSection === 'model' }" @click="scrollTo('model')">
+        <!-- 一级目录：模型配置 -->
+        <div class="nav-group-title">模型设置</div>
+        <div class="nav-item" :class="{ active: route.path.includes('/model-provider') }" @click="router.push('/config/model-provider')">
+          <el-icon class="nav-icon">
+            <Connection />
+          </el-icon>
+          <span>模型提供商</span>
+        </div>
+        <div class="nav-item" :class="{ active: route.path.includes('/default-model') }" @click="router.push('/config/default-model')">
           <el-icon class="nav-icon">
             <Cpu />
           </el-icon>
-          <span>模型配置</span>
+          <span>默认模型</span>
+        </div>
+        <!-- 一级菜单：关于我们 -->
+        <div class="nav-item level-1-item" :class="{ active: route.path.includes('/about') }" @click="router.push('/config/about')">
+          <el-icon class="nav-icon">
+            <InfoFilled />
+          </el-icon>
+          <span>关于我们</span>
         </div>
       </div>
     </div>
 
     <!-- 右侧表单 -->
     <div class="content-wrapper">
+      <AboutUs v-if="route.path === '/config/about'" />
+      <template v-else-if="route.path === '/config'">
       <el-form label-position="top" class="apple-form">
 
         <!-- 基本信息 -->
@@ -480,6 +461,8 @@ onBeforeRouteLeave((to, from, next) => {
           </div>
         </div>
 
+
+
         <!-- 推送配置 -->
         <div id="push" class="settings-group">
           <div class="group-header">
@@ -534,23 +517,16 @@ onBeforeRouteLeave((to, from, next) => {
           </div>
         </div>
 
-        <!-- 模型配置 (New UI) -->
-        <el-divider />
-        <div id="model" class="settings-group">
-          <ModelConfig
-            v-model="form.llmProvider"
-            :providers="providers"
-            :provider-forms="providerForms"
-            v-model:verified-providers="verifiedProviders"
-            @save="saveConfig"
-          />
-        </div>
+
+
 
         <div class="floating-save-bar">
           <el-button :loading="loading" type="primary" size="large" @click="saveConfig"
             class="save-btn">保存更改</el-button>
         </div>
       </el-form>
+      </template>
+      <router-view v-else />
     </div>
   </div>
 
@@ -622,6 +598,29 @@ onBeforeRouteLeave((to, from, next) => {
   background-color: var(--el-color-primary);
   color: #fff;
   box-shadow: 0 4px 12px var(--el-color-primary-light-5);
+}
+
+.nav-group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+  padding: 8px 12px;
+  margin-top: 8px;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mt-4 {
+  margin-top: 16px !important;
+}
+
+.mt-2 {
+  margin-top: 8px !important;
+}
+
+.nav-item.level-1-item {
+  font-weight: 600;
 }
 
 .nav-icon {
@@ -763,6 +762,9 @@ onBeforeRouteLeave((to, from, next) => {
   width: fit-content;
   z-index: 100;
 }
+
+
+
 
 .save-btn {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);

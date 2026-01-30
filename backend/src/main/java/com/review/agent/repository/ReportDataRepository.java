@@ -18,4 +18,11 @@ public interface ReportDataRepository extends JpaRepository<ReportData, Long> {
                         limit 10
                     """)
     List<ReportData> findByCondition(Long userId, Integer type, String date);
+
+    /**
+     * 获取用户最近2条报告记录
+     * @param userId 用户ID
+     * @return 报告列表
+     */
+    List<ReportData> findTop2ByUserIdOrderByCreateTimeDesc(Long userId);
 }

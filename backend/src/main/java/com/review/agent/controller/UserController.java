@@ -8,9 +8,11 @@ import com.review.agent.entity.pojo.SelectedModel;
 import com.review.agent.entity.pojo.UserConfig;
 import com.review.agent.entity.pojo.UserInfo;
 import com.review.agent.entity.pojo.UserLlmConfig;
+import com.review.agent.entity.pojo.UserDefaultModelConfig;
 import com.review.agent.entity.request.BasicConfigUpdateRequest;
 import com.review.agent.entity.request.UpdatePasswordRequest;
 import com.review.agent.entity.vo.UserInfoFilterVo;
+import com.review.agent.entity.vo.UserStatsVo;
 import com.review.agent.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -191,7 +193,54 @@ public class UserController {
         return ResultUtil.success(selectedModelList);
     }
 
+    /**
+     * 获取用户默认模型配置
+     */
+    @GetMapping("/config/default-model/get")
+    public BaseResponse<List<UserDefaultModelConfig>> getUserDefaultModels(@RequestHeader("userId") Long userId) {
+        // 校验用户是否存在
+        UserInfo userInfo = userService.findById(userId);
+        if (userInfo == null) {
+            return ResultUtil.error("user not found");
+        }
+
+        return ResultUtil.success(userService.getUserDefaultModels(userId));
+    }
+
+    /**
+     * 更新用户默认模型配置
+     */
+    @PostMapping("/config/default-model/update")
+    public BaseResponse<?> updateUserDefaultModels(@RequestHeader(value = "userId") Long userId, @RequestBody List<UserDefaultModelConfig> modelConfigs) {
+        // 校验用户是否存在
+        UserInfo userInfo = userService.findById(userId);
+        if (userInfo == null) {
+            return ResultUtil.error("user not found");
+        }
+
+        userService.updateUserDefaultModels(userId, modelConfigs);
+        return ResultUtil.success("update success");
+    }
 
     // endregion 用户配置接口
+
+    // region 个人中心统计接口
+
+    /**
+     * 获取用户统计数据
+     * @param userId 用户ID
+     * @return 统计数据
+     */
+    @GetMapping("/stats")
+    public BaseResponse<UserStatsVo> getUserStats(@RequestHeader("userId") Long userId) {
+        UserInfo userInfo = userService.findById(userId);
+        if (userInfo == null) {
+            return ResultUtil.error("user not found");
+        }
+
+        return ResultUtil.success(userService.getUserStats(userId));
+    }
+
+    // endregion 个人中心统计接口
 
 }

@@ -208,6 +208,25 @@ export const api = {
     const encNew = await encryptPassword(newPassword)
     return request('/user/info/update/password', { method: 'POST', body: { oldPassword: encOld, newPassword: encNew } })
   },
+  uploadAvatar(formData) {
+    const userId = getUserId()
+    const headers = {}
+    if (userId) {
+      headers['userId'] = userId
+    }
+    return fetch(BASE_URL + '/user/info/upload/avatar', {
+      method: 'POST',
+      headers: headers,
+      body: formData,
+    }).then(async (res) => {
+      if (!res.ok) throw new Error(await res.text())
+      const json = await res.json()
+      return normalizeResponse(json)
+    })
+  },
+  getUserStats() {
+    return request('/user/stats')
+  },
 
   getAnalysisList(params) {
     const page = params?.page ?? 0
@@ -352,6 +371,14 @@ export const api = {
   },
   deactiveSelectedModel(selectedModel) {
     return request('/user/config/model/deactive', { method: 'POST', body: selectedModel })
+  },
+
+  // User Default Model Config
+  getUserDefaultModels() {
+    return request('/user/config/default-model/get')
+  },
+  updateUserDefaultModels(modelConfigs) {
+    return request('/user/config/default-model/update', { method: 'POST', body: modelConfigs })
   },
 
   _handleStream(fetchPromise, handlers) {

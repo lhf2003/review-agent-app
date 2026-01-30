@@ -27,4 +27,10 @@ public interface MainTagRepository extends JpaRepository<MainTag, Long> {
        \s""")
     Page<MainTag> findAllByPage(Pageable pageable, @Param("userId") Long userId, @Param("tagName") String tagName, @Param("parentId") Integer parentId);
 
+    /**
+     * 统计用户的主标签数量
+     * @param userId 用户ID
+     * @return 主标签数量
+     */
+    long countByUserId(Long userId);
 }

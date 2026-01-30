@@ -190,11 +190,35 @@ CREATE TABLE `quiz_question`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='AI测验题目表';
 
-ALTER TABLE data_info
-    ADD CONSTRAINT file_name UNIQUE (file_name);
+create table default_llm_provider
+(
+    id   int auto_increment
+        primary key,
+    name varchar(20)  null,
+    url  varchar(255) null
+)
+    comment '默认模型提供商';
 
-ALTER TABLE main_tag
-    ADD CONSTRAINT name UNIQUE (name);
+create table user_llm_config
+(
+    id           bigint auto_increment
+        primary key,
+    user_id      bigint       not null comment '用户id',
+    name         varchar(20)  not null,
+    url          varchar(255) null,
+    api_key      varchar(255) null,
+    is_connected tinyint(1)   null comment '是否已连接'
+)
+    comment '用户模型服务商配置';
 
-ALTER TABLE sub_tag
-    ADD CONSTRAINT name UNIQUE (name);
+create table selected_model
+(
+    id             int auto_increment
+        primary key,
+    provider_id    int          not null comment '绑定模型提供商id',
+    user_id        bigint       not null comment '用户Id',
+    model_name     varchar(100) not null comment '模型名称',
+    model_capacity int          null comment '模型能力'
+)
+    comment '已选择的模型';
+

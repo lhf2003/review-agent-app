@@ -71,4 +71,11 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
      */
     @Query("select a from AnalysisResult a where a.userId = :userId and a.createdTime between :startDateTime and :endDateTime")
     List<AnalysisResult> findAllByDate(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime);
+
+    /**
+     * 统计用户的分析结果数量
+     * @param userId 用户ID
+     * @return 分析结果数量
+     */
+    long countByUserId(Long userId);
 }

@@ -3,7 +3,10 @@ import { useAuthStore } from '../stores/auth'
 
 const LoginPage = () => import('../pages/LoginPage.vue')
 const RegisterPage = () => import('../pages/RegisterPage.vue')
+const ProfilePage = () => import('../pages/ProfilePage.vue')
 const ConfigPage = () => import('../pages/ConfigPage.vue')
+const ModelProviderConfig = () => import('../pages/ModelProviderConfig.vue')
+const DefaultModelConfig = () => import('../pages/DefaultModelConfig.vue')
 const TagPage = () => import('../pages/TagPage.vue')
 const DataPage = () => import('../pages/DataPage.vue')
 const AnalysisResultPage = () => import('../pages/AnalysisResult.vue')
@@ -12,6 +15,7 @@ const FileDetailPage = () => import('../pages/FileDetailPage.vue')
 const WordCloudPage = () => import('../pages/WordCloudPage.vue')
 const ReportPage = () => import('../pages/ReportPage.vue')
 const SessionTracePage = () => import('../pages/SessionTracePage.vue')
+const AboutUsPage = () => import('../pages/AboutUs.vue')
 
 const isFileProtocol = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:'
 const history = isFileProtocol ? createWebHashHistory(import.meta.env.BASE_URL) : createWebHistory(import.meta.env.BASE_URL)
@@ -24,7 +28,16 @@ const router = createRouter({
     { path: '/', redirect: '/login' },
     { path: '/login', component: LoginPage },
     { path: '/register', component: RegisterPage },
-    { path: '/config', component: ConfigPage },
+    { path: '/profile', component: ProfilePage },
+    {
+      path: '/config',
+      component: ConfigPage,
+      children: [
+        { path: 'model-provider', component: ModelProviderConfig },
+        { path: 'default-model', component: DefaultModelConfig },
+        { path: 'about', component: AboutUsPage }
+      ]
+    },
     { path: '/tags', component: TagPage },
     { path: '/data', component: DataPage },
     { path: '/analysis', component: AnalysisResultPage },
