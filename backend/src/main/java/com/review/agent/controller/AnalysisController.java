@@ -47,11 +47,11 @@ public class AnalysisController {
 
     /**
      * 获取分析文件列表
-     * @param userId 用户ID
      * @return <文件名, 分析结果列表>
      */
     @GetMapping("/file-name/list")
-    public BaseResponse<Map<String, List<AnalysisResultVo>>> getFileNameList(@RequestHeader("userId") Long userId) {
+    public BaseResponse<Map<String, List<AnalysisResultVo>>> getFileNameList() {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(analysisService.getFileNameList(userId));
     }
 
