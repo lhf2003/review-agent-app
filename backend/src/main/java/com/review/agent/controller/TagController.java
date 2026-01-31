@@ -2,6 +2,7 @@ package com.review.agent.controller;
 
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.MainTag;
 import com.review.agent.entity.pojo.SubTag;
 import com.review.agent.entity.pojo.TagRelation;
@@ -21,12 +22,15 @@ import java.util.List;
 public class TagController {
     @Resource
     private TagService tagService;
+    @Resource
+    private SecurityUtils securityUtils;
 
     /**
      * 添加推荐标签
      */
     @PostMapping("/recommand/add")
-    public BaseResponse<Void> addRecommendTag(@RequestHeader("userId") Long userId, @RequestBody TagRecommendRequest request) {
+    public BaseResponse<Void> addRecommendTag(@RequestBody TagRecommendRequest request) {
+        Long userId = securityUtils.getCurrentUserId();
         tagService.addRecommendTag(userId, request);
         return ResultUtil.success();
     }
@@ -35,7 +39,7 @@ public class TagController {
      * 清空推荐标签
      */
     @GetMapping("/clear")
-    public BaseResponse<Void> clearRecommendTag(@RequestHeader("userId") Long userId) {
+    public BaseResponse<Void> clearRecommendTag() {
         return ResultUtil.success();
     }
 
@@ -43,11 +47,11 @@ public class TagController {
 
     /**
      * 获取主标签列表
-     * @param userId 用户ID
      * @return 主标签列表
      */
     @GetMapping("/list")
-    public BaseResponse<List<MainTag>> mainTagList(@RequestHeader("userId") Long userId) {
+    public BaseResponse<List<MainTag>> mainTagList() {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(tagService.findMainTagList(userId));
     }
 
@@ -57,10 +61,9 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/add")
-    public BaseResponse<Void> add(@Valid @RequestBody MainTag mainTag, @RequestHeader(value = "userId", required = false) Long userId) {
-        if (userId != null) {
-            mainTag.setUserId(userId);
-        }
+    public BaseResponse<Void> add(@Valid @RequestBody MainTag mainTag) {
+        Long userId = securityUtils.getCurrentUserId();
+        mainTag.setUserId(userId);
         tagService.addTag(mainTag);
         return ResultUtil.success();
     }
@@ -71,22 +74,21 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/update")
-    public BaseResponse<Void> update(@RequestBody MainTag mainTag, @RequestHeader(value = "userId", required = false) Long userId) {
-        if (userId != null) {
-            mainTag.setUserId(userId);
-        }
+    public BaseResponse<Void> update(@Valid @RequestBody MainTag mainTag) {
+        Long userId = securityUtils.getCurrentUserId();
+        mainTag.setUserId(userId);
         tagService.updateMainTag(mainTag);
         return ResultUtil.success();
     }
 
     /**
      * 删除主标签
-     * @param userId 用户ID
      * @param id 主标签ID
      * @return 成功
      */
     @DeleteMapping("/delete")
-    public BaseResponse<Void> delete(@RequestHeader("userId") Long userId, @RequestParam("id") Long id) {
+    public BaseResponse<Void> delete(@RequestParam("id") Long id) {
+        Long userId = securityUtils.getCurrentUserId();
         tagService.deleteMainTag(userId, id);
         return ResultUtil.success();
     }
@@ -111,10 +113,9 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/add/sub")
-    public BaseResponse<Void> addSub(@Valid @RequestBody SubTag subTag, @RequestHeader(value = "userId", required = false) Long userId) {
-        if (userId != null) {
-            subTag.setUserId(userId);
-        }
+    public BaseResponse<Void> addSub(@Valid @RequestBody SubTag subTag) {
+        Long userId = securityUtils.getCurrentUserId();
+        subTag.setUserId(userId);
         tagService.addSubTag(subTag);
         return ResultUtil.success();
     }
@@ -125,22 +126,21 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/update/sub")
-    public BaseResponse<Void> updateSub(@RequestBody SubTag subTag, @RequestHeader(value = "userId", required = false) Long userId) {
-        if (userId != null) {
-            subTag.setUserId(userId);
-        }
+    public BaseResponse<Void> updateSub(@Valid @RequestBody SubTag subTag) {
+        Long userId = securityUtils.getCurrentUserId();
+        subTag.setUserId(userId);
         tagService.updateSubTag(subTag);
         return ResultUtil.success();
     }
 
     /**
      * 删除子标签
-     * @param userId 用户ID
      * @param id 子标签ID
      * @return 成功
      */
     @DeleteMapping("/delete/sub")
-    public BaseResponse<Void> deleteSub(@RequestHeader("userId") Long userId, @RequestParam("id") Long id) {
+    public BaseResponse<Void> deleteSub(@RequestParam("id") Long id) {
+        Long userId = securityUtils.getCurrentUserId();
         tagService.deleteSubTag(userId, id);
         return ResultUtil.success();
     }
@@ -151,12 +151,12 @@ public class TagController {
 
     /**
      * 获取主标签关联子标签关系列表
-     * @param userId 用户ID
      * @param mainTagId 主标签ID
      * @return 主标签关联子标签关系列表
      */
     @GetMapping("/list/relation")
-    public BaseResponse<List<SubTag>> tagRelationList(@RequestHeader("userId") Long userId, @RequestParam("mainTagId") Long mainTagId) {
+    public BaseResponse<List<SubTag>> tagRelationList(@RequestParam("mainTagId") Long mainTagId) {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(tagService.findSubTagListByMainTagId(userId, mainTagId));
     }
 
@@ -166,7 +166,8 @@ public class TagController {
      * @return 成功
      */
     @PostMapping("/add/relation")
-    public BaseResponse<Void> addRelation(@RequestHeader("userId") Long userId, @Valid @RequestBody TagRelation tagRelation) {
+    public BaseResponse<Void> addRelation(@Valid @RequestBody TagRelation tagRelation) {
+        Long userId = securityUtils.getCurrentUserId();
         tagRelation.setUserId(userId);
         tagService.addTagRelation(tagRelation);
         return ResultUtil.success();

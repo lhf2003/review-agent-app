@@ -2,6 +2,7 @@ package com.review.agent.controller;
 
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisResultVo;
@@ -26,6 +27,9 @@ public class AnalysisController {
 
     @Resource
     private AnalysisService analysisService;
+    @Resource
+    private SecurityUtils securityUtils;
+
 
     /**
      * 分页查询分析结果
@@ -53,11 +57,11 @@ public class AnalysisController {
 
     /**
      * 获取分析标签列表
-     * @param userId 用户ID
      * @return 分析标签列表
      */
     @GetMapping("/tag/list")
-    public BaseResponse<List<AnalysisTagVo>> getTagList(@RequestHeader("userId") Long userId) {
+    public BaseResponse<List<AnalysisTagVo>> getTagList() {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(analysisService.getTagList(userId));
     }
 
@@ -65,30 +69,31 @@ public class AnalysisController {
      * 开始分析
      */
     @GetMapping("/start")
-    public BaseResponse<?> startAnalysis(@RequestHeader("userId") Long userId, @RequestParam Long fileId) {
+    public BaseResponse<?> startAnalysis(@RequestParam Long fileId) {
+        Long userId = securityUtils.getCurrentUserId();
         analysisService.startAnalysis(userId, fileId);
         return ResultUtil.success("analysis success!");
     }
 
     /**
      * 获取指定会话的分析结果
-     * @param userId 用户ID
      * @param dataId 数据ID
      * @return 分析结果
      */
     @GetMapping("/result")
-    public BaseResponse<AnalysisResult> getAnalysisResult(@RequestHeader("userId") Long userId, @RequestParam("dataId") Long dataId, @RequestParam("analysisId") Long analysisId) {
+    public BaseResponse<AnalysisResult> getAnalysisResult(@RequestParam("dataId") Long dataId, @RequestParam("analysisId") Long analysisId) {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(analysisService.getAnalysisResult(userId, dataId, analysisId));
     }
 
     /**
      * 查看指定会话的相似会话
-     * @param userId 用户ID
      * @param analysisId 分析ID
      * @return 相似会话列表
      */
     @GetMapping("/similarity")
-    public BaseResponse<List<SimilarAnalysisResultVo>> getSimilarity(@RequestHeader("userId") Long userId, @RequestParam("analysisId") Long analysisId) {
+    public BaseResponse<List<SimilarAnalysisResultVo>> getSimilarity(@RequestParam("analysisId") Long analysisId) {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(analysisService.getSimilarity(userId, analysisId));
     }
 }

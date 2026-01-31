@@ -1,5 +1,6 @@
 package com.review.agent.controller;
 
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.service.SseService;
 import jakarta.annotation.Resource;
 import org.springframework.http.MediaType;
@@ -16,12 +17,16 @@ public class AnalysisLogController {
     @Resource
     private SseService sseService;
 
+    @Resource
+    private SecurityUtils securityUtils;
+
     /**
      * 建立SSE连接，接收日志推送
      * @return SseEmitter
      */
     @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamLogs(@RequestHeader(value = "userId", required = false) Long userId) {
+    public SseEmitter streamLogs() {
+        Long userId = securityUtils.getCurrentUserId();
         return sseService.createConnection(userId);
     }
 }

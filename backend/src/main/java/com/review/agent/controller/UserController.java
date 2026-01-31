@@ -4,6 +4,7 @@ import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.AesUtil;
 import com.review.agent.common.utils.JwtUtil;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.SelectedModel;
 import com.review.agent.entity.pojo.UserConfig;
 import com.review.agent.entity.pojo.UserInfo;
@@ -19,11 +20,13 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+
 
 /**
  * 用户信息接口
@@ -41,6 +44,9 @@ public class UserController {
 
     @Resource
     private PasswordEncoder passwordEncoder;
+
+    @Resource
+    private SecurityUtils securityUtils;
 
     @Value("${jwt.expiration:86400000}")
     private Long jwtExpiration;
@@ -111,7 +117,8 @@ public class UserController {
      * 根据用户名查询用户信息
      */
     @GetMapping("/info")
-    public BaseResponse<UserInfoFilterVo> getUserInfoByUsername(@RequestHeader("userId") Long userId) {
+    public BaseResponse<UserInfoFilterVo> getUserInfoByUsername() {
+        Long userId = securityUtils.getCurrentUserId();
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
             return ResultUtil.error("userId not found");
@@ -125,7 +132,8 @@ public class UserController {
      * 上传用户头像
      */
     @PostMapping("/info/upload/avatar")
-    public BaseResponse<?> uploadAvatar(@RequestHeader("userId") Long userId, @RequestParam("avatar") MultipartFile avatar) {
+    public BaseResponse<?> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
+        Long userId = securityUtils.getCurrentUserId();
         userService.uploadAvatar(userId, avatar);
         return ResultUtil.success("upload success");
     }
@@ -134,7 +142,8 @@ public class UserController {
      * 更新用户信息
      */
     @PostMapping("/info/update")
-    public BaseResponse<?> updateUserInfo(@RequestHeader("userId") Long userId, @RequestBody UserInfo userInfo) {
+    public BaseResponse<?> updateUserInfo(@RequestBody UserInfo userInfo) {
+        Long userId = securityUtils.getCurrentUserId();
         userService.updateInfo(userId, userInfo);
         return ResultUtil.success();
     }
@@ -143,7 +152,8 @@ public class UserController {
      * 更新用户密码
      */
     @PostMapping("/info/update/password")
-    public BaseResponse<?> updateUserPassword(@RequestHeader("userId") Long userId, @RequestBody UpdatePasswordRequest request) {
+    public BaseResponse<?> updateUserPassword(@RequestBody UpdatePasswordRequest request) {
+        Long userId = securityUtils.getCurrentUserId();
         request.setOldPassword(AesUtil.decrypt(request.getOldPassword()));
         request.setNewPassword(AesUtil.decrypt(request.getNewPassword()));
         userService.updatePassword(userId, request);
@@ -158,7 +168,8 @@ public class UserController {
      * 获取用户基本配置
      */
     @GetMapping("/config/get")
-    public BaseResponse<UserConfig> getUserConfig(@RequestHeader("userId") Long userId) {
+    public BaseResponse<UserConfig> getUserConfig() {
+        Long userId = securityUtils.getCurrentUserId();
         // 校验用户是否存在
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
@@ -172,7 +183,8 @@ public class UserController {
      * 更新用户基本配置
      */
     @PostMapping("/config/update")
-    public BaseResponse<?> updateUserConfig(@RequestHeader(value = "userId") Long userId, @RequestBody BasicConfigUpdateRequest updateRequest) {
+    public BaseResponse<?> updateUserConfig(@RequestBody BasicConfigUpdateRequest updateRequest) {
+        Long userId = securityUtils.getCurrentUserId();
         userService.updateUserConfig(userId, updateRequest);
         return ResultUtil.success("update success");
     }
@@ -181,7 +193,8 @@ public class UserController {
      * 获取用户模型服务商配置
      */
     @GetMapping("/config/model/get")
-    public BaseResponse<List<UserLlmConfig>> getUserModelConfig(@RequestHeader("userId") Long userId) {
+    public BaseResponse<List<UserLlmConfig>> getUserModelConfig() {
+        Long userId = securityUtils.getCurrentUserId();
         // 校验用户是否存在
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
@@ -195,27 +208,31 @@ public class UserController {
      * 更新用户模型服务商配置
      */
     @PostMapping("/config/model/update")
-    public BaseResponse<?> updateUserModelConfig(@RequestHeader(value = "userId") Long userId, @RequestBody List<UserLlmConfig> modeConfigList) {
+    public BaseResponse<?> updateUserModelConfig(@RequestBody List<UserLlmConfig> modeConfigList) {
+        Long userId = securityUtils.getCurrentUserId();
         userService.updateModelConfig(userId, modeConfigList);
         return ResultUtil.success("update success");
     }
 
     @PostMapping("/config/model/active")
-    public BaseResponse<?> activeSelectedModel(@RequestHeader(value = "userId") Long userId, @RequestBody SelectedModel selectedModel) {
+    public BaseResponse<?> activeSelectedModel(@RequestBody SelectedModel selectedModel) {
+        Long userId = securityUtils.getCurrentUserId();
         selectedModel.setUserId(userId);
         userService.activeSelectedModel(selectedModel);
         return ResultUtil.success();
     }
 
     @PostMapping("/config/model/deactive")
-    public BaseResponse<?> deactiveSelectedModel(@RequestHeader(value = "userId") Long userId, @RequestBody SelectedModel selectedModel) {
+    public BaseResponse<?> deactiveSelectedModel(@RequestBody SelectedModel selectedModel) {
+        Long userId = securityUtils.getCurrentUserId();
         selectedModel.setUserId(userId);
         userService.deactiveSelectedModel(selectedModel);
         return ResultUtil.success();
     }
 
     @PostMapping("/config/model/list")
-    public BaseResponse<?> getSelectedModel(@RequestHeader(value = "userId") Long userId, @RequestParam("providerId") Integer providerId) {
+    public BaseResponse<?> getSelectedModel(@RequestParam("providerId") Integer providerId) {
+        Long userId = securityUtils.getCurrentUserId();
         List<SelectedModel> selectedModelList = userService.getSelectedModel(userId, providerId);
         return ResultUtil.success(selectedModelList);
     }
@@ -224,7 +241,8 @@ public class UserController {
      * 获取用户默认模型配置
      */
     @GetMapping("/config/default-model/get")
-    public BaseResponse<List<UserDefaultModelConfig>> getUserDefaultModels(@RequestHeader("userId") Long userId) {
+    public BaseResponse<List<UserDefaultModelConfig>> getUserDefaultModels() {
+        Long userId = securityUtils.getCurrentUserId();
         // 校验用户是否存在
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
@@ -238,7 +256,8 @@ public class UserController {
      * 更新用户默认模型配置
      */
     @PostMapping("/config/default-model/update")
-    public BaseResponse<?> updateUserDefaultModels(@RequestHeader(value = "userId") Long userId, @RequestBody List<UserDefaultModelConfig> modelConfigs) {
+    public BaseResponse<?> updateUserDefaultModels(@RequestBody List<UserDefaultModelConfig> modelConfigs) {
+        Long userId = securityUtils.getCurrentUserId();
         // 校验用户是否存在
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
@@ -255,11 +274,12 @@ public class UserController {
 
     /**
      * 获取用户统计数据
-     * @param userId 用户ID
      * @return 统计数据
      */
     @GetMapping("/stats")
-    public BaseResponse<UserStatsVo> getUserStats(@RequestHeader("userId") Long userId) {
+    public BaseResponse<UserStatsVo> getUserStats() {
+        Long userId = securityUtils.getCurrentUserId();
+        // 校验用户是否存在
         UserInfo userInfo = userService.findById(userId);
         if (userInfo == null) {
             return ResultUtil.error("user not found");

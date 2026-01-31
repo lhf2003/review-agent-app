@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.pojo.QuizRecord;
 import com.review.agent.entity.request.CollectionRequest;
@@ -26,13 +27,17 @@ public class QuizController {
     @Resource
     private ObjectMapper objectMapper;
 
+    @Resource
+    private SecurityUtils securityUtils;
+
     @PostMapping("/generate-quiz")
-    public BaseResponse<QuizVo> generateQuiz(@RequestHeader("userId") Long userId, @RequestBody Map<String, Long> body) {
+    public BaseResponse<QuizVo> generateQuiz(@RequestBody Map<String, Long> body) {
         Long collectionId = body.get("collectionId");
         if (collectionId == null) {
             return ResultUtil.error("collectionId is required");
         }
 
+        Long userId = securityUtils.getCurrentUserId();
         QuizRecord record = quizService.generateQuiz(userId, collectionId);
         List<QuizQuestion> questions = quizService.getQuizQuestions(record.getId());
 

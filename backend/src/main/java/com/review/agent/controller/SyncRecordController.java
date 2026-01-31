@@ -1,5 +1,6 @@
 package com.review.agent.controller;
 
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.service.SyncRecordService;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
@@ -16,10 +17,13 @@ import org.springframework.web.bind.annotation.*;
 public class SyncRecordController {
     @Resource
     private SyncRecordService syncRecordService;
+    @Resource
+    private SecurityUtils securityUtils;
 
     @GetMapping("/history")
-    public BaseResponse<java.util.List<SyncRecord>> history(@RequestHeader(value = "userId", required = false) Long userId) {
-        java.util.List<SyncRecord> list = userId == null ? syncRecordService.findAll() : syncRecordService.findByUserId(userId);
+    public BaseResponse<java.util.List<SyncRecord>> history() {
+        Long userId = securityUtils.getCurrentUserId();
+        java.util.List<SyncRecord> list = syncRecordService.findByUserId(userId);
         return ResultUtil.success(list);
     }
 }

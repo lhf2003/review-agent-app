@@ -2,10 +2,12 @@ package com.review.agent.controller;
 
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.DataInfo;
 import com.review.agent.entity.request.DataInfoRequest;
 import com.review.agent.entity.projection.DataInfoVo;
 import com.review.agent.service.DataInfoService;
+import com.review.agent.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,8 @@ public class DataInfoController {
 
     @Resource
     private DataInfoService dataInfoService;
+    @Resource
+    private SecurityUtils securityUtils;
 
     /**
      * 分页
@@ -60,27 +64,25 @@ public class DataInfoController {
      * @return 导入结果
      */
     @PostMapping("/import")
-    public BaseResponse<DataInfo> importData(@RequestHeader("userId") Long userId, 
-                                             @RequestPart("file") MultipartFile file,
+    public BaseResponse<DataInfo> importData(@RequestPart("file") MultipartFile file,
                                              @RequestParam(value = "source", required = false, defaultValue = "0") Integer source) throws IOException {
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null) {
             originalFilename = "upload.txt";
         }
         String content = new String(file.getBytes());
-        DataInfo dataInfo = dataInfoService.importData(userId, originalFilename, content, source);
+        DataInfo dataInfo = dataInfoService.importData(securityUtils.getCurrentUserId(), originalFilename, content, source);
         return ResultUtil.success(dataInfo);
     }
 
     /**
      * 手动创建数据
-     * @param userId 用户ID
      * @param dataInfo 数据信息
      * @return 创建结果
      */
     @PostMapping("/create")
-    public BaseResponse<DataInfo> create(@RequestHeader("userId") Long userId, @RequestBody DataInfo dataInfo) {
-        dataInfo.setUserId(userId);
+    public BaseResponse<DataInfo> create(@RequestBody DataInfo dataInfo) {
+        dataInfo.setUserId(securityUtils.getCurrentUserId());
         DataInfo created = dataInfoService.createData(dataInfo);
         return ResultUtil.success(created);
     }
@@ -98,12 +100,11 @@ public class DataInfoController {
 
     /**
      * 同步数据
-     * @param userId 用户ID
      * @return 同步结果
      */
     @GetMapping("/sync")
-    public BaseResponse<DataInfo> syncData(@RequestHeader("userId") Long userId) throws IOException {
-        dataInfoService.syncData(userId);
+    public BaseResponse<DataInfo> syncData() throws IOException {
+        dataInfoService.syncData(securityUtils.getCurrentUserId());
         return ResultUtil.success(null);
     }
 }

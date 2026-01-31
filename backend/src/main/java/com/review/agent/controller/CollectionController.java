@@ -2,6 +2,7 @@ package com.review.agent.controller;
 
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.request.CollectionItemRequest;
 import com.review.agent.entity.request.CollectionRequest;
 import com.review.agent.entity.vo.CollectionDetailVo;
@@ -20,36 +21,39 @@ import java.util.List;
 public class CollectionController {
     @Resource
     private CollectionService collectionService;
+    @Resource
+    private SecurityUtils securityUtils;
 
     /**
      * 新增合集
      * @param request 合集请求
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addCollection(@RequestHeader("userId") Long userId, @RequestBody CollectionRequest request) {
+    public BaseResponse<Long> addCollection(@RequestBody CollectionRequest request) {
+        Long userId = securityUtils.getCurrentUserId();
         Long id = collectionService.createCollection(userId, request);
         return ResultUtil.success(id);
     }
 
     /**
      * 更新合集信息
-     * @param userId 用户ID
      * @param id 合集ID
      * @param request 合集请求
      */
     @PutMapping("/update")
-    public BaseResponse<Void> updateCollection(@RequestHeader("userId") Long userId, @RequestParam("id") Long id, @RequestBody CollectionRequest request) {
+    public BaseResponse<Void> updateCollection(@RequestParam("id") Long id, @RequestBody CollectionRequest request) {
+        Long userId = securityUtils.getCurrentUserId();
         collectionService.updateCollection(userId, id, request);
         return ResultUtil.success();
     }
 
     /**
      * 删除合集
-     * @param userId 用户ID
      * @param id 合集ID
      */
     @DeleteMapping("/delete")
-    public BaseResponse<Void> deleteCollection(@RequestHeader("userId") Long userId, @RequestParam("id") Long id) {
+    public BaseResponse<Void> deleteCollection(@RequestParam("id") Long id) {
+        Long userId = securityUtils.getCurrentUserId();
         collectionService.deleteCollection(userId, id);
         return ResultUtil.success();
     }
@@ -59,42 +63,41 @@ public class CollectionController {
      * @param request 合集请求
      */
     @PostMapping("/add-with-items")
-    public BaseResponse<Long> addCollectionWithItems(@RequestHeader("userId") Long userId, @RequestBody CollectionRequest request) {
+    public BaseResponse<Long> addCollectionWithItems(@RequestBody CollectionRequest request) {
+        Long userId = securityUtils.getCurrentUserId();
         Long id = collectionService.createCollectionWithItems(userId, request);
         return ResultUtil.success(id);
     }
 
     /**
      * 合集列表（带结果数量）
-     * @param userId 用户ID
      * @return 合集列表
      */
     @GetMapping("/list")
-    public BaseResponse<List<CollectionVo>> listCollection(@RequestHeader("userId") Long userId) {
+    public BaseResponse<List<CollectionVo>> listCollection() {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(collectionService.listCollection(userId));
     }
 
     /**
      * 合集详情
-     * @param userId 用户ID
      * @param id 合集ID
      * @return 合集详情
      */
     @GetMapping("/detail")
-    public BaseResponse<CollectionDetailVo> detailCollection(@RequestHeader("userId") Long userId, @RequestParam("id") Long id) {
+    public BaseResponse<CollectionDetailVo> detailCollection(@RequestParam("id") Long id) {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(collectionService.getCollectionDetail(userId, id));
     }
 
     /**
      * 修改合集内容 (Update - Add/Remove Items)
-     * @param userId 用户ID
      * @param collectionId 合集ID
      * @param request 合集请求
      * @return 空响应
      */
     @PostMapping("/items")
-    public BaseResponse<Void> updateCollectionItems(@RequestHeader("userId") Long userId,
-                                                 @RequestParam(value = "collectionId", required = false) Long collectionId, 
+    public BaseResponse<Void> updateCollectionItems(@RequestParam(value = "collectionId", required = false) Long collectionId,
                                                  @RequestBody CollectionItemRequest request) {
         
         if (collectionId == null) {
@@ -102,18 +105,19 @@ public class CollectionController {
             return ResultUtil.error("Collection ID is required");
         }
         
+        Long userId = securityUtils.getCurrentUserId();
         collectionService.updateCollectionItems(userId, collectionId, request);
         return ResultUtil.success();
     }
     
     /**
      * 检查归属状态
-     * @param userId 用户ID
      * @param analysisId 分析ID
      * @return 合集列表
      */
     @GetMapping("/check-contain")
-    public BaseResponse<List<CollectionVo>> checkContain(@RequestHeader("userId") Long userId, @RequestParam("analysisId") Long analysisId) {
+    public BaseResponse<List<CollectionVo>> checkContain(@RequestParam("analysisId") Long analysisId) {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(collectionService.checkContain(userId, analysisId));
     }
 

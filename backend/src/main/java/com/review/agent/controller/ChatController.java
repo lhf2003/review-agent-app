@@ -3,6 +3,7 @@ package com.review.agent.controller;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.service.ChatService;
 import jakarta.annotation.Resource;
 import org.springframework.http.MediaType;
@@ -16,6 +17,8 @@ import java.util.List;
 public class ChatController {
     @Resource
     private ChatService chatService;
+    @Resource
+    private SecurityUtils securityUtils;
 
     @GetMapping("/placeholders")
     public BaseResponse<List<String>> placeholders() {
@@ -27,7 +30,8 @@ public class ChatController {
      * 闲聊
      */
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chat(@RequestHeader("userId") Long userId, @RequestParam("request") String request) throws GraphRunnerException {
+    public Flux<String> chat(@RequestParam("request") String request) throws GraphRunnerException {
+        Long userId = securityUtils.getCurrentUserId();
         return chatService.chat(userId, request);
     }
 
@@ -35,7 +39,8 @@ public class ChatController {
      * 基于分析结果聊天
      */
     @PostMapping(path = "/with-analysis", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatWithAnalysisResult(@RequestHeader("userId") Long userId, @RequestParam("request") String request) throws GraphRunnerException {
+    public Flux<String> chatWithAnalysisResult(@RequestParam("request") String request) throws GraphRunnerException {
+        Long userId = securityUtils.getCurrentUserId();
         return chatService.chatWithAnalysisResult(userId, request);
     }
 
@@ -43,7 +48,8 @@ public class ChatController {
      * 清空上下文
      */
     @GetMapping("/clear")
-    public BaseResponse<Void> clearContext(@RequestHeader("userId") Long userId) {
+    public BaseResponse<Void> clearContext() {
+        Long userId = securityUtils.getCurrentUserId();
         chatService.clearContext(userId);
         return ResultUtil.success();
     }
