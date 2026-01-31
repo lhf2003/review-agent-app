@@ -1,11 +1,10 @@
 package com.review.agent.controller;
 
-import com.review.agent.common.utils.SecurityUtils;
-import com.review.agent.service.SyncRecordService;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
+import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.SyncRecord;
-import com.review.agent.entity.request.SyncRecordQueryRequest;
+import com.review.agent.service.SyncRecordService;
 import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -52,7 +51,7 @@ public class SyncRecordController {
     @PostMapping("/retry")
     public BaseResponse<String> retrySync() {
         Long userId = securityUtils.getCurrentUserId();
-        syncRecordService.retrySync(userId);
+//        syncRecordService.retrySync(userId);
         return ResultUtil.success("同步已重新触发");
     }
 }

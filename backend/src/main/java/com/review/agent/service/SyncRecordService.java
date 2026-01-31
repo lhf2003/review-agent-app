@@ -5,6 +5,7 @@ import com.review.agent.repository.SyncRecordRepository;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -27,44 +28,6 @@ public class SyncRecordService {
         syncRecord.setStatus(0); // 默认状态：成功
         syncRecordRepository.save(syncRecord);
     }
-
-    public java.util.List<SyncRecord> findAll() {
-        return syncRecordRepository.findAll();
-    }
-
-    public java.util.List<SyncRecord> findByUserId(Long userId) {
-        return syncRecordRepository.findByUserId(userId);
-    }
-
-    /**
-     * 分页查询同步记录（支持状态过滤）
-     */
-    public Page<SyncRecord> findByUserIdWithFilters(
-            Long userId, Integer status, String startDate, String endDate, Pageable pageable) {
-        // 先按状态查询（如果有状态过滤），日期范围在应用层处理
-        if (status != null) {
-            return syncRecordRepository.findByUserIdWithStatus(userId, status, pageable);
-        } else {
-            return syncRecordRepository.findByUserId(userId, pageable);
-        }
-    }
-
-    /**
-     * 解析日期字符串
-     */
-    private Date parseDate(SimpleDateFormat sdf, String dateStr) {
-        if (dateStr == null || dateStr.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            return sdf.parse(dateStr);
-        } catch (ParseException e) {
-            log.warn("日期解析失败: {}", dateStr, e);
-            return null;
-        }
-    }
-}
-
 
     public java.util.List<SyncRecord> findAll() {
         return syncRecordRepository.findAll();

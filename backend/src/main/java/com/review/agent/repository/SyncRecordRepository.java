@@ -6,10 +6,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.util.Date;
+import java.util.List;
 
 public interface SyncRecordRepository extends JpaRepository<SyncRecord, Long> {
-    java.util.List<SyncRecord> findByUserId(Long userId);
+    List<SyncRecord> findByUserId(Long userId);
 
     /**
      * 分页查询用户同步记录
@@ -41,5 +41,5 @@ public interface SyncRecordRepository extends JpaRepository<SyncRecord, Long> {
      * @param userId 用户ID
      * @return 同步记录列表
      */
-    java.util.List<SyncRecord> findTop3ByUserIdOrderByCreateTimeDesc(Long userId);
+    List<SyncRecord> findTop3ByUserIdOrderByCreateTimeDesc(Long userId);
 }
