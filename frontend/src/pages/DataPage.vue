@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { api } from '../api/http'
 import { useAuthStore } from '../stores/auth'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElTour } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { useRouter } from 'vue-router'
 import { Document, Select, UploadFilled, Close } from '@element-plus/icons-vue'
@@ -39,6 +39,30 @@ const drawerContent = ref('')
 const logs = ref([])
 const showLogs = ref(false)
 let logStream = null
+
+// 新手引导 Tour
+const showTour = ref(false)
+const tour = ref(null)
+const tourSteps = ref([
+  {
+    target: 'import-btn',
+    title: '第一步：导入数据',
+    description: '点击"导入数据"按钮，支持上传本地文件、Gemini 导出或 ChatGPT 导出格式的 AI 对话记录。',
+    placement: 'bottom'
+  },
+  {
+    target: 'data-table',
+    title: '第二步：查看分析结果',
+    description: '导入的数据会自动进行分析，分析完成后可以在这里查看结构化的问题描述和解决方案。',
+    placement: 'top'
+  },
+  {
+    target: 'filter-group',
+    title: '第三步：筛选和搜索',
+    description: '使用搜索框和状态筛选器快速找到你需要的分析结果。完成后，可以点击侧边栏的"标签"来整理数据。',
+    placement: 'bottom'
+  }
+])
 
 function openContent(row) {
   if (row.processedStatus === 2) {
@@ -153,7 +177,25 @@ async function doDelete(row) {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  // 检查是否是首次访问，显示新手引导
+  const tourShown = localStorage.getItem('tour-shown')
+  if (!tourShown) {
+    showTour.value = true
+  }
+})
+
+// Tour 完成/跳过处理
+function onTourFinish() {
+  localStorage.setItem('tour-shown', 'true')
+  showTour.value = false
+}
+
+function onTourSkip() {
+  localStorage.setItem('tour-shown', 'true')
+  showTour.value = false
+}
 </script>
 
 <template>
@@ -168,16 +210,18 @@ onMounted(load)
 
       <div class="spacer"></div>
 
-      <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="width: 200px" />
-      <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 120px" @change="() => { page = 1; load() } ">
+      <div class="filter-group" ref="filter-group">
+        <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="width: 200px" />
+        <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 120px" @change="() => { page = 1; load() } ">
         <el-option :value="null" label="全部" />
         <el-option :value="0" label="未分析" />
         <el-option :value="2" label="已分析" />
         <el-option :value="3" label="有更新" />
         <el-option :value="4" label="失败" />
       </el-select>
-      
-      <el-button type="plain" @click="openImport" icon="Upload">
+      </div>
+
+      <el-button type="plain" ref="import-btn" @click="openImport" icon="Upload">
         导入
       </el-button>
       <el-button type="plain" link size="large" @click="load">
@@ -187,7 +231,7 @@ onMounted(load)
 
     <!-- 表格区域 -->
     <div class="table-wrapper">
-      <el-table :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" size="small" class="glass-table">
+      <el-table ref="data-table" :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" size="small" class="glass-table">
         <template #empty>
             <el-empty description="暂无数据" :image-size="100" />
         </template>
@@ -346,6 +390,14 @@ onMounted(load)
         <MarkdownRenderer :content="drawerContent" />
       </CustomScroll>
     </el-drawer>
+
+    <!-- 新手引导 Tour -->
+    <el-tour
+      v-model="showTour"
+      :steps="tourSteps"
+      @finish="onTourFinish"
+      @skip="onTourSkip"
+    />
   </div>
 </template>
 
