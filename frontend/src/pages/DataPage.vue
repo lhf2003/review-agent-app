@@ -42,7 +42,7 @@ let logStream = null
 
 // 新手引导 Tour
 const showTour = ref(false)
-const tour = ref(null)
+const tourRef = ref(null)
 const tourSteps = ref([
   {
     target: 'import-btn',
@@ -179,20 +179,32 @@ async function doDelete(row) {
 
 onMounted(() => {
   load()
-  // 检查是否是首次访问，显示新手引导
+  // 延迟显示新手引导，确保页面完全加载
   const tourShown = localStorage.getItem('tour-shown')
   if (!tourShown) {
-    showTour.value = true
+    // 延迟 1 秒后显示，确保所有元素已渲染
+    setTimeout(() => {
+      showTour.value = true
+    }, 1000)
   }
 })
 
 // Tour 完成/跳过处理
 function onTourFinish() {
+  console.log('Tour finished')
   localStorage.setItem('tour-shown', 'true')
   showTour.value = false
 }
 
 function onTourSkip() {
+  console.log('Tour skipped')
+  localStorage.setItem('tour-shown', 'true')
+  showTour.value = false
+}
+
+// 手动关闭 Tour（用于紧急关闭）
+function closeTour() {
+  console.log('Tour closed manually')
   localStorage.setItem('tour-shown', 'true')
   showTour.value = false
 }
@@ -200,13 +212,18 @@ function onTourSkip() {
 
 <template>
   <div class="page-container">
-    <!-- 顶部工具栏 -->
-    <div class="toolbar">
-      <el-radio-group v-model="sourceFilter" @change="() => { page = 1; load() }">
-        <el-radio-button :label="0">本地文件</el-radio-button>
-        <el-radio-button :label="1">Gemini</el-radio-button>
-        <el-radio-button :label="2">ChatGPT</el-radio-button>
-      </el-radio-group>
+     <!-- 顶部工具栏 -->
+     <div class="toolbar">
+       <!-- 紧急关闭引导按钮（仅在引导显示时出现） -->
+       <el-button v-if="showTour" type="danger" size="small" @click="closeTour" style="margin-right: 12px;">
+         关闭引导
+       </el-button>
+
+       <el-radio-group v-model="sourceFilter" @change="() => { page = 1; load() }">
+         <el-radio-button :label="0">本地文件</el-radio-button>
+         <el-radio-button :label="1">Gemini</el-radio-button>
+         <el-radio-button :label="2">ChatGPT</el-radio-button>
+       </el-radio-group>
 
       <div class="spacer"></div>
 
@@ -393,10 +410,15 @@ function onTourSkip() {
 
     <!-- 新手引导 Tour -->
     <el-tour
+      ref="tourRef"
       v-model="showTour"
       :steps="tourSteps"
+      :close-on-press-escape="true"
+      :close-on-page-visibility-change="true"
+      :z-index="9999"
       @finish="onTourFinish"
       @skip="onTourSkip"
+      @close="onTourSkip"
     />
   </div>
 </template>
