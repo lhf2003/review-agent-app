@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, nextTick, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Moon, Sunny, FullScreen, Menu as MenuIcon, User } from '@element-plus/icons-vue'
+import { Moon, Sunny, FullScreen, Menu as MenuIcon } from '@element-plus/icons-vue'
 import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
 import { useThemeStore } from './stores/theme'
@@ -81,6 +81,7 @@ function renderMarkdown(content) {
 const auth = useAuthStore()
 const chatStore = useChatStore()
 const themeStore = useThemeStore()
+const profileForm = ref({ avatar: '', newPassword: '', confirm: '' })
 const chatInput = ref('')
 
 // Responsive State
@@ -97,7 +98,7 @@ const currentPlaceholderIndex = ref(0)
 let placeholderInterval = null
 
 const displayText = computed(() => {
-  if (chatStore.messages && chatStore.messages.length > 0 && chatStore.hasUnreadMessage) {
+  if (chatStore.hasUnreadMessage && chatStore.messages.length > 0) {
     const lastMsg = chatStore.messages[chatStore.messages.length - 1]
     if (lastMsg && lastMsg.role === 'assistant') {
       return lastMsg.content
@@ -148,9 +149,7 @@ function navigateTo(path) {
 watch(() => chatStore.messages, () => {
   nextTick(() => {
     const box = document.querySelector('.chat-messages')
-    if (box && chatStore.messages && chatStore.messages.length > 0) {
-      box.scrollTop = box.scrollHeight
-    }
+    if (box) box.scrollTop = box.scrollHeight
   })
 }, { deep: true })
 
@@ -162,6 +161,20 @@ function sendChat() {
   chatStore.sendMessage(text)
   chatInput.value = ''
 }
+
+async function saveAvatar() {
+  if (!auth.userId || !profileForm.value.avatar) { ElMessage.warning('缺少用户ID或头像URL'); return }
+  try {
+    await api.updateUserInfo({ id: Number(auth.userId), avatar: profileForm.value.avatar })
+    ElMessage.success('头像已更新')
+  } catch (e) { ElMessage.error(`更新失败: ${e.message}`) }
+}
+
+watch(() => auth.isAuthenticated, (val) => {
+  if (!val) {
+    avatarDialog.value = false
+  }
+})
 </script>
 
 <template>
@@ -172,48 +185,48 @@ function sendChat() {
     <!-- Desktop Sidebar - Left Vertical Dock -->
     <div class="vertical-dock-container" v-if="!isMobile">
       <div class="dock-wrapper">
-         <div class="dock-item" @click="navigateTo('/profile')">
-           <el-avatar class="dock-avatar" :size="48" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" />
-         </div>
+        <div class="dock-item" @click="navigateTo('/profile')">
+          <el-avatar class="dock-avatar" :size="48" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" />
+        </div>
         <router-link to="/data" class="dock-item">
-          <div class="dock-icon" :class="{ 'is-active': route.path === '/data' }">
+          <div class="dock-icon" :class="{ 'is-active': $route.path === '/data' }">
             <el-icon><List /></el-icon>
             <span class="dock-text">数据</span>
           </div>
         </router-link>
         <router-link to="/collections" class="dock-item">
-          <div class="dock-icon" :class="{ 'is-active': route.path === '/collections' }">
+          <div class="dock-icon" :class="{ 'is-active': $route.path === '/collections' }">
             <el-icon><Files /></el-icon>
             <span class="dock-text">合集</span>
           </div>
         </router-link>
         <router-link to="/analysis" class="dock-item">
-          <div class="dock-icon" :class="{ 'is-active': route.path === '/analysis' }">
+          <div class="dock-icon" :class="{ 'is-active': $route.path === '/analysis' }">
             <el-icon><Folder /></el-icon>
             <span class="dock-text">分析结果</span>
           </div>
         </router-link>
         <router-link to="/tags" class="dock-item">
-          <div class="dock-icon" :class="{ 'is-active': route.path === '/tags' }">
+          <div class="dock-icon" :class="{ 'is-active': $route.path === '/tags' }">
             <el-icon><PriceTag /></el-icon>
             <span class="dock-text">标签</span>
           </div>
         </router-link>
         <router-link to="/word-cloud" class="dock-item">
-          <div class="dock-icon" :class="{ 'is-active': route.path === '/word-cloud' }">
+          <div class="dock-icon" :class="{ 'is-active': $route.path === '/word-cloud' }">
             <el-icon><TrendCharts /></el-icon>
             <span class="dock-text">统计</span>
           </div>
         </router-link>
         <router-link to="/report" class="dock-item">
-          <div class="dock-icon" :class="{ 'is-active': route.path === '/report' }">
+          <div class="dock-icon" :class="{ 'is-active': $route.path === '/report' }">
             <el-icon><Notebook /></el-icon>
             <span class="dock-text">报告</span>
           </div>
         </router-link>
         <div class="dock-spacer"></div>
         <router-link to="/config" class="dock-item">
-          <div class="dock-icon" :class="{ 'is-active': route.path === '/config' }">
+          <div class="dock-icon" :class="{ 'is-active': $route.path === '/config' }">
             <el-icon><Setting /></el-icon>
             <span class="dock-text">配置</span>
           </div>
@@ -228,13 +241,7 @@ function sendChat() {
            <el-avatar class="user-avatar" :size="50" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" />
            <span style="margin-left: 12px; font-weight: 600;">{{ auth.username }}</span>
         </div>
-        <el-divider />
         <el-menu router :default-active="$route.path" class="mobile-menu">
-            <el-menu-item index="/profile" @click="drawerVisible = false">
-              <el-icon><User /></el-icon>
-              <span>个人中心</span>
-            </el-menu-item>
-            <el-divider />
             <el-menu-item index="/data" @click="drawerVisible = false">
               <el-icon><List /></el-icon>
               <span>数据</span>

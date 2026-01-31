@@ -222,3 +222,73 @@ create table selected_model
 )
     comment '已选择的模型';
 
+-- 成就定义表
+create table achievement_definition
+(
+    id               int auto_increment
+        primary key,
+    code             varchar(50)  not null unique comment '成就代码',
+    name             varchar(100) not null comment '成就名称',
+    description      varchar(500) not null comment '成就描述',
+    icon             varchar(50)  not null comment '成就图标',
+    condition_type   varchar(50)  not null comment '条件类型(count_sync, count_analysis, count_collection, count_quiz, continuous_days)',
+    condition_value  int          not null comment '条件值',
+    category         varchar(50)  not null comment '成就分类(milestone, activity, knowledge, special)',
+    order_index      int          null comment '排序索引',
+    created_time     datetime     default current_timestamp null
+)
+    comment '成就定义表';
+
+-- 用户成就表
+create table user_achievement
+(
+    id               bigint auto_increment
+        primary key,
+    user_id          bigint       not null comment '用户ID',
+    achievement_code varchar(50)  not null comment '成就代码',
+    unlocked         tinyint(1)   default 0 null comment '是否解锁',
+    progress         int          default 0 null comment '当前进度',
+    unlocked_time    datetime     null comment '解锁时间',
+    created_time     datetime     default current_timestamp null,
+    updated_time     datetime     default current_timestamp on update current_timestamp null,
+    constraint uk_user_achievement
+        unique (user_id, achievement_code)
+)
+    comment '用户成就表';
+
+-- 插入成就定义数据
+INSERT INTO achievement_definition (code, name, description, icon, condition_type, condition_value, category, order_index) VALUES
+-- 里程碑成就 (order_index 1-4)
+('first_sync', '初出茅庐', '完成第一次文件同步', 'Document', 'count_sync', 1, 'milestone', 1),
+('first_analysis', '初露锋芒', '完成第一次问题分析', 'Edit', 'count_analysis', 1, 'milestone', 2),
+('first_collection', '初建知识', '创建第一个知识合集', 'FolderOpened', 'count_collection', 1, 'milestone', 3),
+('first_quiz', '小试牛刀', '完成第一次测验', 'CircleCheck', 'count_quiz', 1, 'milestone', 4),
+
+-- 活跃度成就 (order_index 5-10)
+('quiz_master_5', '学习达人', '完成5次测验', 'Star', 'count_quiz', 5, 'activity', 5),
+('quiz_master_10', '学习专家', '完成10次测验', 'StarFilled', 'count_quiz', 10, 'activity', 6),
+('collector_5', '知识收集者', '创建5个合集', 'Folder', 'count_collection', 5, 'activity', 7),
+('collector_10', '知识大师', '创建10个合集', 'FolderOpened', 'count_collection', 10, 'activity', 8),
+('continuous_7', '坚持不懈', '连续学习7天', 'Calendar', 'continuous_days', 7, 'activity', 9),
+('continuous_30', '持之以恒', '连续学习30天', 'CalendarFilled', 'continuous_days', 30, 'activity', 10),
+
+-- 知识掌握成就 (order_index 11-15)
+('tag_master_10', '标签专家', '掌握10个知识点', 'PriceTag', 'count_analysis', 10, 'knowledge', 11),
+('quiz_perfect_100', '完美主义者', '单次测验满分', 'Trophy', 'count_quiz', 1, 'knowledge', 12),
+('java_master', 'Java高手', '掌握10个Java知识点', 'DataLine', 'count_analysis', 10, 'knowledge', 13),
+('python_master', 'Python达人', '掌握10个Python知识点', 'ChatDotRound', 'count_analysis', 10, 'knowledge', 14),
+('js_master', 'JavaScript专家', '掌握10个JavaScript知识点', 'Coin', 'count_analysis', 10, 'knowledge', 15),
+
+-- 特殊成就 (order_index 16-20)
+('continuous_90', '百日铸剑', '连续学习90天', 'Medal', 'continuous_days', 90, 'special', 16),
+('sync_master_10', '数据先锋', '同步10次文件', 'Upload', 'count_sync', 10, 'special', 17),
+('sync_master_50', '数据巨匠', '同步50次文件', 'UploadFilled', 'count_sync', 50, 'special', 18),
+('analysis_master_20', '分析达人', '分析20个问题', 'TrendCharts', 'count_analysis', 20, 'special', 19),
+('all_rounder', '全能选手', '解锁所有里程碑成就', 'Crown', 'count_analysis', 4, 'special', 20);
+
+-- 为现有用户初始化成就记录 (假设 user_id = 1 存在)
+-- 注意：这需要在 users 表有数据后执行，或者在应用启动时由代码初始化
+INSERT INTO user_achievement (user_id, achievement_code, unlocked, progress)
+SELECT 8, ad.code, 0, 0
+FROM achievement_definition ad;
+

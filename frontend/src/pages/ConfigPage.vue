@@ -556,7 +556,8 @@ onBeforeRouteLeave((to, from, next) => {
 .config-page {
   display: flex;
   gap: 40px;
-  max-width: 1200px;
+  max-width: 1600px;
+  width: 100%;
   margin: 0 auto;
   padding: 20px;
   align-items: flex-start;

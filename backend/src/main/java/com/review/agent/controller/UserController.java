@@ -1,8 +1,8 @@
 package com.review.agent.controller;
 
-import com.review.agent.common.constant.UserConstant;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.AesUtil;
+import com.review.agent.common.utils.JwtUtil;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.entity.pojo.SelectedModel;
 import com.review.agent.entity.pojo.UserConfig;
@@ -11,13 +11,15 @@ import com.review.agent.entity.pojo.UserLlmConfig;
 import com.review.agent.entity.pojo.UserDefaultModelConfig;
 import com.review.agent.entity.request.BasicConfigUpdateRequest;
 import com.review.agent.entity.request.UpdatePasswordRequest;
+import com.review.agent.entity.vo.LoginResponseVo;
 import com.review.agent.entity.vo.UserInfoFilterVo;
 import com.review.agent.entity.vo.UserStatsVo;
 import com.review.agent.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.util.DigestUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +35,15 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private JwtUtil jwtUtil;
+
+    @Resource
+    private PasswordEncoder passwordEncoder;
+
+    @Value("${jwt.expiration:86400000}")
+    private Long jwtExpiration;
 
     // region 用户信息接口
 
@@ -51,7 +62,7 @@ public class UserController {
      * 登录
      */
     @PostMapping("/login")
-    public BaseResponse<UserInfoFilterVo> login(@RequestBody UserInfo userInfo) {
+    public BaseResponse<LoginResponseVo> login(@RequestBody UserInfo userInfo) {
         // 解密前端传来的密码
         String plainPassword = AesUtil.decrypt(userInfo.getPassword());
 
@@ -60,12 +71,28 @@ public class UserController {
         if (userInfoFromDb == null) {
             return ResultUtil.error("username not found");
         }
-        if (!userInfoFromDb.getPassword().equals(DigestUtils.md5DigestAsHex((UserConstant.SALT + plainPassword).getBytes()))) {
+
+        // 使用 BCrypt 验证密码
+        if (!passwordEncoder.matches(plainPassword, userInfoFromDb.getPassword())) {
             return ResultUtil.error("password not match");
         }
+
+        // 生成 JWT Token
+        String token = jwtUtil.generateToken(userInfoFromDb.getId());
+
+        // 构造用户信息
         UserInfoFilterVo userInfoFilterVo = new UserInfoFilterVo();
         BeanUtils.copyProperties(userInfoFromDb, userInfoFilterVo);
-        return ResultUtil.success(userInfoFilterVo);
+
+        // 构造登录响应
+        LoginResponseVo response = LoginResponseVo.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .userInfo(userInfoFilterVo)
+                .expiresIn(System.currentTimeMillis() + jwtExpiration)
+                .build();
+
+        return ResultUtil.success(response);
     }
 
     /**

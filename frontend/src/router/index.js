@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/auth'
 
 const LoginPage = () => import('../pages/LoginPage.vue')
 const RegisterPage = () => import('../pages/RegisterPage.vue')
-const ProfilePage = () => import('../pages/ProfilePage.vue')
+const IndexPage = () => import('../pages/profile/index.vue')
 const ConfigPage = () => import('../pages/ConfigPage.vue')
 const ModelProviderConfig = () => import('../pages/ModelProviderConfig.vue')
 const DefaultModelConfig = () => import('../pages/DefaultModelConfig.vue')
@@ -28,7 +28,7 @@ const router = createRouter({
     { path: '/', redirect: '/login' },
     { path: '/login', component: LoginPage },
     { path: '/register', component: RegisterPage },
-    { path: '/profile', component: ProfilePage },
+    { path: '/profile', component: IndexPage },
     {
       path: '/config',
       component: ConfigPage,

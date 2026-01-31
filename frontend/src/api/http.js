@@ -55,6 +55,17 @@ async function encryptPassword(password) {
   }
 }
 
+function getToken() {
+  try {
+    const token = localStorage.getItem('token')
+    return token || null
+  } catch (e) {
+    console.error('Failed to get token from localStorage', e)
+  }
+  return null
+}
+
+// 保留 getUserId 用于获取用户 ID（但不用于认证）
 function getUserId() {
   try {
     const authRaw = localStorage.getItem('auth')
@@ -72,16 +83,24 @@ async function request(path, { method = 'GET', params, body, headers } = {}) {
   // 统一添加 /api 前缀，触发代理
   const baseUrl = '/api'
   let url = path.startsWith('http') ? path : (baseUrl + path)
-  
+
   if (params) {
     const usp = new URLSearchParams(params)
     url += `?${usp.toString()}`
   }
-  
+
+  // 获取 Token（用于 JWT 认证）
+  const token = getToken()
   const userId = getUserId()
+
   const finalHeaders = {
     'Content-Type': 'application/json',
     ...(headers || {}),
+  }
+
+  // 同时添加 Authorization Header（JWT）和 userId Header（兼容性）
+  if (token) {
+    finalHeaders['Authorization'] = `Bearer ${token}`
   }
   if (userId) {
     finalHeaders['userId'] = userId
@@ -92,12 +111,43 @@ async function request(path, { method = 'GET', params, body, headers } = {}) {
     headers: finalHeaders,
     body: body ? JSON.stringify(body) : undefined,
   })
+
+  // 处理错误响应
   if (!res.ok) {
     const text = await res.text()
-    const msg = `HTTP ${res.status}: ${text}`
-    ElMessage.error(msg)
-    throw new Error(msg)
+
+    // 尝试解析 JSON，提取 message 字段
+    let errorMsg = ''
+    try {
+      const json = JSON.parse(text)
+      errorMsg = json.message || json.msg || `HTTP ${res.status} 错误`
+    } catch (e) {
+      // JSON 解析失败，使用原始文本
+      errorMsg = text || `HTTP ${res.status} 错误`
+    }
+
+    // 401 未授权：Token 无效或过期
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('auth')
+      ElMessage.error('登录已过期，请重新登录')
+      // 跳转到登录页
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+      throw new Error('未授权，请重新登录')
+    }
+
+    // 429 请求过于频繁
+    if (res.status === 429) {
+      ElMessage.error('请求过于频繁，请稍后再试')
+      throw new Error('请求过于频繁')
+    }
+
+    // 直接抛出错误，不在这里显示（让调用方决定如何处理）
+    throw new Error(errorMsg)
   }
+
   const data = await res.json().catch(() => null)
   return normalizeResponse(data)
 }
@@ -106,11 +156,33 @@ export const api = {
   // auth
   async login(username, password) {
     const encryptedPassword = await encryptPassword(password)
-    return request('/user/login', { method: 'POST', body: { username, password: encryptedPassword } })
+    const response = await request('/user/login', { method: 'POST', body: { username, password: encryptedPassword } })
+
+    // 保存 Token 和用户信息
+    if (response && response.token) {
+      localStorage.setItem('token', response.token)
+      // 保存用户信息到 auth（兼容现有代码）
+      const auth = {
+        userId: response.userInfo?.id,
+        username: response.userInfo?.username
+      }
+      localStorage.setItem('auth', JSON.stringify(auth))
+    }
+
+    return response
   },
   async register(username, password) {
     const encryptedPassword = await encryptPassword(password)
     return request('/user/register', { method: 'POST', body: { username, password: encryptedPassword } })
+  },
+
+  // 退出登录
+  logout() {
+    localStorage.removeItem('token')
+    localStorage.removeItem('auth')
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
   },
 
   // config
@@ -170,16 +242,17 @@ export const api = {
   importFile(file) {
     const formData = new FormData()
     formData.append('file', file)
-    
+
+    // 同时传递 userId Header（兼容性）和 Authorization Header（JWT）
     const userId = getUserId()
+    const token = getToken()
     const headers = {}
-    if (userId) {
-      headers['userId'] = userId
-    }
+    if (userId) headers['userId'] = userId
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
     return fetch(BASE_URL + '/file-info/import', {
       method: 'POST',
-      headers: headers,
+      headers,
       body: formData,
     }).then(async (res) => {
       if (!res.ok) throw new Error(await res.text())
@@ -207,22 +280,6 @@ export const api = {
     const encOld = await encryptPassword(oldPassword)
     const encNew = await encryptPassword(newPassword)
     return request('/user/info/update/password', { method: 'POST', body: { oldPassword: encOld, newPassword: encNew } })
-  },
-  uploadAvatar(formData) {
-    const userId = getUserId()
-    const headers = {}
-    if (userId) {
-      headers['userId'] = userId
-    }
-    return fetch(BASE_URL + '/user/info/upload/avatar', {
-      method: 'POST',
-      headers: headers,
-      body: formData,
-    }).then(async (res) => {
-      if (!res.ok) throw new Error(await res.text())
-      const json = await res.json()
-      return normalizeResponse(json)
-    })
   },
   getUserStats() {
     return request('/user/stats')
@@ -424,12 +481,16 @@ export const api = {
 
   chatStream(requestText, handlers = {}) {
     const controller = new AbortController()
+    // 同时传递 userId Header（兼容性）和 Authorization Header（JWT）
     const userId = getUserId()
+    const token = getToken()
     const headers = { Accept: 'text/event-stream' }
     if (userId) headers['userId'] = userId
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
     const url = new URL('/chat')
     url.searchParams.set('request', requestText || '')
-    
+
     const p = fetch(url.toString(), { method: 'GET', headers, signal: controller.signal })
     this._handleStream(p, handlers)
     return { cancel: () => controller.abort() }
@@ -437,12 +498,16 @@ export const api = {
 
   chatWithAnalysisStream(requestText, handlers = {}) {
     const controller = new AbortController()
+    // 同时传递 userId Header（兼容性）和 Authorization Header（JWT）
     const userId = getUserId()
+    const token = getToken()
     const headers = { Accept: 'text/event-stream' }
     if (userId) headers['userId'] = userId
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
     const url = new URL(BASE_URL + '/chat/with-analysis')
     url.searchParams.set('request', requestText || '')
-    
+
     const p = fetch(url.toString(), { method: 'POST', headers, signal: controller.signal })
     this._handleStream(p, handlers)
     return { cancel: () => controller.abort() }
@@ -459,14 +524,18 @@ export const api = {
   },
  
    analysisLogStream(handlers = {}) {
-     const controller = new AbortController()
-     const userId = getUserId()
-     const headers = { Accept: 'text/event-stream' }
-     if (userId) headers['userId'] = userId
-     const p = fetch(BASE_URL + '/analysis/log/stream', { method: 'GET', headers, signal: controller.signal })
-     this._handleStream(p, handlers)
-     return { cancel: () => controller.abort() }
-   },
+      const controller = new AbortController()
+      // 同时传递 userId Header（兼容性）和 Authorization Header（JWT）
+      const userId = getUserId()
+      const token = getToken()
+      const headers = { Accept: 'text/event-stream' }
+      if (userId) headers['userId'] = userId
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const p = fetch(BASE_URL + '/analysis/log/stream', { method: 'GET', headers, signal: controller.signal })
+      this._handleStream(p, handlers)
+      return { cancel: () => controller.abort() }
+    },
    
   // --- Collection API ---
   getCollectionList() {
@@ -521,7 +590,7 @@ function normalizeResponse(resp) {
   if (codeNum === 0) {
     return resp.data !== undefined ? resp.data : resp
   }
+  // 只提取错误信息，不显示（让调用方决定如何处理）
   const msg = resp.message || resp.msg || '请求失败'
-  ElMessage.error(msg)
   throw new Error(msg)
 }

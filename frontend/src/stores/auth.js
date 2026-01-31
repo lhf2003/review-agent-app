@@ -12,23 +12,22 @@ export const useAuthStore = defineStore('auth', {
     async login(username, password) {
       const data = await api.login(username, password)
       if (data && data.code && data.code !== 0) throw new Error(data.message || '登录错误')
-      
-      const user = data.data || data // Handle potential direct data return or wrapped response
-      
-      this.isAuthenticated = true
-      this.username = user?.username || ''
-      this.userId = user?.id || null
-      localStorage.setItem('auth', JSON.stringify({ isAuthenticated: this.isAuthenticated, username: this.username, userId: this.userId }))
+
+      // 登录成功，从 localStorage 更新状态（api.login 已经保存了 token 和 auth）
+      this.hydrate()
+
+      return data
     },
     async register(username, password) {
       const data = await api.register(username, password)
       if (data && data.code && data.code !== 0) throw new Error(data.message || '注册错误')
+      return data
     },
     logout() {
       this.isAuthenticated = false
       this.username = ''
       this.userId = null
-      localStorage.removeItem('auth')
+      // localStorage 清空已在 api.logout() 中完成
       router.push('/login')
     },
     routerPushAfterLogin() {
@@ -38,13 +37,19 @@ export const useAuthStore = defineStore('auth', {
       router.push('/login')
     },
     hydrate() {
+      // 从 auth 获取用户信息（api.login 已保存）
       const raw = localStorage.getItem('auth')
       if (raw) {
         const obj = JSON.parse(raw)
-        this.isAuthenticated = !!obj.isAuthenticated
+        this.isAuthenticated = obj.isAuthenticated !== undefined ? obj.isAuthenticated : !!obj.userId
         this.username = obj.username || ''
         this.userId = obj.userId ?? null
+      } else {
+        this.isAuthenticated = false
+        this.username = ''
+        this.userId = null
       }
-    }
+    },
   },
 })
+

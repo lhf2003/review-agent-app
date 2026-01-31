@@ -10,12 +10,11 @@ import com.review.agent.repository.*;
 import com.review.agent.schedule.DynamicScheduledService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
-import org.springframework.boot.autoconfigure.web.format.DateTimeFormatters;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.text.SimpleDateFormat;
@@ -31,10 +30,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.review.agent.common.constant.UserConstant.SALT;
-
 @Service
 public class UserService {
+    @Resource
+    private PasswordEncoder passwordEncoder;
+
     @Resource
     private UserInfoRepository userInfoRepository;
 
@@ -81,6 +81,12 @@ public class UserService {
     @Resource
     private ReportDataRepository reportDataRepository;
 
+    @Resource
+    private AchievementDefinitionRepository achievementDefinitionRepository;
+
+    @Resource
+    private UserAchievementRepository userAchievementRepository;
+
     // region 用户信息相关
 
     /**
@@ -95,8 +101,8 @@ public class UserService {
             ExceptionUtils.throwDataInUse("user " + username + " already exists");
         }
         String password = userInfo.getPassword();
-        // 密码加密
-        String handledPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes());
+        // 密码加密（使用 BCrypt）
+        String handledPassword = passwordEncoder.encode(password);
         userInfo.setPassword(handledPassword);
         Date date = new Date();
         userInfo.setCreateTime(date);
@@ -120,6 +126,7 @@ public class UserService {
         userConfigRepository.save(userConfig);
 
         addDefaultLlmConfig(userInfo.getId());
+        initializeUserAchievements(userInfo.getId());
     }
 
     /**
@@ -138,6 +145,24 @@ public class UserService {
             userLlmConfigList.add(userLlmConfig);
         }
         userLlmConfigRepository.saveAll(userLlmConfigList);
+    }
+
+    /**
+     * 为新用户初始化成就记录
+     * @param userId 用户 id
+     */
+    private void initializeUserAchievements(Long userId) {
+        List<AchievementDefinition> achievementDefinitions = achievementDefinitionRepository.findAll();
+        List<UserAchievement> userAchievements = new ArrayList<>();
+        for (AchievementDefinition ad : achievementDefinitions) {
+            UserAchievement userAchievement = new UserAchievement();
+            userAchievement.setUserId(userId);
+            userAchievement.setAchievementCode(ad.getCode());
+            userAchievement.setUnlocked(false);
+            userAchievement.setProgress(0);
+            userAchievements.add(userAchievement);
+        }
+        userAchievementRepository.saveAll(userAchievements);
     }
 
     /**
@@ -238,12 +263,12 @@ public class UserService {
         if (userInfo == null) {
             ExceptionUtils.throwDataNotFound("user not found");
         }
-        // 校验旧密码是否正确
-        if (!userInfo.getPassword().equals(DigestUtils.md5DigestAsHex((SALT + request.getOldPassword()).getBytes()))) {
+        // 校验旧密码是否正确（使用 BCrypt）
+        if (!passwordEncoder.matches(request.getOldPassword(), userInfo.getPassword())) {
             ExceptionUtils.throwPasswordError();
         }
-        // 密码加密
-        String handledPassword = DigestUtils.md5DigestAsHex((SALT + request.getNewPassword()).getBytes());
+        // 密码加密（使用 BCrypt）
+        String handledPassword = passwordEncoder.encode(request.getNewPassword());
         userInfo.setPassword(handledPassword);
         userInfoRepository.save(userInfo);
     }
@@ -444,8 +469,8 @@ public class UserService {
         if (date == null) {
             return "";
         }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        return formatter.format(date);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return date.format(formatter);
     }
 
     // endregion

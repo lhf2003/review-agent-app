@@ -13,6 +13,8 @@ public enum ErrorCode {
     NOT_FOUND_DIRECTORY(40004, "目录不存在"),
 
     USER_NOT_LOGIN(40100, "用户未登录"),
+    UNAUTHORIZED(401, "未授权访问，请先登录"),
+    TOO_MANY_REQUESTS(429, "请求过于频繁，请稍后再试"),
     DATA_ALREADY_EXISTS(40002, "数据已存在"),
     NULL_DATA(40004, "数据为空"),
     PASSWORD_ERROR(40015, "密码错误"),

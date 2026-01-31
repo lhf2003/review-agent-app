@@ -1,25 +1,23 @@
-package com.review.agent.common.config;
+package com.review.agent.config;
 
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
-  
-    /**  
+
+    /**
      * 跨域配置  
-     */  
-    @Override  
+     */
+    @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")  
-                .allowedOrigins("http://localhost:5173")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  
-                .allowedHeaders("*")  
+        registry.addMapping("/**")
+                .allowedOrigins("http://localhost:5173", "http://192.168.184.192:5173", "http://0.0.0.1:5173")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
                 .allowCredentials(true);  // 允许发送Cookie  
-    }  
+    }
 //    /**
 //     * Cookie 配置
 //     * @return CookieSerializer
