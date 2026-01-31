@@ -24,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.concurrent.Executor;
+
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -49,6 +51,8 @@ public class AnalysisService {
     private SseService sseService;
     @Resource
     private VectorStoreService vectorStoreService;
+    @Resource(name = "analysisTaskExecutor")
+    private Executor analysisTaskExecutor;
 
     /**
      * 开始分析
@@ -68,24 +72,34 @@ public class AnalysisService {
         dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_PROCESSING);
         fileInfoService.update(dataInfo);
 
-        new Thread(() -> {
-            sseService.sendLog(userId, "🚀 开始分析文件: " + dataInfo.getFileName());
+        // 使用线程池执行异步分析任务，避免使用 new Thread()
+        analysisTaskExecutor.execute(() -> {
+            try {
+                sseService.sendLog(userId, "🚀 开始分析文件: " + dataInfo.getFileName());
 
-            Map<String, Object> metaMap = new HashMap<>();
-            metaMap.put("fileId", fileId);
-            metaMap.put("userId", userId);
-            metaMap.put("originalContent", dataInfo.getFileContent());
+                Map<String, Object> metaMap = new HashMap<>();
+                metaMap.put("fileId", fileId);
+                metaMap.put("userId", userId);
+                metaMap.put("originalContent", dataInfo.getFileContent());
 
-            sseService.sendLog(userId, "🤖 正在执行AI分析流...");
-            // 调用图计算引擎
-            RunnableConfig config = RunnableConfig.builder()
-                    .threadId("analysis-graph-" + userId)
-                    .build();
-            Optional<OverAllState> callResult = analysisCompiledGraph.invoke(metaMap, config);
-            callResult.ifPresent(overAllState -> processAnalysisResult(overAllState, dataInfo));
+                sseService.sendLog(userId, "🤖 正在执行AI分析流...");
+                // 调用图计算引擎
+                RunnableConfig config = RunnableConfig.builder()
+                        .threadId("analysis-graph-" + userId)
+                        .build();
+                Optional<OverAllState> callResult = analysisCompiledGraph.invoke(metaMap, config);
+                callResult.ifPresent(overAllState -> processAnalysisResult(overAllState, dataInfo));
 
-            sseService.sendLog(userId, "✅ 分析完成: " + dataInfo.getFileName());
-        }).start();
+                sseService.sendLog(userId, "✅ 分析完成: " + dataInfo.getFileName());
+            } catch (Exception e) {
+                log.error("分析任务执行失败，userId={}, fileId={}", userId, fileId, e);
+                sseService.sendLog(userId, "❌ 分析失败: " + e.getMessage());
+
+                // 更新文件状态为失败
+                dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_ERROR);
+                fileInfoService.update(dataInfo);
+            }
+        });
 
     }
 

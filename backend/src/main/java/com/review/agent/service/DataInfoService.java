@@ -13,6 +13,7 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 
 import java.io.File;
@@ -56,6 +57,7 @@ public class DataInfoService {
      * @param userId 用户ID
      * @throws IOException 扫描目录不存在时抛出
      */
+    @Transactional(rollbackFor = Exception.class)
     public void syncData(Long userId) throws IOException {
         UserConfig userConfig = userService.getUserConfig(userId);
         String scanDirectory = userConfig.getScanDirectory();
@@ -161,6 +163,7 @@ public class DataInfoService {
         return dataInfoRepository.findByUserId(userId);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public DataInfo importData(Long userId, String originalFilename, String content, Integer source) {
         DataInfo existing = dataInfoRepository.findByUserIdAndFileName(userId,originalFilename);
         if (existing == null) {
@@ -182,6 +185,7 @@ public class DataInfoService {
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public DataInfo createData(DataInfo dataInfo) {
         dataInfo.setProcessedStatus(FILE_PROCESS_STATUS_NOT_PROCESSED);
         dataInfo.setCreatedTime(new Date());
@@ -192,11 +196,39 @@ public class DataInfoService {
         return dataInfoRepository.save(dataInfo);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void update(DataInfo dataInfo) {
         dataInfoRepository.save(dataInfo);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        dataInfoRepository.deleteById(id);
+        // 软删除：设置 deleted = true 和 deleted_at = 当前时间
+        dataInfoRepository.softDelete(id, new Date());
+    }
+
+    /**
+     * 恢复已删除的数据
+     * @param id 数据ID
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void restore(Long id) {
+        DataInfo dataInfo = findById(id);
+        if (dataInfo == null) {
+            ExceptionUtils.throwDataNotFound("data info not found");
+        }
+
+        dataInfo.setDeleted(false);
+        dataInfo.setDeletedAt(null);
+        dataInfoRepository.save(dataInfo);
+    }
+
+    /**
+     * 获取用户的所有文件（不包括已删除的）
+     * @param userId 用户ID
+     * @return 文件列表
+     */
+    public List<DataInfo> findAll(Long userId) {
+        return dataInfoRepository.findByUserId(userId);
     }
 }

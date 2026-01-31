@@ -54,5 +54,19 @@ public class DataInfo {
     @Column(name = "update_time")
     private Date updateTime;
 
+    /**
+     * 删除标记（软删除）
+     * false-未删除，true-已删除
+     */
+    @ColumnDefault("0")
+    @Column(name = "deleted")
+    private Boolean deleted = false;
+
+    /**
+     * 删除时间（软删除）
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @Column(name = "deleted_at")
+    private Date deletedAt;
 
 }

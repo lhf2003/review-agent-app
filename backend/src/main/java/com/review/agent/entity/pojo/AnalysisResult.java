@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
@@ -50,5 +51,19 @@ public class AnalysisResult {
 
     @Column(name = "created_time")
     private LocalDateTime createdTime;
+
+    /**
+     * 删除标记（软删除）
+     * false-未删除，true-已删除
+     */
+    @ColumnDefault("0")
+    @Column(name = "deleted")
+    private Boolean deleted = false;
+
+    /**
+     * 删除时间（软删除）
+     */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
 }
