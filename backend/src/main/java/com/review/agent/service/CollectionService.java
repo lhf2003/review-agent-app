@@ -93,10 +93,26 @@ public class CollectionService {
 
     public List<CollectionVo> listCollection(Long userId) {
         List<AnalysisCollection> collections = analysisCollectionRepository.findByUserIdOrderByCreatedTimeDesc(userId);
+
+        if (CollectionUtils.isEmpty(collections)) {
+            return new ArrayList<>();
+        }
+
+        // Batch query counts for all collections at once to avoid N+1 queries
+        List<Long> collectionIds = collections.stream().map(AnalysisCollection::getId).toList();
+        List<Object[]> countResults = collectionRelationRepository.countByCollectionIds(collectionIds);
+
+        // Build count map: collectionId -> count
+        Map<Long, Long> countMap = countResults.stream()
+            .collect(Collectors.toMap(
+                result -> (Long) result[0],
+                result -> (Long) result[1]
+            ));
+
         return collections.stream().map(c -> {
             CollectionVo vo = new CollectionVo();
             BeanUtils.copyProperties(c, vo);
-            vo.setCount(collectionRelationRepository.countByCollectionId(c.getId()));
+            vo.setCount(countMap.getOrDefault(c.getId(), 0L));
             return vo;
         }).toList();
     }

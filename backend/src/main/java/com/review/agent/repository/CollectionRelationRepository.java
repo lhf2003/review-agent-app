@@ -29,4 +29,11 @@ public interface CollectionRelationRepository extends JpaRepository<CollectionRe
     List<Long> findCollectionIdsByAnalysisResultId(Long analysisResultId);
 
     boolean existsByCollectionIdAndAnalysisResultId(Long collectionId, Long analysisResultId);
+
+    /**
+     * Batch query counts for multiple collections at once to avoid N+1 queries
+     * Returns a map of collectionId -> count
+     */
+    @Query("select c.collectionId, count(c) from CollectionRelation c where c.collectionId in :collectionIds group by c.collectionId")
+    List<Object[]> countByCollectionIds(List<Long> collectionIds);
 }

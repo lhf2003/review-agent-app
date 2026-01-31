@@ -89,10 +89,19 @@ public class DataInfoService {
             return;
         }
 
+        // Batch query all existing files for this user to avoid N+1 queries
+        List<DataInfo> existingFiles = dataInfoRepository.findByUserId(userId);
+        java.util.Map<String, DataInfo> existingFileMap = existingFiles.stream()
+            .collect(java.util.stream.Collectors.toMap(
+                DataInfo::getFileName,
+                f -> f,
+                (existing, replacement) -> existing  // keep existing if duplicate filenames
+            ));
+
         List<DataInfo> dataList = new ArrayList<>();
         for (File newFileData : files) {
             if (newFileData.isFile()) {
-                upsertFile(userId, newFileData, dataList);
+                upsertFile(userId, newFileData, dataList, existingFileMap);
             }
         }
 
@@ -114,8 +123,9 @@ public class DataInfoService {
      * @param userId 用户ID
      * @param newFileData 文件数据
      * @param dataList 数据列表
+     * @param existingFileMap 已存在的文件映射（从批量查询获取，避免N+1查询）
      */
-    private void upsertFile(Long userId, File newFileData, List<DataInfo> dataList) {
+    private void upsertFile(Long userId, File newFileData, List<DataInfo> dataList, java.util.Map<String, DataInfo> existingFileMap) {
         String content;
         try {
             content = FileUtils.readFileToString(newFileData, StandardCharsets.UTF_8);
@@ -133,7 +143,10 @@ public class DataInfoService {
             log.error("❌无法获取修改时间: " + filePath);
         }
         Date currentDateTime = Date.from(Instant.ofEpochMilli(currentModifiedTime));
-        DataInfo existingData = dataInfoRepository.findByUserIdAndFileName(userId, filename);
+
+        // Look up existing file from map instead of querying database (N+1 fix)
+        DataInfo existingData = existingFileMap.get(filename);
+
         // 新增文件
         if (existingData == null) {
             DataInfo dataInfo = new DataInfo();
