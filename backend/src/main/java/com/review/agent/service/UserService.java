@@ -20,14 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -86,6 +82,9 @@ public class UserService {
 
     @Resource
     private UserAchievementRepository userAchievementRepository;
+
+    @Resource
+    private QuizQuestionRepository quizQuestionRepository;
 
     // region 用户信息相关
 
@@ -158,7 +157,7 @@ public class UserService {
             UserAchievement userAchievement = new UserAchievement();
             userAchievement.setUserId(userId);
             userAchievement.setAchievementCode(ad.getCode());
-            userAchievement.setUnlocked(false);
+            userAchievement.setUnlocked(1);
             userAchievement.setProgress(0);
             userAchievements.add(userAchievement);
         }
@@ -306,14 +305,14 @@ public class UserService {
     @Transactional
     public void deactiveSelectedModel(SelectedModel selectedModel) {
         selectedModelRepository.deleteByUserIdAndProviderIdAndModelName(
-            selectedModel.getUserId(), 
-            selectedModel.getProviderId(), 
-            selectedModel.getModelName()
+                selectedModel.getUserId(),
+                selectedModel.getProviderId(),
+                selectedModel.getModelName()
         );
     }
 
     public List<SelectedModel> getSelectedModel(Long userId, Integer providerId) {
-       return selectedModelRepository.findByUserIdAndProviderId(userId, providerId);
+        return selectedModelRepository.findByUserIdAndProviderId(userId, providerId);
     }
 
     /**
@@ -381,8 +380,8 @@ public class UserService {
         UserInfo userInfo = findById(userId);
         if (userInfo != null && userInfo.getCreateTime() != null) {
             long daysBetween = ChronoUnit.DAYS.between(
-                userInfo.getCreateTime().toInstant(),
-                Instant.now()
+                    userInfo.getCreateTime().toInstant(),
+                    Instant.now()
             );
             stats.setLearningDays(Math.max(1, daysBetween));
         }
@@ -390,7 +389,69 @@ public class UserService {
         // 7. 获取最近活动 (最近10条)
         stats.setRecentActivities(getRecentActivities(userId));
 
+        // 8. 检查并自动解锁成就
+        checkAndUnlockAchievements(userId);
+
+        // 9. 获取成就列表
+        stats.setAchievements(getAchievementList(userId));
+
+        // 10. 获取测验分数趋势
+        stats.setQuizScoreTrend(getQuizScoreTrend(userId));
+
+        // 11. 获取知识点掌握度
+        stats.setKnowledgeMastery(getKnowledgeMastery(userId));
+
+        // 12. 计算学习进度
+        stats.setLearningProgress(calculateLearningProgress(userId));
+
         return stats;
+    }
+
+    /**
+     * 获取用户成就列表
+     * @param userId 用户ID
+     * @return 成就列表
+     */
+    private List<UserStatsVo.AchievementVo> getAchievementList(Long userId) {
+        List<UserStatsVo.AchievementVo> achievementList = new ArrayList<>();
+
+        // 获取所有成就定义
+        List<AchievementDefinition> definitions = achievementDefinitionRepository.findAllByOrderByOrderIndexAsc();
+
+        // 获取用户成就记录
+        Map<String, UserAchievement> userAchievementMap = new HashMap<>();
+        List<UserAchievement> userAchievements = userAchievementRepository.findByUserId(userId);
+        for (UserAchievement ua : userAchievements) {
+            userAchievementMap.put(ua.getAchievementCode(), ua);
+        }
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        // 组装成就列表
+        for (AchievementDefinition definition : definitions) {
+            UserStatsVo.AchievementVo vo = new UserStatsVo.AchievementVo();
+            vo.setCode(definition.getCode());
+            vo.setName(definition.getName());
+            vo.setDescription(definition.getDescription());
+            vo.setIcon(definition.getIcon());
+            vo.setTarget(definition.getConditionValue());
+
+            UserAchievement userAchievement = userAchievementMap.get(definition.getCode());
+            if (userAchievement != null) {
+                vo.setUnlocked(userAchievement.getUnlocked() == 1);
+                vo.setProgress(userAchievement.getProgress());
+                if (userAchievement.getUnlockedTime() != null) {
+                    vo.setUnlockedTime(userAchievement.getUnlockedTime().format(formatter));
+                }
+            } else {
+                vo.setUnlocked(false);
+                vo.setProgress(0);
+            }
+
+            achievementList.add(vo);
+        }
+
+        return achievementList;
     }
 
     /**
@@ -471,6 +532,208 @@ public class UserService {
         }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return date.format(formatter);
+    }
+
+    // endregion
+
+    // region 学习成就相关
+
+    /**
+     * 获取用户测验分数趋势
+     * @param userId 用户ID
+     * @return 测验分数趋势列表（按时间升序）
+     */
+    public List<UserStatsVo.QuizScoreTrendVo> getQuizScoreTrend(Long userId) {
+        List<QuizRecord> quizRecords = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        List<UserStatsVo.QuizScoreTrendVo> trend = new ArrayList<>();
+        for (QuizRecord record : quizRecords) {
+            UserStatsVo.QuizScoreTrendVo vo = new UserStatsVo.QuizScoreTrendVo();
+            vo.setDate(record.getCreatedTime().format(formatter));
+            vo.setScore(record.getTotalScore());
+            trend.add(vo);
+        }
+        return trend;
+    }
+
+    /**
+     * 获取用户知识点掌握度
+     * @param userId 用户ID
+     * @return 知识点掌握度列表（按正确率降序）
+     */
+    public List<UserStatsVo.KnowledgeMasteryVo> getKnowledgeMastery(Long userId) {
+        // 查询用户所有已完成测验的问题（包含标签信息）
+        List<QuizRecord> quizRecords = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
+        Map<String, Integer> tagCorrectCount = new HashMap<>();
+        Map<String, Integer> tagTotalCount = new HashMap<>();
+
+        for (QuizRecord record : quizRecords) {
+            List<QuizQuestion> questions = quizQuestionRepository.findByQuizId(record.getId());
+            for (QuizQuestion question : questions) {
+                // 这里简化处理，假设 QuizQuestion 有标签信息
+                // 实际可能需要通过其他方式获取问题对应的标签
+                // 暂时跳过，等待数据库结构调整
+            }
+        }
+
+        // 计算每个标签的正确率
+        List<UserStatsVo.KnowledgeMasteryVo> masteryList = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : tagCorrectCount.entrySet()) {
+            String tagName = entry.getKey();
+            int correctCount = entry.getValue();
+            int totalCount = tagTotalCount.getOrDefault(tagName, 0);
+            if (totalCount > 0) {
+                UserStatsVo.KnowledgeMasteryVo vo = new UserStatsVo.KnowledgeMasteryVo();
+                vo.setTagName(tagName);
+                vo.setAccuracyRate(correctCount * 100.0 / totalCount);
+                masteryList.add(vo);
+            }
+        }
+
+        // 按正确率降序排序
+        masteryList.sort((a, b) -> b.getAccuracyRate().compareTo(a.getAccuracyRate()));
+        return masteryList;
+    }
+
+    /**
+     * 检查并自动解锁用户成就
+     * @param userId 用户ID
+     * @return 新解锁的成就列表（成就代码列表）
+     */
+    @Transactional
+    public List<String> checkAndUnlockAchievements(Long userId) {
+        List<String> newlyUnlocked = new ArrayList<>();
+
+        // 获取用户统计数据
+        Long syncFileCount = dataInfoRepository.countByUserId(userId);
+        Long analyzedCount = analysisResultRepository.countByUserId(userId);
+        Long collectionCount = analysisCollectionRepository.countByUserId(userId);
+        long unlockedAchievementCount = userAchievementRepository.countByUserIdAndUnlockedTrue(userId);
+        long quizCompletedCount = quizRecordRepository.countByUserIdAndStatus(userId, 1);
+
+        // 获取用户注册时间
+        UserInfo userInfo = findById(userId);
+        long learningDays = 1;
+        if (userInfo != null && userInfo.getCreateTime() != null) {
+            learningDays = Math.max(1, ChronoUnit.DAYS.between(
+                    userInfo.getCreateTime().toInstant(),
+                    Instant.now()
+            ));
+        }
+
+        // 获取所有成就定义
+        List<AchievementDefinition> definitions = achievementDefinitionRepository.findAllByOrderByOrderIndexAsc();
+
+        for (AchievementDefinition definition : definitions) {
+            String code = definition.getCode();
+            String conditionType = definition.getConditionType();
+            int conditionValue = definition.getConditionValue();
+
+            // 获取用户当前的成就记录
+            UserAchievement userAchievement = userAchievementRepository.findByUserIdAndAchievementCode(userId, code);
+
+            if (userAchievement != null && userAchievement.getUnlocked() == 1) {
+                // 已解锁，跳过
+                continue;
+            }
+
+            // 根据条件类型判断是否满足解锁条件
+            boolean shouldUnlock = false;
+            int currentProgress = userAchievement != null ? userAchievement.getProgress() : 0;
+
+            // TODO 需要优化
+            switch (conditionType) {
+                case "count_sync":
+                    shouldUnlock = syncFileCount >= conditionValue;
+                    currentProgress = syncFileCount.intValue();
+                    break;
+                case "count_analysis":
+                    shouldUnlock = analyzedCount >= conditionValue;
+                    currentProgress = analyzedCount.intValue();
+                    break;
+                case "count_collection":
+                    shouldUnlock = collectionCount >= conditionValue;
+                    currentProgress = collectionCount.intValue();
+                    break;
+                case "count_quiz":
+                    shouldUnlock = quizCompletedCount >= conditionValue;
+                    currentProgress = (int) quizCompletedCount;
+                    break;
+                case "continuous_days":
+                    shouldUnlock = learningDays >= conditionValue;
+                    currentProgress = (int) learningDays;
+                    break;
+                case "achievement":
+                    shouldUnlock = unlockedAchievementCount >= conditionValue;
+                    currentProgress = (int) unlockedAchievementCount;
+                    break;
+                case "perfect":
+                    // 查询是否有满分的测验
+                    List<QuizRecord> perfectQuizzes = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
+                    shouldUnlock = perfectQuizzes.stream().anyMatch(q -> q.getTotalScore() == 100);
+                    currentProgress = perfectQuizzes.stream().anyMatch(q -> q.getTotalScore() == 100) ? 100 : 0;
+                    break;
+                default:
+                    // 未知条件类型，跳过
+                    continue;
+            }
+
+            if (shouldUnlock && userAchievement != null) {
+                // 解锁成就
+                userAchievement.setUnlocked(1);
+                userAchievement.setProgress(conditionValue);
+                userAchievement.setUnlockedTime(LocalDateTime.now());
+                userAchievementRepository.save(userAchievement);
+                // 记录新解锁的成就
+                newlyUnlocked.add(code);
+            } else if (userAchievement != null) {
+                // 更新进度
+                userAchievement.setProgress(Math.min(currentProgress, conditionValue));
+                userAchievementRepository.save(userAchievement);
+            }
+        }
+
+        return newlyUnlocked;
+    }
+
+    /**
+     * 计算用户学习进度
+     * @param userId 用户ID
+     * @return 学习进度数据
+     */
+    public UserStatsVo.LearningProgressVo calculateLearningProgress(Long userId) {
+        UserStatsVo.LearningProgressVo progress = new UserStatsVo.LearningProgressVo();
+
+        // 获取统计数据
+        Long syncFileCount = dataInfoRepository.countByUserId(userId);
+        Long analyzedCount = analysisResultRepository.countByUserId(userId);
+        long quizCompletedCount = quizRecordRepository.countByUserIdAndStatus(userId, 1);
+        long totalAchievements = achievementDefinitionRepository.count();
+        long unlockedAchievements = userAchievementRepository.countByUserIdAndUnlockedTrue(userId);
+
+        // 设置目标值（可根据实际需求调整）
+        int targetSyncCount = 100;      // 目标同步文件数
+        int targetAnalysisCount = 50;    // 目标分析结果数
+        int targetQuizCount = 20;        // 目标测验完成数
+
+        // 计算各维度进度
+        int syncProgress = Math.min(100, (int) ((syncFileCount * 100.0) / targetSyncCount));
+        int analysisProgress = Math.min(100, (int) ((analyzedCount * 100.0) / targetAnalysisCount));
+        int quizProgress = Math.min(100, (int) ((quizCompletedCount * 100.0) / targetQuizCount));
+        int achievementProgress = totalAchievements > 0
+                ? (int) ((unlockedAchievements * 100.0) / totalAchievements)
+                : 0;
+
+        // 计算总体进度（各维度平均）
+        int overallProgress = (syncProgress + analysisProgress + quizProgress + achievementProgress) / 4;
+
+        progress.setOverallProgress(overallProgress);
+        progress.setSyncProgress(syncProgress);
+        progress.setAnalysisProgress(analysisProgress);
+        progress.setQuizProgress(quizProgress);
+        progress.setAchievementProgress(achievementProgress);
+
+        return progress;
     }
 
     // endregion

@@ -5,6 +5,7 @@ import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.request.CollectionItemRequest;
 import com.review.agent.entity.request.CollectionRequest;
+import com.review.agent.entity.vo.CollectionCreateResultVo;
 import com.review.agent.entity.vo.CollectionDetailVo;
 import com.review.agent.entity.vo.CollectionVo;
 import com.review.agent.service.CollectionService;
@@ -29,10 +30,10 @@ public class CollectionController {
      * @param request 合集请求
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addCollection(@RequestBody CollectionRequest request) {
+    public BaseResponse<CollectionCreateResultVo> addCollection(@RequestBody CollectionRequest request) {
         Long userId = securityUtils.getCurrentUserId();
-        Long id = collectionService.createCollection(userId, request);
-        return ResultUtil.success(id);
+        CollectionCreateResultVo result = collectionService.createCollection(userId, request);
+        return ResultUtil.success(result);
     }
 
     /**

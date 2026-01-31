@@ -1,14 +1,17 @@
 package com.review.agent.service;
 
-import com.review.agent.common.exception.ErrorCode;
 import com.review.agent.common.utils.ExceptionUtils;
+import com.review.agent.entity.pojo.AchievementDefinition;
 import com.review.agent.entity.pojo.AnalysisCollection;
 import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.pojo.CollectionRelation;
 import com.review.agent.entity.request.CollectionItemRequest;
 import com.review.agent.entity.request.CollectionRequest;
+import com.review.agent.entity.vo.CollectionCreateResultVo;
 import com.review.agent.entity.vo.CollectionDetailVo;
 import com.review.agent.entity.vo.CollectionVo;
+import com.review.agent.entity.vo.UserStatsVo;
+import com.review.agent.repository.AchievementDefinitionRepository;
 import com.review.agent.repository.AnalysisCollectionRepository;
 import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.CollectionRelationRepository;
@@ -19,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,13 +42,46 @@ public class CollectionService {
     @Resource
     private AnalysisResultRepository analysisResultRepository;
 
-    public Long createCollection(Long userId, CollectionRequest request) {
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private AchievementDefinitionRepository achievementDefinitionRepository;
+
+    public CollectionCreateResultVo createCollection(Long userId, CollectionRequest request) {
         AnalysisCollection collection = new AnalysisCollection();
         collection.setUserId(userId);
         collection.setName(request.getName());
         collection.setDescription(request.getDescription());
         collection = analysisCollectionRepository.save(collection);
-        return collection.getId();
+
+        // 触发成就检查，获取新解锁的成就代码
+        List<String> newlyUnlockedCodes = userService.checkAndUnlockAchievements(userId);
+
+        // 获取新解锁的成就详细信息
+        List<UserStatsVo.AchievementVo> newlyUnlockedAchievements = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(newlyUnlockedCodes)) {
+            List<AchievementDefinition> definitions = achievementDefinitionRepository.findByCodeIn(newlyUnlockedCodes);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+            for (AchievementDefinition definition : definitions) {
+                com.review.agent.entity.vo.UserStatsVo.AchievementVo vo = new com.review.agent.entity.vo.UserStatsVo.AchievementVo();
+                vo.setCode(definition.getCode());
+                vo.setName(definition.getName());
+                vo.setDescription(definition.getDescription());
+                vo.setIcon(definition.getIcon());
+                vo.setTarget(definition.getConditionValue());
+                vo.setUnlocked(true);
+                vo.setProgress(definition.getConditionValue());
+                vo.setUnlockedTime(LocalDateTime.now().format(formatter));
+                newlyUnlockedAchievements.add(vo);
+            }
+        }
+
+        return CollectionCreateResultVo.builder()
+                .collectionId(collection.getId())
+                .newlyUnlockedAchievements(newlyUnlockedAchievements)
+                .build();
     }
 
     public void updateCollection(Long userId, Long collectionId, CollectionRequest request) {
@@ -70,14 +108,14 @@ public class CollectionService {
 
     @Transactional(rollbackFor = Exception.class)
     public Long createCollectionWithItems(Long userId, CollectionRequest request) {
-        // 1. Create Collection
+        //1. Create Collection
         AnalysisCollection collection = new AnalysisCollection();
         collection.setUserId(userId);
         collection.setName(request.getName());
         collection.setDescription(request.getDescription());
         collection = analysisCollectionRepository.save(collection);
 
-        // 2. Add Items
+        //2. Add Items
         if (!CollectionUtils.isEmpty(request.getAnalysisIds())) {
             List<CollectionRelation> relations = new ArrayList<>();
             for (Long analysisId : request.getAnalysisIds()) {
@@ -88,6 +126,10 @@ public class CollectionService {
             }
             collectionRelationRepository.saveAll(relations);
         }
+
+        // 触发成就检查
+        userService.checkAndUnlockAchievements(userId);
+
         return collection.getId();
     }
 

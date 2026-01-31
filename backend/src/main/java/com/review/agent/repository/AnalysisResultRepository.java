@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, Long> {
-    @Query("select a from AnalysisResult a where a.userId = ?1 and a.deleted = false")
+    @Query("select a from AnalysisResult a where a.userId = ?1 and a.deleted = 0")
     List<AnalysisResult> findByUserId(Long userId);
 
     /**
@@ -21,7 +21,7 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
      * @param deletedAt 删除时间
      */
     @Modifying
-    @Query("update AnalysisResult a set a.deleted = true, a.deletedAt = :deletedAt where a.id = :id")
+    @Query("update AnalysisResult a set a.deleted = 1, a.deletedAt = :deletedAt where a.id = :id")
     void softDelete(@Param("id") Long id, @Param("deletedAt") LocalDateTime deletedAt);
 
     /**
@@ -46,7 +46,7 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
                                  and (:tagId is null or at.tag_id = :tagId)
                                  and (:userId is null or a.user_id = :userId)
                                  and (:fileId is null or a.file_id = :fileId )
-                                 and a.deleted = false
+                                 and a.deleted = 0
                                  GROUP BY a.id, at.sub_tag_id
              """)
     List<AnalysisResultInfo> findByPage(Pageable pageable,
@@ -55,24 +55,24 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
                                           @Param("tagId") Long tagId,
                                           @Param("userId") Long userId);
 
-    @Query("select a from AnalysisResult a where a.userId = :userId and a.fileId = :dataId and a.deleted = false order by a.createdTime desc limit 1")
+    @Query("select a from AnalysisResult a where a.userId = :userId and a.fileId = :dataId and a.deleted = 0 order by a.createdTime desc limit 1")
     AnalysisResult findByCondition(Long userId, Long dataId, Long analysisId);
 
     /**
      * 根据日期查询分析结果（添加 deleted 过滤）
      */
-    @Query("select a from AnalysisResult a where a.userId = :userId and a.createdTime between :startDateTime and :endDateTime and a.deleted = false")
+    @Query("select a from AnalysisResult a where a.userId = :userId and a.createdTime between :startDateTime and :endDateTime and a.deleted = 0")
     List<AnalysisResult> findAllByDate(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime);
 
     /**
      * 统计用户的分析结果数量（添加 deleted 过滤）
      */
-    @Query("select count(a) from AnalysisResult a where a.userId = :userId and a.deleted = false")
+    @Query("select count(a) from AnalysisResult a where a.userId = :userId and a.deleted = 0")
     long countByUserId(Long userId);
 
     /**
      * 根据用户ID和数据ID查询分析结果（添加 deleted 过滤）
      */
-    @Query("select a from AnalysisResult a where a.userId = :userId and a.fileId = :dataId and a.deleted = false")
+    @Query("select a from AnalysisResult a where a.userId = :userId and a.fileId = :dataId and a.deleted = 0")
     List<AnalysisResult> findByUserIdAndDataId(Long userId, Long dataId);
 }

@@ -58,7 +58,7 @@ public class AnalysisResult {
      */
     @ColumnDefault("0")
     @Column(name = "deleted")
-    private Boolean deleted = false;
+    private Integer deleted = 0;
 
     /**
      * 删除时间（软删除）

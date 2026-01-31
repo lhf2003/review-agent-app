@@ -36,10 +36,10 @@ public interface DataInfoRepository extends JpaRepository<DataInfo, Long> {
              """)
     Page<DataInfoVo> findByPage(Pageable pageable, Long userId, String fileName, Integer processedStatus, Date startTime, Date endTime, Integer source);
 
-    @Query("select d from DataInfo d where d.userId = :userId and d.deleted = false")
+    @Query("select d from DataInfo d where d.userId = :userId and d.deleted = 0")
     List<DataInfo> findByUserId(Long userId);
 
-    @Query("select d from DataInfo d where d.userId = :userId and d.fileName = :fileName and d.deleted = false")
+    @Query("select d from DataInfo d where d.userId = :userId and d.fileName = :fileName and d.deleted = 0")
     DataInfo findByUserIdAndFileName(Long userId, String fileName);
 
     /**
@@ -47,7 +47,7 @@ public interface DataInfoRepository extends JpaRepository<DataInfo, Long> {
      * @param userId 用户ID
      * @return 文件数量
      */
-    @Query("select count(d) from DataInfo d where d.userId = :userId and d.deleted = false")
+    @Query("select count(d) from DataInfo d where d.userId = :userId and d.deleted = 0")
     long countByUserId(Long userId);
 
     /**
@@ -56,7 +56,7 @@ public interface DataInfoRepository extends JpaRepository<DataInfo, Long> {
      * @param deletedAt 删除时间
      */
     @Modifying
-    @Query("update DataInfo d set d.deleted = true, d.deletedAt = :deletedAt where d.id = :id")
+    @Query("update DataInfo d set d.deleted = 1, d.deletedAt = :deletedAt where d.id = :id")
     void softDelete(@Param("id") Long id, @Param("deletedAt") Date deletedAt);
 
     /**

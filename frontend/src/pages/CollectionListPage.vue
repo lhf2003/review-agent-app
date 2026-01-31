@@ -5,6 +5,7 @@ import { Plus, Folder, Delete, Edit } from '@element-plus/icons-vue'
 import { api } from '../api/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CustomScroll from '../components/CustomScroll.vue'
+import AchievementNotification from '../components/AchievementNotification.vue'
 
 const router = useRouter()
 const collections = ref([])
@@ -13,6 +14,10 @@ const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const createForm = ref({ name: '', description: '' })
 const editForm = ref({ id: null, name: '', description: '' })
+
+// 成就弹窗
+const achievementDialogVisible = ref(false)
+const newlyUnlockedAchievements = ref([])
 
 onMounted(() => {
   fetchList()
@@ -35,14 +40,28 @@ function goDetail(id) {
 async function handleCreate() {
   if (!createForm.value.name) return
   try {
-    await api.createCollection(createForm.value)
+    const result = await api.createCollection(createForm.value)
     ElMessage.success('创建成功')
     createDialogVisible.value = false
     createForm.value = { name: '', description: '' } // Reset form
     fetchList()
+
+    // 检查是否有新解锁的成就
+    if (result && result.newlyUnlockedAchievements && result.newlyUnlockedAchievements.length > 0) {
+      newlyUnlockedAchievements.value = result.newlyUnlockedAchievements
+      // 延迟显示成就弹窗，让用户先看到创建成功的提示
+      setTimeout(() => {
+        achievementDialogVisible.value = true
+      }, 500)
+    }
   } catch (e) {
     ElMessage.error('创建失败')
   }
+}
+
+function handleAchievementClose() {
+  achievementDialogVisible.value = false
+  newlyUnlockedAchievements.value = []
 }
 
 function openEditDialog(e, item) {
@@ -160,6 +179,13 @@ function confirmDelete(e, id) {
         <el-button type="primary" @click="handleEdit">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 成就解锁弹窗 -->
+    <AchievementNotification
+      v-model:visible="achievementDialogVisible"
+      :achievements="newlyUnlockedAchievements"
+      @close="handleAchievementClose"
+    />
   </div>
 </template>
 

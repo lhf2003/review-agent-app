@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "achievement_definition", schema = "review_agent")
+@Table(name = "achievement_definition")
 public class AchievementDefinition {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

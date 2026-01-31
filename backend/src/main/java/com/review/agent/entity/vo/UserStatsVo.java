@@ -45,6 +45,26 @@ public class UserStatsVo {
     private List<RecentActivityVo> recentActivities;
 
     /**
+     * 成就列表
+     */
+    private List<AchievementVo> achievements;
+
+    /**
+     * 测验分数趋势
+     */
+    private List<QuizScoreTrendVo> quizScoreTrend;
+
+    /**
+     * 知识点掌握度
+     */
+    private List<KnowledgeMasteryVo> knowledgeMastery;
+
+    /**
+     * 学习进度
+     */
+    private LearningProgressVo learningProgress;
+
+    /**
      * 最近活动 VO
      */
     @Data
@@ -63,5 +83,114 @@ public class UserStatsVo {
          * 活动详情
          */
         private String detail;
+    }
+
+    /**
+     * 成就 VO
+     */
+    @Data
+    public static class AchievementVo {
+        /**
+         * 成就代码
+         */
+        private String code;
+
+        /**
+         * 成就名称
+         */
+        private String name;
+
+        /**
+         * 成就描述
+         */
+        private String description;
+
+        /**
+         * 成就图标
+         */
+        private String icon;
+
+        /**
+         * 是否已解锁
+         */
+        private Boolean unlocked;
+
+        /**
+         * 当前进度
+         */
+        private Integer progress;
+
+        /**
+         * 目标值（用于进度条）
+         */
+        private Integer target;
+
+        /**
+         * 解锁时间
+         */
+        private String unlockedTime;
+    }
+
+    /**
+     * 测验分数趋势 VO
+     */
+    @Data
+    public static class QuizScoreTrendVo {
+        /**
+         * 测验日期（yyyy-MM-dd）
+         */
+        private String date;
+
+        /**
+         * 分数
+         */
+        private Integer score;
+    }
+
+    /**
+     * 知识点掌握度 VO
+     */
+    @Data
+    public static class KnowledgeMasteryVo {
+        /**
+         * 标签名
+         */
+        private String tagName;
+
+        /**
+         * 正确率（百分比）
+         */
+        private Double accuracyRate;
+    }
+
+    /**
+     * 学习进度 VO
+     */
+    @Data
+    public static class LearningProgressVo {
+        /**
+         * 总体进度（百分比）
+         */
+        private Integer overallProgress;
+
+        /**
+         * 同步文件进度（百分比）
+         */
+        private Integer syncProgress;
+
+        /**
+         * 已分析结果进度（百分比）
+         */
+        private Integer analysisProgress;
+
+        /**
+         * 测验完成进度（百分比）
+         */
+        private Integer quizProgress;
+
+        /**
+         * 成就解锁进度（百分比）
+         */
+        private Integer achievementProgress;
     }
 }

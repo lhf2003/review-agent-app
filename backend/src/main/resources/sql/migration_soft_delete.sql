@@ -3,7 +3,7 @@
 --
 -- 说明：
 --   1. 为需要的表添加 deleted 和 deleted_at 字段
---   2. 为现有数据设置默认值（deleted = false, deleted_at = NULL）
+--   2. 为现有数据设置默认值（deleted = 0, deleted_at = NULL）
 --   3. 添加索引以优化软删除查询性能
 --
 -- 执行方式：
@@ -11,7 +11,7 @@
 --
 -- 注意事项：
 --   1. 执行前请备份数据库
---   2. 删除后的数据可以恢复（设置 deleted = false）
+--   2. 删除后的数据可以恢复（设置 deleted = 0）
 --   3. 物理删除需要使用 Repository 中的 hardDelete 方法
 --
 -- 作者：Review Agent Team
@@ -105,7 +105,7 @@ ON quiz_record(collection_id, deleted);
 --
 -- 2. 恢复删除的数据：
 --    Service 方法调用：
---    dataInfo.setDeleted(false);
+--    dataInfo.setDeleted(0);
 --    dataInfo.setDeletedAt(null);
 --    dataInfoRepository.save(dataInfo);
 --
@@ -114,11 +114,11 @@ ON quiz_record(collection_id, deleted);
 --    注意：物理删除会级联删除关联数据（如果有外键）
 --
 -- 4. 查询时自动过滤已删除数据：
---    JPA Query 中添加：and deleted = false
---    例如：select d from DataInfo d where d.userId = :userId and d.deleted = false
+--    JPA Query 中添加：and deleted = 0
+--    例如：select d from DataInfo d where d.userId = :userId and d.deleted = 0
 --
 -- 5. 统计未删除的数据：
---    @Query("select count(d) from DataInfo d where d.userId = :userId and d.deleted = false")
+--    @Query("select count(d) from DataInfo d where d.userId = :userId and d.deleted = 0")
 --    long countByUserId(Long userId);
 --
 -- ================================================

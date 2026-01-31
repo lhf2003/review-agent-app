@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "user_achievement", schema = "review_agent")
+@Table(name = "user_achievement")
 public class UserAchievement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +29,7 @@ public class UserAchievement {
     private String achievementCode;
 
     @Column(name = "unlocked")
-    private Boolean unlocked;
+    private Integer unlocked;
 
     @Column(name = "progress")
     private Integer progress;
@@ -52,7 +52,7 @@ public class UserAchievement {
             this.updatedTime = LocalDateTime.now();
         }
         if (this.unlocked == null) {
-            this.unlocked = false;
+            this.unlocked = 0;
         }
         if (this.progress == null) {
             this.progress = 0;
