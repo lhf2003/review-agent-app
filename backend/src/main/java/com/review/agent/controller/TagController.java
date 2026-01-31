@@ -99,11 +99,11 @@ public class TagController {
 
     /**
      * 获取子标签列表
-     * @param userId 用户ID
      * @return 子标签列表
      */
     @GetMapping("/sub/list")
-    public BaseResponse<List<SubTag>> subTagList(@RequestHeader("userId") Long userId) {
+    public BaseResponse<List<SubTag>> subTagList() {
+        Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(tagService.findSubTagList(userId));
     }
 
