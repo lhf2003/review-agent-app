@@ -91,19 +91,15 @@ async function request(path, { method = 'GET', params, body, headers } = {}) {
 
   // 获取 Token（用于 JWT 认证）
   const token = getToken()
-  const userId = getUserId()
 
   const finalHeaders = {
     'Content-Type': 'application/json',
     ...(headers || {}),
   }
 
-  // 同时添加 Authorization Header（JWT）和 userId Header（兼容性）
+  // 只添加 Authorization Header（JWT），后端通过 SecurityContext 获取用户 ID
   if (token) {
     finalHeaders['Authorization'] = `Bearer ${token}`
-  }
-  if (userId) {
-    finalHeaders['userId'] = userId
   }
 
   const res = await fetch(url, {
@@ -243,11 +239,9 @@ export const api = {
     const formData = new FormData()
     formData.append('file', file)
 
-    // 同时传递 userId Header（兼容性）和 Authorization Header（JWT）
-    const userId = getUserId()
+    // 只传递 Authorization Header（JWT），后端通过 SecurityContext 获取用户 ID
     const token = getToken()
     const headers = {}
-    if (userId) headers['userId'] = userId
     if (token) headers['Authorization'] = `Bearer ${token}`
 
     return fetch(BASE_URL + '/file-info/import', {
@@ -369,11 +363,11 @@ export const api = {
     const formData = new FormData()
     formData.append('file', file)
     if (source !== undefined && source !== null) formData.append('source', source)
-    
+
+    // 只传递 Authorization Header（JWT），后端通过 SecurityContext 获取用户 ID
+    const token = getToken()
     const headers = {}
-    if (userId) {
-      headers['userId'] = userId
-    }
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
     return fetch(BASE_URL + '/data/import', { method: 'POST', headers, body: formData }).then(async (res) => {
       if (!res.ok) throw new Error(await res.text())
@@ -481,11 +475,9 @@ export const api = {
 
   chatStream(requestText, handlers = {}) {
     const controller = new AbortController()
-    // 同时传递 userId Header（兼容性）和 Authorization Header（JWT）
-    const userId = getUserId()
+    // 只传递 Authorization Header（JWT），后端通过 SecurityContext 获取用户 ID
     const token = getToken()
     const headers = { Accept: 'text/event-stream' }
-    if (userId) headers['userId'] = userId
     if (token) headers['Authorization'] = `Bearer ${token}`
 
     const url = new URL('/chat')
@@ -498,11 +490,9 @@ export const api = {
 
   chatWithAnalysisStream(requestText, handlers = {}) {
     const controller = new AbortController()
-    // 同时传递 userId Header（兼容性）和 Authorization Header（JWT）
-    const userId = getUserId()
+    // 只传递 Authorization Header（JWT），后端通过 SecurityContext 获取用户 ID
     const token = getToken()
     const headers = { Accept: 'text/event-stream' }
-    if (userId) headers['userId'] = userId
     if (token) headers['Authorization'] = `Bearer ${token}`
 
     const url = new URL(BASE_URL + '/chat/with-analysis')
@@ -525,11 +515,9 @@ export const api = {
  
    analysisLogStream(handlers = {}) {
       const controller = new AbortController()
-      // 同时传递 userId Header（兼容性）和 Authorization Header（JWT）
-      const userId = getUserId()
+      // 只传递 Authorization Header（JWT），后端通过 SecurityContext 获取用户 ID
       const token = getToken()
       const headers = { Accept: 'text/event-stream' }
-      if (userId) headers['userId'] = userId
       if (token) headers['Authorization'] = `Bearer ${token}`
 
       const p = fetch(BASE_URL + '/analysis/log/stream', { method: 'GET', headers, signal: controller.signal })
