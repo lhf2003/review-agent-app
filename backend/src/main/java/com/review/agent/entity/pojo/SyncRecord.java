@@ -33,4 +33,17 @@ public class SyncRecord {
     @Column(name = "create_time")
     private Date createTime;
 
+    /**
+     * 同步状态：0=成功, 1=同步中, 2=失败
+     */
+    @ColumnDefault("0")
+    @Column(name = "status", nullable = false)
+    private Integer status;
+
+    /**
+     * 同步消息或错误描述
+     */
+    @Column(name = "message", length = 500)
+    private String message;
+
 }
