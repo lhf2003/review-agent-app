@@ -1,4 +1,5 @@
 <script setup>
+import { ref, computed } from 'vue'
 import SingleChoiceQuestion from './SingleChoiceQuestion.vue'
 import MultipleChoiceQuestion from './MultipleChoiceQuestion.vue'
 import TrueFalseQuestion from './TrueFalseQuestion.vue'

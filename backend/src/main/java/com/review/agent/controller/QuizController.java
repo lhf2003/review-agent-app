@@ -50,9 +50,11 @@ public class QuizController {
             QuizVo.QuestionVo qVo = new QuizVo.QuestionVo();
             qVo.setId(q.getId());
             qVo.setQuestion(q.getQuestionText());
+            qVo.setType(q.getQuestionType() != null ? q.getQuestionType().getCode() : "single_choice"); // 添加题目类型
             qVo.setAnswer(q.getCorrectAnswer());
             qVo.setExplanation(q.getExplanation());
             qVo.setUserAnswer(q.getUserAnswer());
+            qVo.setKnowledgePoint(q.getKnowledgePoint()); // 添加知识点
             try {
                 qVo.setOptions(objectMapper.readValue(q.getOptionsJson(), List.class));
             } catch (JsonProcessingException e) {

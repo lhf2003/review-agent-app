@@ -283,11 +283,17 @@ function viewOriginal(item) {
           
           <div class="question-card">
             <QuestionRenderer
-              :question="quizQuestions[currentQuestionIndex]"
-              :key="quizQuestions[currentQuestionIndex].id"
-              :show-answer="showAnswer"
+              v-if="quizQuestions[currentQuestionIndex]"
+              :question="quizQuestions[currentQuestionIndex].question"
+              :type="quizQuestions[currentQuestionIndex].type || 'single_choice'"
+              :options="quizQuestions[currentQuestionIndex].options || []"
+              :correct-answer="quizQuestions[currentQuestionIndex].answer"
+              :explanation="quizQuestions[currentQuestionIndex].explanation"
               :user-answer="currentUserAnswer"
-              @answer="handleQuestionAnswer"
+              :is-submitted="showAnswer"
+              :knowledge-point="quizQuestions[currentQuestionIndex].knowledgePoint"
+              :key="quizQuestions[currentQuestionIndex].id"
+              @answer-selected="handleQuestionAnswer"
             />
           </div>
 
