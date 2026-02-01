@@ -48,8 +48,16 @@ async function startLearning() {
     quizQuestions.value = res.questions || []
     currentQuestionIndex.value = 0
     loadQuestionState(0)
+
+    // 检查是否成功生成题目
+    if (!quizQuestions.value || quizQuestions.value.length === 0) {
+      ElMessage.warning('未能生成题目，请确保合集有已分析的内容')
+    }
   } catch(e) {
-    ElMessage.error('生成题目失败')
+    console.error('生成题目失败，详细错误:', e)
+    // 显示详细的错误信息
+    const errorMsg = e.message || '未知错误'
+    ElMessage.error(`生成题目失败: ${errorMsg}`)
   } finally {
     quizLoading.value = false
   }
