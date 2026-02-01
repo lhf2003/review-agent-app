@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { Search, RefreshRight, Check, FolderChecked, Delete, SuccessFilled, WarningFilled, Collection, Edit, Loading, PriceTag, Clock, MoreFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CustomScroll from '../components/CustomScroll.vue'
+import MistakeDrawer from '../components/quiz/MistakeDrawer.vue'
 import { api } from '../api/http'
 
 /**
@@ -28,6 +29,11 @@ const filterMode = ref('all')
 
 // 搜索状态
 const isSearching = ref(false)
+
+// 错题详情抽屉
+const drawerVisible = ref(false)
+const currentMistakeId = ref(null)
+const currentQuestionId = ref(null)
 
 onMounted(() => {
   fetchMistakes()
@@ -163,7 +169,29 @@ const refreshMistakeBook = () => {
 
 // 查看错题详情
 const viewDetail = (mistake) => {
-  console.log('查看错题详情:', mistake)
+  currentMistakeId.value = mistake.id
+  currentQuestionId.value = mistake.questionId
+  drawerVisible.value = true
+}
+
+// 处理抽屉中的标记掌握回调
+const handleMarkedMastered = (questionId) => {
+  // 更新本地状态
+  const mistake = mistakes.value.find(m => m.questionId === questionId)
+  if (mistake) {
+    mistake.mastered = true
+  }
+  // 更新统计
+  updateStats(mistakes.value)
+}
+
+// 处理抽屉中的删除回调
+const handleDeleted = (questionId) => {
+  // 从列表中移除
+  mistakes.value = mistakes.value.filter(m => m.questionId !== questionId)
+  // 更新统计
+  updateStats(mistakes.value)
+  ElMessage.success('已从错题本移除')
 }
 
 // 批量操作
@@ -445,6 +473,15 @@ const getQuestionTypeTagType = (type) => {
         </div>
       </CustomScroll>
     </div>
+
+    <!-- 错题详情抽屉 -->
+    <MistakeDrawer
+      v-model:visible="drawerVisible"
+      :mistake-id="currentMistakeId"
+      :question-id="currentQuestionId"
+      @marked-mastered="handleMarkedMastered"
+      @deleted="handleDeleted"
+    />
   </div>
 </template>
 
