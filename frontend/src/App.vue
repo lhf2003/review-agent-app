@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, nextTick, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Moon, Sunny, FullScreen, Menu as MenuIcon } from '@element-plus/icons-vue'
+import { Moon, Sunny, FullScreen, Menu as MenuIcon, WarningFilled } from '@element-plus/icons-vue'
 import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
 import { useThemeStore } from './stores/theme'
@@ -200,6 +200,12 @@ watch(() => auth.isAuthenticated, (val) => {
             <span class="dock-text">合集</span>
           </div>
         </router-link>
+        <router-link to="/mistake-book" class="dock-item">
+          <div class="dock-icon" :class="{ 'is-active': $route.path === '/mistake-book' }">
+            <el-icon><WarningFilled /></el-icon>
+            <span class="dock-text">错题本</span>
+          </div>
+        </router-link>
         <router-link to="/analysis" class="dock-item">
           <div class="dock-icon" :class="{ 'is-active': $route.path === '/analysis' }">
             <el-icon><Folder /></el-icon>
@@ -249,6 +255,10 @@ watch(() => auth.isAuthenticated, (val) => {
             <el-menu-item index="/collections" @click="drawerVisible = false">
               <el-icon><Files /></el-icon>
               <span>合集</span>
+            </el-menu-item>
+            <el-menu-item index="/mistake-book" @click="drawerVisible = false">
+              <el-icon><WarningFilled /></el-icon>
+              <span>错题本</span>
             </el-menu-item>
             <el-menu-item index="/analysis" @click="drawerVisible = false">
               <el-icon><Folder /></el-icon>

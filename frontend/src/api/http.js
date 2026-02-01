@@ -567,6 +567,21 @@ export const api = {
   resetQuiz(quizId) {
     return request('/collection/reset', { method: 'POST', body: { quizId } })
   },
+
+  // --- Mistake Book API ---
+  getMistakeList(filter = 'all') {
+    return request('/mistake-book/list', { params: { filter } })
+      .then(data => Array.isArray(data) ? data : [])
+  },
+  getMistakeStats() {
+    return request('/mistake-book/stats')
+  },
+  markMistakesMastered(questionIds) {
+    return request('/mistake-book/mark-mastered', { method: 'POST', body: { questionIds } })
+  },
+  deleteMistakes(questionIds) {
+    return request('/mistake-book/delete', { method: 'DELETE', body: { questionIds } })
+  },
 }
 
 function normalizeResponse(resp) {

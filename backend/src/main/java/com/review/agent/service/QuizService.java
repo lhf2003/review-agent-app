@@ -4,12 +4,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.pojo.CollectionRelation;
+import com.review.agent.entity.pojo.KnowledgeMastery;
+import com.review.agent.entity.pojo.QuestionType;
 import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.pojo.QuizRecord;
 import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.CollectionRelationRepository;
 import com.review.agent.repository.QuizQuestionRepository;
 import com.review.agent.repository.QuizRecordRepository;
+import com.review.agent.common.utils.SecurityUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -18,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,6 +49,12 @@ public class QuizService {
 
     @Resource
     private ObjectMapper objectMapper;
+
+    @Resource
+    private MistakeBookService mistakeBookService;
+
+    @Resource
+    private KnowledgeMasteryService knowledgeMasteryService;
 
     @Transactional(rollbackFor = Exception.class)
     public QuizRecord generateQuiz(Long userId, Long collectionId) {
@@ -77,7 +88,14 @@ public class QuizService {
         }
 
         String prompt = String.format("""
-            Based on the following code analysis cases, generate 3-5 multiple-choice questions to test the user's understanding of these issues.
+            Based on the following code analysis cases, generate 3-5 questions to test the user's understanding.
+            
+            Mix different question types appropriately:
+            - Single choice (single_choice): For basic concepts and principles
+            - Multiple choice (multiple_choice): For multi-faceted issues
+            - True/false (true_false): For concept clarification
+            - Fill in blank (fill_blank): For key terms and parameters
+            - Code snippet (code_snippet): For code analysis and debugging
             
             %s
             
@@ -85,9 +103,13 @@ public class QuizService {
             [
               {
                 "question": "Question text",
+                "type": "single_choice|multiple_choice|true_false|fill_blank|code_snippet",
                 "options": ["A. Option 1", "B. Option 2", "C. Option 3", "D. Option 4"],
-                "answer": "A",
-                "explanation": "Why A is correct...",
+                "answer": "A" or ["A","B"] for multiple choice,
+                "explanation": "Detailed explanation",
+                "knowledgePoint": "Key concept or topic (e.g., 'Java并发', 'Spring事务')",
+                "difficulty": 1-5,
+                "timeLimit": 30-120,
                 "relatedCaseIndex": 1
               }
             ]
@@ -114,16 +136,60 @@ public class QuizService {
         try {
             List<Map<String, Object>> questions = objectMapper.readValue(jsonResponse, List.class);
             List<QuizQuestion> quizQuestions = new ArrayList<>();
-            
+
             for (Map<String, Object> q : questions) {
                 QuizQuestion qq = new QuizQuestion();
                 quizQuestions.add(qq);
                 qq.setQuizId(record.getId());
                 qq.setQuestionText((String) q.get("question"));
-                qq.setOptionsJson(objectMapper.writeValueAsString(q.get("options")));
-                qq.setCorrectAnswer((String) q.get("answer"));
+
+                // Handle answer for different question types
+                Object answerObj = q.get("answer");
+                if (answerObj instanceof String) {
+                    qq.setCorrectAnswer((String) answerObj);
+                } else if (answerObj instanceof List) {
+                    // Multiple choice: join with comma
+                    List<?> answers = (List<?>) answerObj;
+                    qq.setCorrectAnswer(answers.stream().map(Object::toString).collect(Collectors.joining(",")));
+                }
+
+                // Handle options (may be array or null for fill_blank/true_false)
+                Object optionsObj = q.get("options");
+                if (optionsObj != null) {
+                    qq.setOptionsJson(objectMapper.writeValueAsString(optionsObj));
+                }
+
                 qq.setExplanation((String) q.get("explanation"));
-                
+
+                // Parse question type
+                String typeStr = (String) q.getOrDefault("type", "single_choice");
+                try {
+                    qq.setQuestionType(QuestionType.fromCode(typeStr));
+                } catch (Exception e) {
+                    qq.setQuestionType(QuestionType.SINGLE_CHOICE);
+                }
+
+                // Parse difficulty level
+                Object difficultyObj = q.get("difficulty");
+                if (difficultyObj instanceof Number) {
+                    qq.setDifficultyLevel(((Number) difficultyObj).intValue());
+                }
+
+                // Parse knowledge point
+                String knowledgePoint = (String) q.get("knowledgePoint");
+                if (knowledgePoint != null && !knowledgePoint.trim().isEmpty()) {
+                    qq.setKnowledgePoint(knowledgePoint);
+                } else {
+                    // Extract from problem statement if not provided
+                    qq.setKnowledgePoint(extractKnowledgePoint((String) q.get("question")));
+                }
+
+                // Parse time limit
+                Object timeLimitObj = q.get("timeLimit");
+                if (timeLimitObj instanceof Number) {
+                    qq.setTimeLimit(((Number) timeLimitObj).intValue());
+                }
+
                 // Try to link back to original analysis result
                 Object caseIndexObj = q.get("relatedCaseIndex");
                 if (caseIndexObj instanceof Integer) {
@@ -150,10 +216,90 @@ public class QuizService {
     public void submitAnswer(Long questionId, String userAnswer) {
         QuizQuestion question = quizQuestionRepository.findById(questionId)
                 .orElseThrow(() -> new RuntimeException("Question not found"));
-        
+
+        // Check answer correctness based on question type
+        boolean isCorrect = checkAnswer(question, userAnswer);
+
+        // Update question statistics
         question.setUserAnswer(userAnswer);
-        question.setIsCorrect(question.getCorrectAnswer().equalsIgnoreCase(userAnswer));
+        question.setIsCorrect(isCorrect);
+        question.setAnswerCount(question.getAnswerCount() + 1);
+        if (isCorrect) {
+            question.setCorrectCount(question.getCorrectCount() + 1);
+        }
         quizQuestionRepository.save(question);
+
+        // Record in mistake book if incorrect
+        if (!isCorrect) {
+            mistakeBookService.recordAnswer(questionId, false, question.getQuizId());
+        }
+
+        // Update knowledge mastery
+        if (question.getKnowledgePoint() != null) {
+            knowledgeMasteryService.updateMastery(question.getKnowledgePoint(), isCorrect, null);
+        }
+    }
+
+    /**
+     * Check answer correctness based on question type
+     *
+     * @param question Question object
+     * @param userAnswer User's answer
+     * @return Whether the answer is correct
+     */
+    private boolean checkAnswer(QuizQuestion question, String userAnswer) {
+        if (userAnswer == null) return false;
+
+        String correctAnswer = question.getCorrectAnswer();
+        QuestionType type = question.getQuestionType();
+
+        switch (type) {
+            case MULTIPLE_CHOICE:
+                // Multiple choice: compare as sets (order doesn't matter)
+                List<String> userOptions = Arrays.asList(userAnswer.split(","));
+                List<String> correctOptions = Arrays.asList(correctAnswer.split(","));
+                return userOptions.size() == correctOptions.size()
+                        && userOptions.containsAll(correctOptions);
+
+            case TRUE_FALSE:
+                // True/false: case-insensitive comparison
+                return userAnswer.trim().equalsIgnoreCase(correctAnswer.trim());
+
+            case FILL_BLANK:
+                // Fill blank: allow partial match (case-insensitive)
+                return userAnswer.trim().equalsIgnoreCase(correctAnswer.trim());
+
+            case SINGLE_CHOICE:
+            case CODE_SNIPPET:
+            default:
+                // Single choice and code snippet: exact match (case-insensitive)
+                return userAnswer.trim().equalsIgnoreCase(correctAnswer.trim());
+        }
+    }
+
+    /**
+     * Extract knowledge point from question text (simple heuristic)
+     *
+     * @param questionText Question text
+     * @return Extracted knowledge point
+     */
+    private String extractKnowledgePoint(String questionText) {
+        // Simple keyword extraction - can be enhanced with NLP
+        if (questionText == null || questionText.isEmpty()) {
+            return "通用知识";
+        }
+
+        // Look for common technical terms
+        String[] keywords = {"Java", "Spring", "并发", "事务", "数据库", "SQL", "Redis",
+                          "线程", "锁", "异步", "Stream", "Lambda", "泛型"};
+
+        for (String keyword : keywords) {
+            if (questionText.contains(keyword)) {
+                return keyword;
+            }
+        }
+
+        return "通用知识";
     }
 
     @Transactional(rollbackFor = Exception.class)

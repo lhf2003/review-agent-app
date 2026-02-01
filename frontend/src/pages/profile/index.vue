@@ -8,7 +8,6 @@ import CustomScroll from '../../components/CustomScroll.vue'
 import HeroSection from './components/HeroSection.vue'
 import StatisticsGrid from './components/StatisticsGrid.vue'
 import RecentActivity from './components/RecentActivity.vue'
-// import QuickActions from './components/QuickActions.vue'
 import ProfileEditDialog from './components/ProfileEditDialog.vue'
 import PasswordDialog from './components/PasswordDialog.vue'
 // import ProfileNav from './components/ProfileNav.vue'
@@ -176,13 +175,6 @@ async function changePassword() {
             :cards-visible="cardsVisible"
           />
         </div>
-
-        <!-- Quick Actions Grid - 快捷入口 (已注释) -->
-        <!-- <div class="section-title">快捷入口</div>
-        <QuickActions
-          :quick-actions="quickActions"
-          :cards-visible="cardsVisible"
-        /> -->
       </div>
 
       <!-- Achievements Section - 学习成就 -->

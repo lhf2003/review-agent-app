@@ -8,7 +8,7 @@ export function useAnimations() {
     nextTick(() => {
       showContent.value = true
       setTimeout(() => {
-        cardsVisible.value = Array(18).fill(false).map((_, i) => true)
+        cardsVisible.value = Array(22).fill(false).map((_, i) => true)
       }, 100)
     })
   }

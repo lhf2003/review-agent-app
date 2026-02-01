@@ -2,7 +2,7 @@
 import { useRouter } from 'vue-router'
 import {
   FolderOpened, Document, Notebook, Edit,
-  PriceTag, TrendCharts, Clock, Setting
+  PriceTag, TrendCharts, Clock, Setting, Warning
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -27,7 +27,8 @@ const getIconComponent = (iconName) => {
     PriceTag,
     TrendCharts,
     Clock,
-    Setting
+    Setting,
+    Warning
   }
   return iconMap[iconName] || Document
 }

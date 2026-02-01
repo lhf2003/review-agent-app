@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted, onUnmounted, useTemplateRef, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Reading, Delete, FolderOpened, Aim, Timer, RefreshRight } from '@element-plus/icons-vue'
-import { api } from '../api/http'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import AnimatedList from '../components/AnimatedList.vue'
+ import { ref, onMounted, onUnmounted, useTemplateRef, watch } from 'vue'
+ import { useRoute, useRouter } from 'vue-router'
+ import { ArrowLeft, Reading, Delete, FolderOpened, Aim, Timer, RefreshRight } from '@element-plus/icons-vue'
+ import { api } from '../api/http'
+ import { ElMessage, ElMessageBox } from 'element-plus'
+ import AnimatedList from '../components/AnimatedList.vue'
+ import QuestionRenderer from '../components/quiz/QuestionRenderer.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,18 +66,30 @@ function loadQuestionState(index) {
   }
 }
 
-async function handleOptionSelect(option) {
+async function handleQuestionAnswer(answer) {
   if (showAnswer.value) return // 已答题不可修改
-  
+
   const q = quizQuestions.value[currentQuestionIndex.value]
-  const selectedKey = option.substring(0, 1) // "A" from "A. xxx"
-  
-  currentUserAnswer.value = selectedKey
+
+  // Convert answer based on question type
+  let formattedAnswer = answer
+  if (q.type === 'multiple_choice') {
+    // Multiple choice: array of option keys -> comma-separated string
+    formattedAnswer = answer.join(',')
+  } else if (q.type === 'fill_blank') {
+    // Fill blank: object -> JSON string
+    formattedAnswer = JSON.stringify(answer)
+  } else if (q.type === 'code_snippet') {
+    // Code snippet: number -> string
+    formattedAnswer = String(answer)
+  }
+
+  currentUserAnswer.value = answer
   showAnswer.value = true
-  q.userAnswer = selectedKey // 本地更新状态
-  
+  q.userAnswer = answer // 本地更新状态
+
   try {
-    await api.submitAnswer(q.id, selectedKey)
+    await api.submitAnswer(q.id, formattedAnswer)
   } catch (e) {
     ElMessage.error('保存答案失败')
   }
@@ -261,36 +274,13 @@ function viewOriginal(item) {
           </div>
           
           <div class="question-card">
-            <div class="question-badge">Question {{ currentQuestionIndex + 1 }}</div>
-            <div class="question-text">
-              {{ quizQuestions[currentQuestionIndex].question }}
-            </div>
-            
-            <div class="options-list">
-              <div 
-                v-for="(opt, idx) in quizQuestions[currentQuestionIndex].options"
-                :key="idx"
-                class="option-item"
-                :class="{ 
-                  'is-answer': showAnswer && opt.startsWith(quizQuestions[currentQuestionIndex].answer),
-                  'is-selected': currentUserAnswer === String.fromCharCode(65 + idx),
-                  'is-disabled': showAnswer
-                }"
-                @click="handleOptionSelect(opt)"
-              >
-                <div class="option-marker">{{ String.fromCharCode(65 + idx) }}</div>
-                <div class="option-content">{{ opt.substring(2) || opt }}</div>
-              </div>
-            </div>
-
-            <transition name="fade">
-              <div v-if="showAnswer" class="explanation-box">
-                <div class="exp-title">
-                  <el-icon><Reading /></el-icon> 解析
-                </div>
-                <div class="exp-content">{{ quizQuestions[currentQuestionIndex].explanation }}</div>
-              </div>
-            </transition>
+            <QuestionRenderer
+              :question="quizQuestions[currentQuestionIndex]"
+              :key="quizQuestions[currentQuestionIndex].id"
+              :show-answer="showAnswer"
+              :user-answer="currentUserAnswer"
+              @answer="handleQuestionAnswer"
+            />
           </div>
 
           <div class="quiz-footer">
@@ -576,7 +566,7 @@ function viewOriginal(item) {
 
 .quiz-progress-bar {
   margin-bottom: 24px;
-  
+
   .progress-header {
     display: flex;
     justify-content: space-between;
@@ -590,125 +580,6 @@ function viewOriginal(item) {
 .question-card {
   flex: 1;
   overflow-y: auto;
-}
-
-.question-badge {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
-  padding: 4px 10px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  text-transform: uppercase;
-}
-
-.question-text {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  line-height: 1.6;
-  margin-bottom: 24px;
-}
-
-.options-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.option-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--el-border-color);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: var(--transition-base);
-
-  &:hover {
-    border-color: var(--el-color-primary);
-    background-color: var(--el-color-primary-light-9);
-  }
-
-  &.is-selected {
-    border-color: var(--el-color-primary);
-    background-color: var(--el-color-primary-light-9);
-    
-    .option-marker {
-      background: var(--el-color-primary);
-      color: white;
-    }
-  }
-
-  &.is-disabled {
-    cursor: not-allowed;
-    opacity: 0.8;
-    
-    &:hover {
-      border-color: var(--el-border-color);
-      background-color: transparent;
-    }
-    
-    &.is-selected:hover, &.is-answer:hover {
-        // Keep their background color
-    }
-  }
-
-  &.is-answer {
-    background-color: var(--el-color-success-light-9);
-    border-color: var(--el-color-success);
-    
-    .option-marker {
-      background: var(--el-color-success);
-      color: white;
-    }
-  }
-
-  .option-marker {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--el-fill-color-dark);
-    color: var(--el-text-color-regular);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 600;
-    transition: var(--transition-base);
-    flex-shrink: 0;
-  }
-
-  .option-content {
-    font-size: 15px;
-    color: var(--el-text-color-primary);
-  }
-}
-
-.explanation-box {
-  margin-top: 24px;
-  background: var(--el-fill-color-light);
-  padding: 20px;
-  border-radius: 12px;
-  border-left: 4px solid var(--el-color-primary);
-
-  .exp-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--el-color-primary);
-  }
-
-  .exp-content {
-    font-size: 14px;
-    line-height: 1.6;
-    color: var(--el-text-color-regular);
-  }
 }
 
 .quiz-footer {
@@ -728,15 +599,6 @@ function viewOriginal(item) {
 .list-leave-to {
   opacity: 0;
   transform: translateY(20px);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 
 // Responsive
