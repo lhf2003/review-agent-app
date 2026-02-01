@@ -83,6 +83,14 @@ const urgencyConfig = computed(() => {
   return configs[urgencyLevel.value]
 })
 
+// 计算卡片类名
+const cardClasses = computed(() => {
+  return {
+    'compact-mode': props.compact,
+    [`urgency-${urgencyLevel.value}`]: true
+  }
+})
+
 // 获取推荐原因
 const recommendationReason = computed(() => {
   const days = daysUntilForget.value
@@ -130,10 +138,7 @@ function formatDate(dateStr) {
 <template>
   <div
     class="review-card"
-    :class="{
-      'compact-mode': compact,
-      `urgency-${urgencyLevel}`
-    }"
+    :class="cardClasses"
     @click="handleStartReview"
   >
     <!-- 左侧：优先级指示器 -->

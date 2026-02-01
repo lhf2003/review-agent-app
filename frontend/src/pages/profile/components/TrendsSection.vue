@@ -109,7 +109,7 @@
 import { defineProps, computed, watch } from 'vue'
 import { TrendCharts, Star, PriceTag } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import WeaknessList from '../../components/quiz/WeaknessList.vue'
+import WeaknessList from '../../../components/quiz/WeaknessList.vue'
 
 const router = useRouter()
 
