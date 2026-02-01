@@ -46,8 +46,9 @@ public class QuizQuestion {
 
     /**
      * 题目类型
+     * 使用自定义转换器存储 code 值（如 "single_choice"）而不是枚举名称
      */
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = QuestionTypeConverter.class)
     @Column(name = "question_type", nullable = false, length = 20)
     private QuestionType questionType = QuestionType.SINGLE_CHOICE;
 
