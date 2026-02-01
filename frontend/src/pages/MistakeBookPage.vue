@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, RefreshRight, Check, FolderChecked, Delete, SuccessFilled, WarningFilled, Collection, Edit, Loading, PriceTag, Clock, MoreFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CustomScroll from '../components/CustomScroll.vue'
 import MistakeDrawer from '../components/quiz/MistakeDrawer.vue'
+import ReviewCard from '../components/quiz/ReviewCard.vue'
 import { api } from '../api/http'
 
 /**
@@ -29,6 +30,70 @@ const filterMode = ref('all')
 
 // 搜索状态
 const isSearching = ref(false)
+
+// 复习推荐数据
+const reviewRecommendations = ref([])
+const showRecommendations = ref(true)
+
+// 监听错题数据变化，生成复习推荐
+watch(mistakes, (newMistakes) => {
+  generateReviewRecommendations(newMistakes)
+}, { immediate: true })
+
+// 生成复习推荐（基于遗忘曲线）
+function generateReviewRecommendations(mistakeData) {
+  const now = new Date()
+  const recommendations = []
+
+  mistakeData.forEach(mistake => {
+    // 只推荐未掌握的错题
+    if (mistake.mastered) return
+
+    const lastMistakeDate = new Date(mistake.lastMistakeTime)
+    const daysSinceMistake = Math.floor((now - lastMistakeDate) / (1000 * 60 * 60 * 24))
+
+    // 艾宾浩斯遗忘曲线
+    // 1天、3天、7天、15天、30天
+    const reviewIntervals = [1, 3, 7, 15, 30]
+    let nextReviewDays = 1
+    let priority = 5
+
+    for (let i = 0; i < reviewIntervals.length; i++) {
+      if (daysSinceMistake < reviewIntervals[i]) {
+        nextReviewDays = reviewIntervals[i] - daysSinceMistake
+        priority = 5 - i
+        break
+      }
+    }
+
+    // 计算下次复习日期
+    const nextReviewDate = new Date(now)
+    nextReviewDate.setDate(nextReviewDate.getDate() + nextReviewDays)
+
+    recommendations.push({
+      mistakeId: mistake.id,
+      questionId: mistake.questionId,
+      questionText: mistake.question,
+      knowledgePoint: mistake.knowledgePoint,
+      mistakeCount: mistake.mistakeCount,
+      lastMistakeTime: mistake.lastMistakeTime,
+      nextReviewDate: nextReviewDate.toISOString(),
+      priority,
+      daysUntilReview: nextReviewDays
+    })
+  })
+
+  // 按优先级排序
+  recommendations.sort((a, b) => {
+    if (a.daysUntilReview < 0 && b.daysUntilReview >= 0) return -1
+    if (a.daysUntilReview >= 0 && b.daysUntilReview < 0) return 1
+    if (a.priority !== b.priority) return b.priority - a.priority
+    return a.daysUntilReview - b.daysUntilReview
+  })
+
+  // 只显示前5个推荐
+  reviewRecommendations.value = recommendations.slice(0, 5)
+}
 
 // 错题详情抽屉
 const drawerVisible = ref(false)
@@ -231,6 +296,27 @@ const batchAction = async (action, actionName) => {
   }
 }
 
+// 开始复习（从推荐卡片）
+const handleStartReview = (recommendation) => {
+  // 打开错题详情抽屉
+  currentMistakeId.value = recommendation.mistakeId
+  currentQuestionId.value = recommendation.questionId
+  drawerVisible.value = true
+}
+
+// 忽略推荐
+const handleDismissRecommendation = (recommendation) => {
+  reviewRecommendations.value = reviewRecommendations.value.filter(
+    r => r.mistakeId !== recommendation.mistakeId
+  )
+  ElMessage.success('已忽略该推荐')
+}
+
+// 切换推荐区块显示
+const toggleRecommendations = () => {
+  showRecommendations.value = !showRecommendations.value
+}
+
 // 格式化时间
 const formatTime = (time) => {
   if (!time) return ''
@@ -341,6 +427,29 @@ const getQuestionTypeTagType = (type) => {
           @clear="clearSearch"
           @input="handleSearch"
           class="search-input"
+        />
+      </div>
+    </div>
+
+    <!-- 复习推荐区块 -->
+    <div v-if="showRecommendations && reviewRecommendations.length > 0" class="recommendations-section">
+      <div class="section-header">
+        <div class="header-left">
+          <el-icon class="section-icon"><TrendCharts /></el-icon>
+          <h3 class="section-title">复习推荐</h3>
+          <el-tag type="primary" size="small">{{ reviewRecommendations.length }} 题</el-tag>
+        </div>
+        <el-button text @click="toggleRecommendations">
+          <el-icon><Close /></el-icon>
+        </el-button>
+      </div>
+      <div class="recommendations-list">
+        <ReviewCard
+          v-for="rec in reviewRecommendations"
+          :key="rec.mistakeId"
+          :recommendation="rec"
+          @start-review="handleStartReview"
+          @dismiss="handleDismissRecommendation"
         />
       </div>
     </div>
@@ -616,6 +725,59 @@ const getQuestionTypeTagType = (type) => {
   .search-input {
     width: 100%;
   }
+}
+
+// 复习推荐区块
+.recommendations-section {
+  background: var(--el-bg-color);
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-light);
+  padding: 20px;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.section-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-icon {
+  font-size: 20px;
+  color: var(--el-color-primary);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin: 0;
+}
+
+.recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 // 批量操作栏
