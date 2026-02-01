@@ -29,6 +29,20 @@
       </div>
     </div>
 
+    <!-- 薄弱知识点列表 -->
+    <div class="weakness-section">
+      <h4 class="section-title">
+        <el-icon><PriceTag /></el-icon>
+        薄弱知识点
+      </h4>
+      <WeaknessList
+        :knowledge-data="knowledgeMastery"
+        :limit="5"
+        :threshold="60"
+        @start-practice="handleStartPractice"
+      />
+    </div>
+
     <!-- 学习进度 -->
     <div class="progress-section">
       <h4 class="section-title">
@@ -93,7 +107,11 @@
 
 <script setup>
 import { defineProps, computed, watch } from 'vue'
-import { TrendCharts, Star } from '@element-plus/icons-vue'
+import { TrendCharts, Star, PriceTag } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+import WeaknessList from '../../components/quiz/WeaknessList.vue'
+
+const router = useRouter()
 
 const props = defineProps({
   achievementsData: {
@@ -140,6 +158,23 @@ const learningProgress = computed(() => props.achievementsData.learningProgress 
 watch(() => [props.achievementsData.quizScoreTrend, props.achievementsData.knowledgeMastery, props.achievementsData.learningProgress], () => {
   props.updateCharts()
 }, { deep: true })
+
+// 开始练习薄弱知识点
+function handleStartPractice(point) {
+  // 跳转到合集页面，并传递知识点筛选
+  router.push({
+    path: '/collections',
+    query: { tag: point.knowledgePoint }
+  })
+}
+
+// 查看相关合集
+function viewRelatedCollections(point) {
+  router.push({
+    path: '/collections',
+    query: { tag: point.knowledgePoint }
+  })
+}
 </script>
 
 <style scoped>
@@ -175,6 +210,10 @@ watch(() => [props.achievementsData.quizScoreTrend, props.achievementsData.knowl
 }
 
 .chart-section {
+  margin-bottom: 40px;
+}
+
+.weakness-section {
   margin-bottom: 40px;
 }
 
