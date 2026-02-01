@@ -101,7 +101,7 @@ const shouldShowCorrect = (index) => {
 	const handleOptionSelect = (index, option) => {
 	  if (props.isSubmitted) return
 
-	  const selectedLetter = optionLetters.value(index)
+	  const selectedLetter = optionLetters(index)
 	  emit('answer-selected', {
 	    letter: selectedLetter,
 	    fullOption: option,
@@ -174,7 +174,7 @@ defineExpose({
         @click="handleOptionSelect(idx, option)"
       >
         <div class="option-marker">
-          {{ optionLetters.value(idx) }}
+          {{ optionLetters(idx) }}
         </div>
         <div class="option-content">
           {{ option.substring(2) || option }}

@@ -7,7 +7,8 @@
       "Bash(timeout 10 npm run dev:*)",
       "Bash(git checkout:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(grep:*)"
     ]
   }
 }
