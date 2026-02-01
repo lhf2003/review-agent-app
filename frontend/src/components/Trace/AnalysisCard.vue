@@ -1,14 +1,19 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { UserFilled, Service, Connection, Star } from '@element-plus/icons-vue'
+import { UserFilled, Service, Connection, Star, ArrowLeft } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../MarkdownRenderer.vue'
 import AddToCollectionDialog from '../Collection/AddToCollectionDialog.vue'
+import { api } from '../../api/http'
 
 const props = defineProps({
   session: {
     type: Object,
+    default: null
+  },
+  fileId: {
+    type: Number,
     default: null
   },
   similarityCount: {
@@ -19,8 +24,9 @@ const props = defineProps({
 
 const emit = defineEmits(['show-similarity'])
 const collectionDialogRef = ref(null)
+const router = inject('router')
 
-function addToCollection() {
+async function addToCollection() {
   if (props.session && collectionDialogRef.value) {
     collectionDialogRef.value.open()
   }
@@ -28,6 +34,31 @@ function addToCollection() {
 
 function showSimilarity() {
   emit('show-similarity')
+}
+
+async function goToAnalysisResult() {
+  if (!props.session || !props.fileId) {
+    ElMessage.error('缺少必要信息，无法跳转')
+    return
+  }
+
+  try {
+    const resp = await api.getAnalysisResultByIds(props.fileId, props.session.analysisResultId)
+    const data = resp?.data || resp
+
+    const mainTag = data?.mainTagName
+
+    router.push({
+      path: '/analysis',
+      query: {
+        mainTag,
+        dataId: props.fileId,
+        highlightId: props.session.analysisResultId
+      }
+    })
+  } catch (e) {
+    ElMessage.error(`跳转失败: ${e.message}`)
+  }
 }
 </script>
 
@@ -84,6 +115,10 @@ function showSimilarity() {
         <el-button class="action-btn" @click="showSimilarity">
           <el-icon><Connection /></el-icon>
           <span>相似问题 ({{ similarityCount }})</span>
+        </el-button>
+        <el-button class="action-btn" @click="goToAnalysisResult">
+          <el-icon><ArrowLeft /></el-icon>
+          <span>返回结果</span>
         </el-button>
         <el-button class="action-btn primary" @click="addToCollection">
           <el-icon><Star /></el-icon>

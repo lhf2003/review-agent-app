@@ -7,6 +7,7 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden; /* Prevent global scrollbar */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -113,37 +114,53 @@ html, body {
 
 /* Ensure Dark Mode Background is Correct */
 html.dark {
-  background-color: #000000;
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
   
+  /* High Contrast Text Variables - Force Override */
+  --el-text-color-primary: #FFFFFF !important;
+  --el-text-color-regular: #F5F5F7 !important; /* ~96% White */
+  --el-text-color-secondary: #EBEBF5 !important; /* ~92% White */
+  --el-text-color-placeholder: #A0A0A5 !important;
+  --el-text-color-disabled: #636366 !important;
+  
+  --el-border-color: rgba(255, 255, 255, 0.2) !important;
+  --el-border-color-light: rgba(255, 255, 255, 0.15) !important;
+  --el-fill-color-light: rgba(255, 255, 255, 0.15) !important;
+  --el-fill-color-lighter: rgba(255, 255, 255, 0.08) !important;
+
+  /* Optimize Font Rendering for Dark Mode (Make text look thicker/brighter) */
+  -webkit-font-smoothing: subpixel-antialiased;
+  -moz-osx-font-smoothing: auto;
+
   /* Dark Mode App Layout Colors (Override Global Layout Styles) */
   .el-aside.app-aside {
-    /* Dark Mode: No border, shadow separation only */
+    /* Dark Mode: Subtle border, rich glass background */
     border: none !important;
-    border-right: none !important;
-    background: rgba(0, 0, 0, 0.3) !important; /* Much darker and more transparent */
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3) !important; /* Consistent light shadow for dark mode */
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(28, 28, 30, 0.75) !important; /* Richer dark glass */
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2) !important;
   }
 
   .el-header.app-header {
     border: none !important;
-    border-bottom: none !important; /* Remove border for immersive look */
-    background: rgba(0, 0, 0, 0.3) !important; /* Much darker and more transparent */
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3) !important; /* Consistent shadow for dark mode */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(28, 28, 30, 0.75) !important; /* Richer dark glass */
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
   }
   
   /* Main content area should have pure background for glass effect to show */
   .el-main {
-    background: var(--el-bg-color) !important;
+    background: #000000 !important;
   }
-
-  /* Dark Mode App Layout Colors Variables (Deprecated but kept for ref) */
 
   body {
     background-color: #000000;
+    color: #FFFFFF;
   }
 }
 
@@ -179,22 +196,23 @@ html.dark {
 html.dark .el-table {
   --el-table-bg-color: #1c1c1e !important;
   --el-table-tr-bg-color: transparent !important;
-  --el-table-row-striped-bg-color: rgba(255, 255, 255, 0.02) !important;
+  --el-table-row-striped-bg-color: rgba(255, 255, 255, 0.05) !important;
   --el-table-header-bg-color: #1C1C1E;
-  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.08) !important;
-  --el-table-border-color: rgba(255, 255, 255, 0.1);
-  color: #E5E5EA;
+  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.12) !important;
+  --el-table-border-color: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
 }
 
 html.dark .el-table th.el-table__cell {
-  background-color: rgba(28, 28, 30, 0.8) !important;
-  color: #98989D; /* Apple Gray Text */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(28, 28, 30, 0.9) !important;
+  color: #FFFFFF; /* High Contrast White */
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
 html.dark .el-table .el-table__cell {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: #E5E5EA;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #F2F2F7;
 }
 
 /* Increase row height/spacing for all table cells */
@@ -463,14 +481,15 @@ html.dark {
 html.dark {
   .el-card {
     background-color: #1c1c1e; /* Apple Dark Mode Background */
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important; /* Subtle border for separation */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important; /* Deeper shadow */
+    border: 1px solid rgba(255, 255, 255, 0.12) !important; /* Crisper border */
   }
 
   .el-card__header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-    background-color: rgba(28, 28, 30, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background-color: rgba(30, 30, 32, 0.9); /* More opaque for contrast */
     color: #FFFFFF;
+    font-weight: 600;
   }
 
   .el-card.is-hover-shadow:hover,
@@ -676,7 +695,7 @@ html.dark {
   }
 
   .vertical-dock-container {
-    left: 24px;
+    left: 16px;
   }
 }
 
@@ -694,7 +713,7 @@ html.dark {
   }
 
   .vertical-dock-container {
-    left: 16px;
+    left: 8px;
   }
 }
 
@@ -862,4 +881,24 @@ html.dark {
   .switch-icon {
     font-size: 12px;
   }
+}
+
+/* Fix for yellow/orange outline in dark mode or focus */
+:focus-visible {
+  outline: none !important;
+}
+
+:focus {
+  outline: none !important;
+}
+
+html, body, #app, .el-container, .el-main, .el-header, .el-aside {
+  outline: none !important;
+  border: none !important;
+}
+
+/* Global Aggressive Reset for outlines */
+*, *::before, *::after {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
 }

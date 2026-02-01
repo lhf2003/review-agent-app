@@ -5,13 +5,15 @@ import { api } from '../api/http'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { View } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 import CustomScroll from '../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
 const route = useRoute()
+const router = useRouter()
 const search = ref('')
 const sort = ref('mastery')
 const tagMode = ref('main')
@@ -21,6 +23,7 @@ const loading = ref(false)
 const cards = ref([])
 const resultDialog = ref(false)
 const result = ref({ title: '', problemStatement: '', solution: '' })
+const highlightedCardId = ref(null)
 
 const analysisMap = ref({})
 const fileNames = computed(() => Object.keys(analysisMap.value))
@@ -130,6 +133,26 @@ async function loadData() {
       }) : []
 
     assignTagColors(tags.value)
+
+    // 如果有 mainTag 参数，自动选中该标签
+    const mainTagFromQuery = route.query.mainTag
+    if (mainTagFromQuery && Array.isArray(selectedTags.value)) {
+      const tagExists = tags.value.some(t => t.name === mainTagFromQuery)
+      if (tagExists) {
+        selectedTags.value = [mainTagFromQuery]
+        tagMode.value = 'main'
+      }
+    }
+
+    // 如果有 highlightId 参数，高亮对应的卡片
+    const highlightIdFromQuery = route.query.highlightId
+    if (highlightIdFromQuery) {
+      highlightedCardId.value = highlightIdFromQuery
+      // 等待 DOM 更新后滚动到高亮卡片
+      setTimeout(() => {
+        scrollToHighlightedCard()
+      }, 100)
+    }
   } catch (e) {
     ElMessage.error(`加载失败: ${e.message}`)
   } finally {
@@ -177,6 +200,7 @@ function updateCards() {
       displayTags: displayTags,
       recommendTags: it.recommendTagList || [],
       date: it.createdTime || '',
+      mainTagName: it.mainTagName,
     }
   })
 }
@@ -200,10 +224,36 @@ function openDetail(card) {
           : `结果 #${card.id}`,
         problemStatement: data?.problemStatement ?? '',
         solution: data?.solution ?? '',
+        fileId: card.fileId,
+        analysisId: card.id,
       }
       resultDialog.value = true
     })
     .catch(e => ElMessage.error(`查询失败: ${e.message}`))
+}
+
+function goToTrace() {
+  if (!result.value?.fileId) {
+    ElMessage.error('缺少文件ID，无法跳转')
+    return
+  }
+  router.push({
+    path: `/trace/${result.value.fileId}`,
+    query: { activeId: result.value.analysisId }
+  })
+}
+
+function scrollToHighlightedCard() {
+  const cardElement = document.getElementById('card-' + highlightedCardId.value)
+  if (cardElement) {
+    cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // 添加临时高亮效果
+    cardElement.classList.add('highlighted')
+    setTimeout(() => {
+      cardElement.classList.remove('highlighted')
+      highlightedCardId.value = null
+    }, 2000)
+  }
 }
 
 const tagActionDialog = ref({
@@ -331,8 +381,13 @@ onMounted(() => {
         <CustomScroll class="content-scroll-area">
           <template v-if="filteredCards.length">
             <div class="cards-grid">
-              <el-card v-for="c in filteredCards" :key="c.id" @click="openDetail(c)" shadow="hover"
-                :class="{ 'recommend-card': c.recommendTags && c.recommendTags.length }"
+              <el-card
+                v-for="c in filteredCards"
+                :key="c.id"
+                :id="'card-' + c.id"
+                @click="openDetail(c)"
+                shadow="hover"
+                :class="{ 'recommend-card': c.recommendTags && c.recommendTags.length, 'highlighted': c.id === highlightedCardId }"
                 style="position:relative;overflow:visible;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                   <div
@@ -376,7 +431,16 @@ onMounted(() => {
       </div>
     </div>
   </div>
-  <el-dialog v-model="resultDialog" title="分析结果" width="720px" align-center>
+  <el-dialog v-model="resultDialog" width="720px" align-center>
+    <template #header>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span>分析结果</span>
+        <el-button type="primary" link @click="goToTrace" size="small">
+          <el-icon><View /></el-icon>
+          <span style="margin-left:4px;">查看原始会话</span>
+        </el-button>
+      </div>
+    </template>
     <el-card shadow="never">
       <div style="height:520px; overflow:auto; padding-right:8px;">
         <div><b>您的原始请求:</b></div>
@@ -525,9 +589,6 @@ onMounted(() => {
   border-right: none;
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
-
-  // Use glow mixin
-  @include glow-hover($glow-color-light);
 }
 
 .mini-tag {
@@ -586,10 +647,7 @@ onMounted(() => {
   color: var(--el-color-primary);
   z-index: 20;
   /* Bring to front */
-  box-shadow: 0 0 12px 3px rgba(64, 158, 255, 0.5);
-  transform: scale(1.15);
-  border-radius: 4px;
-  border: 1px solid var(--el-color-primary);
+  /* Removed blue border and shadow effects */
 }
 
 .tag-item.active {
@@ -651,8 +709,27 @@ onMounted(() => {
   }
 
   .cards-grid {
-    grid-template-columns: 1fr; /* Single column on mobile */
+    grid-template-columns:1fr; /* Single column on mobile */
     column-gap: 0;
+  }
+}
+
+/* 高亮卡片样式 */
+.el-card.highlighted {
+  animation: highlight-pulse 2s ease-in-out;
+  border: 2px solid var(--el-color-primary);
+  box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.2);
+}
+
+@keyframes highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px 8px rgba(64, 158, 255, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.2);
   }
 }
 </style>

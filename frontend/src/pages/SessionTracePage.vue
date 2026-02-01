@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { api } from '../api/http'
 import { ElMessage } from 'element-plus'
@@ -11,6 +11,9 @@ import SimilarityModal from '../components/Trace/SimilarityModal.vue'
 const router = useRouter()
 const route = useRoute()
 const fileId = route.params.fileId
+
+// Provide router to child components
+provide('router', router)
 
 const loading = ref(false)
 const content = ref('')
@@ -111,8 +114,9 @@ onMounted(() => {
     </main>
     
     <aside class="right-panel">
-      <AnalysisCard 
+      <AnalysisCard
         :session="activeSession"
+        :file-id="fileId"
         :similarity-count="similarIssues.length"
         @show-similarity="showSimilarity = true"
       />

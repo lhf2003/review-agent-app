@@ -413,7 +413,7 @@ watch(() => auth.isAuthenticated, (val) => {
 /* Vertical Left Dock Sidebar */
 .vertical-dock-container {
   position: fixed;
-  left: 20px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 100;
@@ -1012,7 +1012,7 @@ html.dark .dock-spacer {
   }
 
   .vertical-dock-container {
-    left: 16px;
+    left: 8px;
   }
 
   .dock-wrapper {
@@ -1041,7 +1041,7 @@ html.dark .dock-spacer {
   }
 
   .vertical-dock-container {
-    left: 12px;
+    left: 6px;
   }
 
   .dock-wrapper {
