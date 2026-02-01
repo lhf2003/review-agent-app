@@ -1,0 +1,504 @@
+# 阶段二：前端交互升级计划
+
+## 实施日期
+2026-02-01
+
+## 最后更新
+2026-02-01（进度同步）
+
+---
+
+## 📌 快速概览
+
+**当前进度：约 40% 完成**（2/5 Sprint 已完成或部分完成）
+
+### ✅ 已完成模块
+- **题型组件库**（100%）- 5种题型全部实现
+- **错题本基础功能**（部分）- 页面、筛选、批量操作
+- **知识点可视化**（部分）- 趋势图表已集成
+
+### 🚧 下一步重点
+1. `MistakeDrawer.vue` - 错题详情抽屉（P0）
+2. `ReviewCard.vue` - 复习推荐卡片（P0）
+3. `WeaknessList.vue` - 薄弱知识点列表（P0）
+
+---
+
+---
+
+## 🎯 目标
+
+基于后端新增的题型多样化、错题本、知识点掌握度功能，升级前端交互体验
+
+---
+
+## 📊 总体进度
+
+**当前完成度：约 40%**（2/5 Sprint 完成）
+
+| Sprint | 模块 | 完成度 | 状态 |
+|--------|------|--------|------|
+| Sprint 1 | 题型组件库 | 100% | ✅ 已完成 |
+| Sprint 2 | 错题本功能 | 33% | ⚠️ 部分完成 |
+| Sprint 3 | 知识点可视化 | 50% | ⚠️ 部分完成 |
+| Sprint 4 | 学习路径推荐 | 0% | ❌ 未开始 |
+| Sprint 5 | 实时反馈优化 | 0% | ❌ 未开始 |
+
+---
+
+## 📋 任务分解
+
+### Part 1: 题型组件库（P0）
+
+#### 1.1 单选题组件
+```
+文件：frontend/src/components/quiz/SingleChoiceQuestion.vue
+功能：
+- 选项展示（A/B/C/D）
+- 单选交互
+- 答案高亮（正确/错误）
+- 解析展示
+```
+
+#### 1.2 多选题组件
+```
+文件：frontend/src/components/quiz/MultipleChoiceQuestion.vue
+功能：
+- 多选框展示
+- 复杂答案提交（逗号分隔）
+- 部分正确标记
+```
+
+#### 1.3 判断题组件
+```
+文件：frontend/src/components/quiz/TrueFalseQuestion.vue
+功能：
+- 是/否选择
+- 简洁布局
+```
+
+#### 1.4 填空题组件
+```
+文件：frontend/src/components/quiz/FillBlankQuestion.vue
+功能：
+- 填空输入框
+- 实时验证
+```
+
+#### 1.5 代码识别题组件
+```
+文件：frontend/src/components/quiz/CodeSnippetQuestion.vue
+功能：
+- 代码片段展示
+- 错误标记高亮
+```
+
+#### 1.6 题型统一入口
+```
+文件：frontend/src/components/quiz/QuestionRenderer.vue
+功能：
+- 根据 question.type 动态渲染组件
+- 统一的 props 和 events
+```
+
+### Part 2: 错题本页面（P0）
+
+#### 2.1 错题列表页
+```
+文件：frontend/src/pages/MistakeBookPage.vue
+路由：/mistake-book
+功能：
+- 错题列表（按知识点/时间分组）
+- 搜索和筛选
+- 统计卡片（总数/已掌握）
+```
+
+#### 2.2 错题详情抽屉
+```
+组件：frontend/src/components/quiz/MistakeDrawer.vue
+功能：
+- 查看题目详情
+- 查看错误历史
+- 标记为已掌握
+```
+
+#### 2.3 复习推荐卡片
+```
+组件：frontend/src/components/quiz/ReviewCard.vue
+功能：
+- 基于遗忘曲线的复习推荐
+- 优先级排序
+- 一键复习
+```
+
+### Part 3: 知识点掌握度可视化（P1）
+
+#### 3.1 知识图谱雷达图
+```
+组件：frontend/src/components/quiz/KnowledgeRadarChart.vue
+功能：
+- ECharts 雷达图展示
+- 知识点分布
+- 掌握度映射
+```
+
+#### 3.2 薄弱点列表
+```
+组件：frontend/src/components/quiz/WeaknessList.vue
+功能：
+- 掌握度低于 60% 的知识点
+- 进度条展示
+- 关联合集快速入口
+```
+
+#### 3.3 掌握趋势图
+```
+组件：frontend/src/components/quiz/MasteryTrendChart.vue
+功能：
+- 折线图展示学习进度
+- 时间维度切换（周/月）
+```
+
+### Part 4: 学习路径推荐（P1）
+
+#### 4.1 推荐引擎组件
+```
+组件：frontend/src/components/quiz/LearningPathRecommender.vue
+功能：
+- 基于用户弱点推荐合集
+- 智能排序
+- 关联知识点
+```
+
+#### 4.2 推荐卡片
+```
+组件：frontend/src/components/quiz/RecommendationCard.vue
+功能：
+- 卡片式展示推荐合集
+- 一键生成测验
+- 难度标签
+```
+
+### Part 5: 实时反馈优化（P1）
+
+#### 5.1 答题即时反馈
+```
+功能：
+- 答题后立即显示解析
+- 动画反馈（正确/错误）
+- 关联知识点链接
+- 知识点掌握度提示
+```
+
+#### 5.2 连续正确奖励
+```
+功能：
+- 连续答对计数
+- 火焰特效
+- 倍率显示
+- 连击音效（可选）
+```
+
+#### 5.3 答题限时提示
+```
+功能：
+- 倒计时进度条
+- 时间到点提示
+- 紧迫视觉反馈（红色闪烁）
+```
+
+---
+
+## 📂 新增/修改文件清单
+
+### ✅ 已完成文件（8 个）
+
+**题型组件**（6 个）：
+```
+frontend/src/components/quiz/
+├── ✅ SingleChoiceQuestion.vue     (单选题组件)
+├── ✅ MultipleChoiceQuestion.vue   (多选题组件)
+├── ✅ TrueFalseQuestion.vue        (判断题组件)
+├── ✅ FillBlankQuestion.vue        (填空题组件)
+├── ✅ CodeSnippetQuestion.vue      (代码识别题组件)
+└── ✅ QuestionRenderer.vue         (题型统一入口)
+```
+
+**页面组件**（1 个）：
+```
+frontend/src/pages/
+└── ✅ MistakeBookPage.vue          (错题本页面)
+```
+
+**Profile 组件**（1 个）：
+```
+frontend/src/pages/profile/components/
+├── ✅ AchievementsSection.vue      (成就徽章展示)
+└── ✅ TrendsSection.vue            (趋势图表展示)
+```
+
+**API 和路由**（已修改）：
+```
+frontend/src/api/http.js
+  - ✅ 添加错题本 API 方法
+  - ✅ 添加知识点掌握度 API 方法
+
+frontend/src/router/index.js
+  - ✅ 添加 /mistake-book 路由
+
+frontend/src/App.vue
+  - ✅ 添加错题本到左侧边栏
+```
+
+### ❌ 待实现文件（8 个）
+
+**错题本增强**（2 个）：
+```
+frontend/src/components/quiz/
+├── ❌ MistakeDrawer.vue            (错题详情抽屉)
+└── ❌ ReviewCard.vue               (复习推荐卡片)
+```
+
+**知识点可视化**（4 个）：
+```
+frontend/src/components/quiz/
+├── ❌ KnowledgeRadarChart.vue      (知识图谱雷达图)
+├── ❌ WeaknessList.vue             (薄弱点列表)
+└── ❌ MasteryTrendChart.vue        (掌握趋势图)
+
+frontend/src/pages/
+└── ❌ QuizDashboard.vue            (测验仪表盘)
+```
+
+**学习路径推荐**（2 个）：
+```
+frontend/src/components/quiz/
+├── ❌ LearningPathRecommender.vue  (推荐引擎)
+└── ❌ RecommendationCard.vue       (推荐卡片)
+```
+
+### Composables（可选）
+```
+frontend/src/composables/
+├── ❌ useMistakeBook.js            (错题本逻辑)
+└── ❌ useKnowledgeMastery.js       (知识掌握度逻辑)
+```
+
+---
+
+## 🎨 AppleStyle 设计规范
+
+### 视觉风格
+- Glassmorphism 背景（高透明白玻璃）
+- 圆角 16-24px
+- 柔和阴影（`box-shadow: 0 4px 20px rgba(0,0,0,0.08)`）
+- 动画曲线（`cubic-bezier(0.25, 1, 0.5, 1)`）
+
+### 主题适配
+- 深色模式（High Contrast OLED）
+- 高对比度文字（100% 白色）
+- 磨砂玻璃背景（`rgba(28, 28, 30, 0.75)`）
+
+### 滚动规范
+- 所有滚动区域必须使用 CustomScroll/ScrollStack
+- 禁用浏览器默认滚动条（`*:focus { outline: none }`）
+
+---
+
+## 📝 实施优先级
+
+### Sprint 1: 题型组件库（2-3 天）✅ 已完成
+- [x] 单选题组件 - `SingleChoiceQuestion.vue`
+- [x] 多选题组件 - `MultipleChoiceQuestion.vue`
+- [x] 判断题组件 - `TrueFalseQuestion.vue`
+- [x] 填空题组件 - `FillBlankQuestion.vue`
+- [x] 代码识别题组件 - `CodeSnippetQuestion.vue`
+- [x] QuestionRenderer 统一入口 - `QuestionRenderer.vue`
+
+**完成日期**: 2026-02-01
+
+### Sprint 2: 错题本功能（3-4 天）⚠️ 部分完成（33%）
+- [x] MistakeBookPage 页面 - 已实现基础功能
+  - ✅ 页面布局（统计卡片、筛选栏、批量操作）
+  - ✅ 错题列表展示
+  - ✅ 搜索和筛选功能
+  - ✅ 批量标记已掌握/删除
+- [ ] MistakeDrawer 组件 - **待实现**
+  - 错题详情抽屉
+  - 查看错误历史
+  - 快速标记已掌握
+- [ ] ReviewCard 组件 - **待实现**
+  - 基于遗忘曲线的复习推荐
+  - 优先级排序
+  - 一键复习
+- [x] API 接入 - 已完成基础接口
+- [x] 数据加载状态 - 已实现
+
+### Sprint 3: 知识点可视化（2-3 天）⚠️ 部分完成（50%）
+- [x] TrendsSection 组件 - 已集成到 Profile 页面
+  - ✅ 测验分数趋势图
+  - ✅ 知识点掌握度雷达图
+  - ✅ 学习进度仪表盘
+- [ ] KnowledgeRadarChart 组件 - **待提取为独立组件**
+- [ ] WeaknessList 组件 - **待实现**
+  - 掌握度 < 60% 的知识点列表
+  - 进度条展示
+  - 关联合成快速入口
+- [ ] MasteryTrendChart 组件 - **待提取为独立组件**
+- [x] API 接入 - 已集成
+
+### Sprint 4: 学习路径推荐（2-3 天）❌ 未开始（0%）
+- [ ] LearningPathRecommender 组件 - **待实现**
+  - 基于用户弱点推荐合集
+  - 智能排序
+  - 关联知识点
+- [ ] RecommendationCard 组件 - **待实现**
+  - 卡片式展示推荐合集
+  - 一键生成测验
+  - 难度标签
+- [ ] 集成到 Profile 页面
+
+### Sprint 5: 实时反馈优化（1-2 天）❌ 未开始（0%）
+- [ ] 答题即时反馈
+  - 答题后立即显示解析
+  - 动画反馈（正确/错误）
+  - 关联知识点链接
+  - 知识点掌握度提示
+- [ ] 连续正确奖励
+  - 连续答对计数
+  - 火焰特效
+  - 倍率显示
+  - 连击音效（可选）
+- [ ] 答题限时提示
+  - 倒计时进度条
+  - 时间到点提示
+  - 紧迫视觉反馈（红色闪烁）
+
+---
+
+## 🔗 与现有功能集成
+
+### 与 CollectionDetailPage 集成
+- 使用新的 QuestionRenderer 替换现有单选题逻辑
+- 支持多题型展示
+- 添加知识点掌握度显示
+
+### 与 ProfilePage 集成
+- 添加"我的错题"入口
+- 添加"知识图谱"入口
+- 添加"学习路径"入口
+
+### 与成就系统集成
+- 错题掌握触发成就
+- 知识点突破触发成就
+- 学习达标触发成就
+
+---
+
+## ✅ 验收标准
+
+### 功能验收
+- [x] 所有题型组件正常渲染
+  - ✅ 单选题、多选题、判断题、填空题、代码识别题
+- [x] 错题本基础功能正常
+  - ✅ 列表展示、搜索、筛选
+  - ✅ 批量标记已掌握、批量删除
+  - ❌ 错题详情抽屉（待实现）
+  - ❌ 复习推荐（待实现）
+- [ ] 知识点图谱数据准确
+  - ⚠️ 基础图表已实现（在 TrendsSection 中）
+  - ❌ 独立组件待提取
+- [ ] 学习路径推荐合理
+  - ❌ 未实现
+
+### 性能验收
+- [x] 组件加载时间 < 500ms
+- [x] 列表滚动流畅（60fps）
+- [x] 图表渲染性能良好
+- [ ] 大数据量下性能优化（待测试）
+
+### 视觉验收
+- [x] AppleStyle 风格一致
+- [x] 深色模式适配完美
+- [x] 动画流畅自然
+- [ ] 响应式布局完善（移动端待优化）
+
+---
+
+**创建时间**: 2026-02-01
+**计划完成**: 2026-02-15（预计 14 天）
+**负责人**: AI Agent (Sisyphus)
+
+---
+
+## 🔄 进度追踪
+
+### 2026-02-01 更新
+
+#### ✅ 已完成
+1. **题型组件库（Sprint 1）** - 100%
+   - 所有5种题型组件均已实现
+   - QuestionRenderer 统一入口已完成
+   - 组件支持深色模式
+   - 响应式布局适配
+
+2. **错题本基础功能** - 33%
+   - MistakeBookPage 主页面已完成
+   - 统计卡片、筛选、搜索、批量操作均已实现
+   - API 接口已对接
+   - 集成到 App.vue 左侧边栏
+
+3. **知识点可视化基础** - 50%
+   - TrendsSection 组件已集成到 Profile 页面
+   - ECharts 图表已实现（分数趋势、知识雷达、学习进度）
+   - 深色模式适配完成
+
+#### ⚠️ 进行中
+- 无
+
+#### ❌ 待开发（按优先级排序）
+
+**P0 - 高优先级（建议优先完成）**：
+1. `MistakeDrawer.vue` - 错题详情抽屉
+   - 预计工作量：4-6 小时
+   - 依赖：无
+   - 价值：提升错题本用户体验
+
+2. `ReviewCard.vue` - 复习推荐卡片
+   - 预计工作量：6-8 小时
+   - 依赖：后端推荐接口
+   - 价值：智能复习提醒
+
+3. `WeaknessList.vue` - 薄弱知识点列表
+   - 预计工作量：4-6 小时
+   - 依赖：知识掌握度数据
+   - 价值：帮助用户聚焦薄弱环节
+
+**P1 - 中优先级**：
+4. `LearningPathRecommender.vue` - 学习路径推荐引擎
+5. `RecommendationCard.vue` - 推荐合集卡片
+6. 实时反馈优化（答题动画、连续奖励、限时提示）
+
+#### 🚧 技术债务
+- 题型组件中存在 SCSS 语法问题（已在之前修复）
+- 部分 API 错误处理需要完善
+- 单元测试覆盖率待提升
+
+#### 📋 下一步计划
+1. **优先完成 MistakeDrawer.vue**，完善错题本功能
+2. **实现 ReviewCard.vue**，添加智能复习推荐
+3. **提取独立的图表组件**，提高代码复用性
+4. **实现 WeaknessList.vue**，帮助用户识别薄弱知识点
+5. **根据反馈调整优先级**
+
+---
+
+## 🎯 里程碑
+
+| 里程碑 | 目标 | 预计日期 | 实际日期 | 状态 |
+|--------|------|----------|----------|------|
+| M1 | 题型组件库完成 | 2026-02-03 | 2026-02-01 | ✅ 提前完成 |
+| M2 | 错题本功能完成 | 2026-02-07 | - | ⚠️ 进行中 |
+| M3 | 知识点可视化完成 | 2026-02-10 | - | ⚠️ 部分完成 |
+| M4 | 学习路径推荐完成 | 2026-02-13 | - | ❌ 未开始 |
+| M5 | 实时反馈优化完成 | 2026-02-15 | - | ❌ 未开始 |
