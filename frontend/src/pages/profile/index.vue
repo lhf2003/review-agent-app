@@ -13,6 +13,7 @@ import PasswordDialog from './components/PasswordDialog.vue'
 // import ProfileNav from './components/ProfileNav.vue'
 import AchievementsSection from './components/AchievementsSection.vue'
 import TrendsSection from './components/TrendsSection.vue'
+import LearningPathRecommender from '../../components/quiz/LearningPathRecommender.vue'
 import { useUserInfo } from './composables/useUserInfo'
 import { useStats } from './composables/useStats'
 import { useAnimations } from './composables/useAnimations'
@@ -153,6 +154,7 @@ async function changePassword() {
         <el-radio-button value="overview">数据概览</el-radio-button>
         <el-radio-button value="achievements">学习成就</el-radio-button>
         <el-radio-button value="trends">趋势分析</el-radio-button>
+        <el-radio-button value="learning-path">学习路径</el-radio-button>
       </el-radio-group>
 
       <!-- 数据概览区块 -->
@@ -198,6 +200,11 @@ async function changePassword() {
         :progress-gauge-chart-ref="progressGaugeChartRef"
         :update-charts="updateCharts"
       />
+
+      <!-- Learning Path Section - 学习路径推荐 -->
+      <div v-show="activeSection === 'learning-path'" class="section-transition">
+        <LearningPathRecommender :limit="5" />
+      </div>
     </CustomScroll>
 
     <!-- Profile Edit Dialog - 个人信息编辑对话框 -->
