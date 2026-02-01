@@ -145,13 +145,15 @@ watch(() => [props.achievementsData.quizScoreTrend, props.achievementsData.knowl
 <style scoped>
 .trends-section {
   padding: 32px;
-  background: rgba(255, 255, 255, 0.75);
-  border-radius: 20px;
-  backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 24px;
+  backdrop-filter: blur(24px) saturate(180%);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+    0 20px 40px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   border: none;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .section-title {
@@ -159,18 +161,21 @@ watch(() => [props.achievementsData.quizScoreTrend, props.achievementsData.knowl
   align-items: center;
   gap: 12px;
   margin: 0 0 24px 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--el-text-color-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
 }
 
 .section-title .el-icon {
-  font-size: 20px;
+  font-size: 22px;
   color: var(--el-color-primary);
+  filter: drop-shadow(0 2px 4px rgba(var(--el-color-primary-rgb), 0.2));
 }
 
 .chart-section {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .loading-container {
@@ -198,22 +203,21 @@ watch(() => [props.achievementsData.quizScoreTrend, props.achievementsData.knowl
 
 .progress-grid {
   display: flex;
-  gap: 32px;
-  align-items: flex-start;
+  gap: 40px;
+  align-items: center;
 }
 
 .progress-gauge-wrapper {
   display: flex;
-  flex: 1;
+  flex: 0 0 160px;
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  flex: 0 0 150px;
 }
 
 .progress-gauge {
-  width: 150px;
-  height: 150px;
+  width: 160px;
+  height: 160px;
 }
 
 .progress-label {
@@ -227,53 +231,59 @@ watch(() => [props.achievementsData.quizScoreTrend, props.achievementsData.knowl
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .progress-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
-.progress-label {
+.progress-item .progress-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--el-text-color-regular);
 }
 
 .progress-value {
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--el-text-color-primary);
 }
 
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: var(--el-fill-color-blank);
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 100px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--el-color-primary) 0%, var(--el-color-primary) 100%);
-  border-radius: 4px;
-  transition: width 0.3s ease;
+  background: linear-gradient(90deg, var(--el-color-primary) 0%, color-mix(in srgb, var(--el-color-primary), white 20%) 100%);
+  border-radius: 100px;
+  transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 2px 4px rgba(var(--el-color-primary-rgb), 0.2);
 }
 
 /* Dark Mode */
 html.dark .trends-section {
-  background: rgba(30, 30, 30, 0.85);
+  background: rgba(30, 30, 30, 0.65);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
 }
 
 html.dark .progress-bar {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 html.dark .progress-fill {
-  background: linear-gradient(90deg, rgba(64, 158, 255, 0.3), rgba(64, 158, 255, 0.1));
+  background: linear-gradient(90deg, var(--el-color-primary) 0%, color-mix(in srgb, var(--el-color-primary), black 10%) 100%);
+  box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.3);
 }
 </style>
