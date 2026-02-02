@@ -7,7 +7,9 @@ import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.pojo.QuizRecord;
+import com.review.agent.entity.request.BatchSubmitRequest;
 import com.review.agent.entity.request.CollectionRequest;
+import com.review.agent.entity.vo.QuizResultSummary;
 import com.review.agent.entity.vo.QuizVo;
 import com.review.agent.service.QuizService;
 import jakarta.annotation.Resource;
@@ -71,9 +73,24 @@ public class QuizController {
     public BaseResponse<Void> submitAnswer(@RequestBody Map<String, Object> body) {
         Long questionId = Long.valueOf(body.get("questionId").toString());
         String userAnswer = (String) body.get("userAnswer");
-        
+
         quizService.submitAnswer(questionId, userAnswer);
         return ResultUtil.success();
+    }
+
+    /**
+     * 批量提交答案
+     * @param request 批量提交请求
+     * @return 答题结果统计
+     */
+    @PostMapping("/submit-batch-answers")
+    public BaseResponse<QuizResultSummary> submitBatchAnswers(@RequestBody BatchSubmitRequest request) {
+        Long userId = securityUtils.getCurrentUserId();
+        QuizResultSummary summary = quizService.submitBatchAnswers(
+            request.getQuizId(),
+            request.getAnswers()
+        );
+        return ResultUtil.success(summary);
     }
 
     @PostMapping("/reset")

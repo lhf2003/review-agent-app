@@ -8,11 +8,13 @@ import com.review.agent.entity.pojo.KnowledgeMastery;
 import com.review.agent.entity.pojo.QuestionType;
 import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.pojo.QuizRecord;
+import com.review.agent.entity.request.BatchSubmitRequest;
 import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.CollectionRelationRepository;
 import com.review.agent.repository.QuizQuestionRepository;
 import com.review.agent.repository.QuizRecordRepository;
 import com.review.agent.common.utils.SecurityUtils;
+import com.review.agent.entity.vo.QuizResultSummary;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -238,6 +240,83 @@ public class QuizService {
         if (question.getKnowledgePoint() != null) {
             knowledgeMasteryService.updateMastery(question.getKnowledgePoint(), isCorrect, null);
         }
+    }
+
+    /**
+     * 批量提交答案
+     *
+     * @param quizId 测验记录ID
+     * @param answers 答案列表
+     * @return 答题结果统计
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public QuizResultSummary submitBatchAnswers(Long quizId, List<BatchSubmitRequest.QuestionAnswer> answers) {
+        // 1. 验证 quizId
+        QuizRecord quizRecord = quizRecordRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz record not found"));
+
+        // 2. 验证 answers 不为空
+        if (answers == null || answers.isEmpty()) {
+            throw new RuntimeException("Answers list is empty");
+        }
+
+        // 3. 初始化统计对象
+        QuizResultSummary summary = new QuizResultSummary();
+        summary.setTotalCount(answers.size());
+
+        int correct = 0;
+        int incorrect = 0;
+        int unanswered = 0;
+
+        // 4. 遍历提交每个答案
+        for (BatchSubmitRequest.QuestionAnswer qa : answers) {
+            try {
+                QuizQuestion question = quizQuestionRepository.findById(qa.getQuestionId())
+                        .orElseThrow(() -> new RuntimeException("Question not found: " + qa.getQuestionId()));
+
+                // 判断是否未作答
+                if (qa.getUserAnswer() == null || qa.getUserAnswer().trim().isEmpty()) {
+                    unanswered++;
+                    continue;
+                }
+
+                // 判断答案正确性
+                boolean isCorrect = checkAnswer(question, qa.getUserAnswer());
+
+                // 更新题目数据
+                question.setUserAnswer(qa.getUserAnswer());
+                question.setIsCorrect(isCorrect);
+                question.setAnswerCount(question.getAnswerCount() + 1);
+
+                if (isCorrect) {
+                    question.setCorrectCount(question.getCorrectCount() + 1);
+                    correct++;
+                } else {
+                    incorrect++;
+                    // 记录到错题本
+                    mistakeBookService.recordAnswer(qa.getQuestionId(), false, quizId);
+                }
+
+                // 更新知识点掌握度
+                if (question.getKnowledgePoint() != null) {
+                    knowledgeMasteryService.updateMastery(question.getKnowledgePoint(), isCorrect, null);
+                }
+
+                quizQuestionRepository.save(question);
+
+            } catch (Exception e) {
+                log.error("Failed to submit answer for questionId: {}", qa.getQuestionId(), e);
+                // 继续处理其他题目，不中断整个流程
+                unanswered++;
+            }
+        }
+
+        // 5. 设置统计数据
+        summary.setCorrectCount(correct);
+        summary.setIncorrectCount(incorrect);
+        summary.setUnansweredCount(unanswered);
+
+        return summary;
     }
 
     /**

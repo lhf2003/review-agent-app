@@ -564,6 +564,10 @@ export const api = {
   submitAnswer(questionId, userAnswer) {
     return request('/collection/submit-answer', { method: 'POST', body: { questionId, userAnswer } })
   },
+  submitBatchAnswers(quizId, answers) {
+    // answers: [{ questionId, userAnswer }, ...]
+    return request('/collection/submit-batch-answers', { method: 'POST', body: { quizId, answers } })
+  },
   resetQuiz(quizId) {
     return request('/collection/reset', { method: 'POST', body: { quizId } })
   },
