@@ -53,6 +53,9 @@ public class QuizService {
     private ObjectMapper objectMapper;
 
     @Resource
+    private PromptService promptService;
+
+    @Resource
     private MistakeBookService mistakeBookService;
 
     @Resource
@@ -72,12 +75,12 @@ public class QuizService {
         if (CollectionUtils.isEmpty(relations)) {
             throw new RuntimeException("Collection is empty");
         }
-        
+
         List<Long> analysisIds = relations.stream().map(CollectionRelation::getAnalysisResultId).collect(Collectors.toList());
         List<AnalysisResult> analysisResults = analysisResultRepository.findAllById(analysisIds);
-        
+
         if (CollectionUtils.isEmpty(analysisResults)) {
-             throw new RuntimeException("No analysis results found");
+            throw new RuntimeException("No analysis results found");
         }
 
         // 2. Generate questions via LLM
@@ -86,36 +89,11 @@ public class QuizService {
         for (int i = 0; i < analysisResults.size(); i++) {
             AnalysisResult ar = analysisResults.get(i);
             context.append(String.format("Case %d:\nProblem: %s\n",
-                i + 1, ar.getProblemStatement()));
+                    i + 1, ar.getProblemStatement()));
         }
 
-        String prompt = String.format("""
-            Based on the following code analysis cases, generate 3-5 questions to test the user's understanding.
-            
-            Mix different question types appropriately:
-            - Single choice (single_choice): For basic concepts and principles
-            - Multiple choice (multiple_choice): For multi-faceted issues
-            - True/false (true_false): For concept clarification
-            - Fill in blank (fill_blank): For key terms and parameters
-            - Code snippet (code_snippet): For code analysis and debugging
-            
-            %s
-            
-            Return the result ONLY as a JSON array with the following format, And Using Chinese:
-            [
-              {
-                "question": "Question text",
-                "type": "single_choice|multiple_choice|true_false|fill_blank|code_snippet",
-                "options": ["A. Option 1", "B. Option 2", "C. Option 3", "D. Option 4"],
-                "answer": "A" or ["A","B"] for multiple choice,
-                "explanation": "Detailed explanation",
-                "knowledgePoint": "Key concept or topic (e.g., 'Java并发', 'Spring事务')",
-                "difficulty": 1-5,
-                "timeLimit": 30-120,
-                "relatedCaseIndex": 1
-              }
-            ]
-            """, context);
+        // Use PromptService to get the optimized prompt
+        String prompt = promptService.getQuizGenerationPrompt(context.toString());
 
         String jsonResponse = analysisChatClient.prompt().user(prompt).call().content();
         // Clean up markdown code blocks if present
@@ -159,6 +137,9 @@ public class QuizService {
                 Object optionsObj = q.get("options");
                 if (optionsObj != null) {
                     qq.setOptionsJson(objectMapper.writeValueAsString(optionsObj));
+                } else {
+                    // For question types without options (e.g., fill_blank), set empty array
+                    qq.setOptionsJson("[]");
                 }
 
                 qq.setExplanation((String) q.get("explanation"));
@@ -190,6 +171,19 @@ public class QuizService {
                 Object timeLimitObj = q.get("timeLimit");
                 if (timeLimitObj instanceof Number) {
                     qq.setTimeLimit(((Number) timeLimitObj).intValue());
+                }
+
+                // Parse blank count (for fill_blank questions)
+                Object blankCountObj = q.get("blankCount");
+                if (blankCountObj instanceof Number) {
+                    qq.setBlankCount(((Number) blankCountObj).intValue());
+                } else if (qq.getQuestionType() == QuestionType.FILL_BLANK) {
+                    // For fill_blank questions without blankCount, calculate from question text
+                    String questionText = (String) q.get("question");
+                    if (questionText != null) {
+                        int blankCount = countBlanks(questionText);
+                        qq.setBlankCount(blankCount);
+                    }
                 }
 
                 // Try to link back to original analysis result
@@ -339,10 +333,8 @@ public class QuizService {
                 List<String> correctOptions = Arrays.asList(correctAnswer.split(","));
                 return userOptions.size() == correctOptions.size()
                         && userOptions.containsAll(correctOptions);
-
             case TRUE_FALSE:
-                // True/false: case-insensitive comparison
-                return userAnswer.trim().equalsIgnoreCase(correctAnswer.trim());
+                return  userAnswer.trim().equalsIgnoreCase(correctAnswer.trim());
 
             case FILL_BLANK:
                 // Fill blank: allow partial match (case-insensitive)
@@ -370,7 +362,7 @@ public class QuizService {
 
         // Look for common technical terms
         String[] keywords = {"Java", "Spring", "并发", "事务", "数据库", "SQL", "Redis",
-                          "线程", "锁", "异步", "Stream", "Lambda", "泛型"};
+                "线程", "锁", "异步", "Stream", "Lambda", "泛型"};
 
         for (String keyword : keywords) {
             if (questionText.contains(keyword)) {
@@ -379,6 +371,35 @@ public class QuizService {
         }
 
         return "通用知识";
+    }
+
+    /**
+     * Count the number of blanks in a fill-in-the-blank question
+     *
+     * @param questionText Question text
+     * @return Number of blanks (at least 1)
+     */
+    private int countBlanks(String questionText) {
+        if (questionText == null || questionText.isEmpty()) {
+            return 1;
+        }
+
+        // Count consecutive underscores (e.g., "_____" counts as 1 blank)
+        int count = 0;
+        boolean inBlank = false;
+        for (int i = 0; i < questionText.length(); i++) {
+            char c = questionText.charAt(i);
+            if (c == '_') {
+                if (!inBlank) {
+                    count++;
+                    inBlank = true;
+                }
+            } else {
+                inBlank = false;
+            }
+        }
+
+        return Math.max(count / 5, 1);
     }
 
     @Transactional(rollbackFor = Exception.class)

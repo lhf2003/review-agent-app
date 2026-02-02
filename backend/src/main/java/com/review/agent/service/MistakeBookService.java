@@ -52,7 +52,7 @@ public class MistakeBookService {
             // 答对了：检查是否连续答对3次，标记为掌握
             if (!existingMistakes.isEmpty()) {
                 Mistake mistake = existingMistakes.get(0);
-                // 这里需要额外的字段来跟踪连续正确次数，暂时简化处理
+                // TODO 这里需要额外的字段来跟踪连续正确次数，暂时简化处理
                 // 实际应该记录连续正确次数，达到3次才标记为掌握
                 log.info("用户 {} 答对了题目 {}，考虑标记为掌握", userId, questionId);
             }

@@ -99,7 +99,7 @@ flowchart LR
 | 文件同步与管理（Sync & Data） | 扫描/导入文件，维护元数据与状态流转 | SyncRecordController，DataInfoService | `data_info`，`sync_record`，`user_config` |
 | 智能分析（Analysis） | 异步分析文件，抽取结构化结果与标签 | AnalysisService，DataAnalysisNode，SessionExtractionNode，TagClassifyNode | `analysis_result`，`analysis_tag` |
 | 标签与合集（Tags & Collections） | 两级标签体系；合集聚合与条目管理 | TagPage（前端），CollectionService（后端） | `main_tag`，`sub_tag`，`tag_relation`，`analysis_collection`，`collection_relation` |
-| AI 学习辅导（Quiz） | 基于合集生成题目、答题与记录 | CollectionDetailPage（前端抽屉），QuizService（后端） | `quiz_record`，`quiz_question` |
+| AI 学习辅导（Quiz） | 基于合集生成题目、答题与记录 | QuizPage（独立页面），QuestionRenderer（答题组件），QuizService（后端） | `quiz_record`，`quiz_question` |
 | 错题本（Mistake Book） | 错题记录、复习推荐、掌握状态追踪 | MistakeBookPage（前端），MistakeBookService（后端） | `quiz_mistake` |
 | 报表与统计（Report & Statistics） | 日/周报与可视化统计 | StatisticController，WordCloudPage | `report_data` |
 | 系统配置（Config） | 扫描、推送、LLM 提供商配置与默认模型 | ConfigPage，ModelConfig | `user_config`（含扫描路径/开关） |
@@ -250,69 +250,7 @@ flowchart LR
 ## 10. 近期变更摘要（沉淀归档）
 
 ### 10.1 错题本模块（Mistake Book）- 完整实现
-
-**功能范围：**
-- 错题自动记录：用户答错题目时自动加入错题本，记录错误次数与最后错误时间
-- 掌握状态追踪：支持手动标记或自动判断（连续答对3次）题目为"已掌握"
-- 智能复习推荐：基于艾宾浩斯遗忘曲线（1天/3天/7天/15天/30天）推荐待复习错题
-- 多维度筛选：支持按掌握状态（全部/未掌握/已掌握）、关键词、题型等多维度筛选错题
-- 批量操作：支持批量标记掌握和批量删除，提升复习效率
-
-**后端实现：**
-- **实体层**：`Mistake.java`（错题记录实体）、`MistakeVo.java`（错题视图对象）、`QuestionType.java`（题目类型枚举）
-- **Repository层**：`MistakeRepository.java`（错题数据访问层）
-- **Service层**：`MistakeBookService.java`（错题本业务逻辑）
-  - `recordAnswer()` - 记录答题结果，自动更新错题本
-  - `getMistakeList()` - 获取错题列表（支持筛选）
-  - `getMistakeStats()` - 获取错题统计信息
-  - `batchMarkMastered()` - 批量标记为已掌握
-  - `batchDelete()` - 批量删除错题
-  - `getReviewRecommendation()` - 获取复习推荐（基于遗忘曲线）
-- **Controller层**：`MistakeBookController.java`（错题本 REST API）
-  - `GET /api/mistake-book/list` - 获取错题列表
-  - `GET /api/mistake-book/stats` - 获取统计信息
-  - `POST /api/mistake-book/mark-mastered` - 标记已掌握
-  - `DELETE /api/mistake-book/delete` - 删除错题
-  - `GET /api/mistake-book/review-recommendation` - 获取复习推荐（TODO）
-
-**前端实现：**
-- **页面组件**：`MistakeBookPage.vue`（错题本页面）
-  - 页面头部（标题+副标题+刷新按钮）
-  - 统计卡片（总数、未掌握、已掌握）
-  - 筛选栏（全部/未掌握/已掌握 + 搜索框）
-  - 批量操作栏（标记已掌握、删除）
-  - 错题卡片列表（支持点击查看详情、单项操作）
-- **API接口**：`frontend/src/api/http.js`
-  - `getMistakeList(filter)` - 获取错题列表
-  - `getMistakeStats()` - 获取统计信息
-  - `markMistakesMastered(questionIds)` - 标记已掌握
-  - `deleteMistakes(questionIds)` - 删除错题
-- **路由配置**：`/mistake-book`
-- **导航集成**：`App.vue` - 添加到左侧边栏（桌面端和移动端），使用 `WarningFilled` 图标
-
-**数据库设计：**
-- **quiz_mistake 表**（错题记录表）
-  - 字段：id, user_id, question_id, quiz_id, mistake_count, last_mistake_time, mastered, created_time, updated_time
-  - 索引：`idx_user_mastered (user_id, mastered)`、`idx_question (question_id)`、`idx_last_mistake (user_id, last_mistake_time)`
-  - 外键：关联 user_info、quiz_question、quiz_record
-- **quiz_question 表扩展字段**：
-  - question_type（题目类型）、difficulty_level（难度等级）、knowledge_point（知识点）、time_limit（答题时限）、answer_count（回答次数）、correct_count（正确次数）
-
-**业务流程：**
-1. 用户答错题目 → 自动加入错题本（记录错误次数与时间）
-2. 用户访问错题本 → 加载统计数据和错题列表
-3. 用户筛选错题 → 按掌握状态/关键词/题型筛选
-4. 用户标记掌握 → 单项或批量标记已掌握
-5. 遗忘曲线推荐 → 基于最后错误时间推荐复习时机（1天/3天/7天/15天/30天）
-
-**合规性检查：**
-- ✅ 命名规范：遵循驼峰命名和 RESTful 规范
-- ✅ 异常处理：Controller层统一捕获异常，Service层事务回滚
-- ✅ 事务边界：写操作方法标注 `@Transactional(rollbackFor = Exception.class)`
-- ✅ 参数校验：实体类使用 `@NotNull` 注解，Controller层校验请求参数
-- ✅ 日志规范：使用 Slf4j 记录关键操作和异常信息
-
-**详细文档：** [docs/modules/mistake-book.md](docs/modules/mistake-book.md)
+错题本模块**详细文档：** [docs/modules/mistake-book.md](docs/modules/mistake-book.md)
 
 ### 10.2 学习成就模块（迭代 1）
 
@@ -360,9 +298,65 @@ flowchart LR
 - **Glass 质感升级**：替换原有的半透明黑色遮罩，采用更具质感的深灰玻璃 (`rgba(28, 28, 30, 0.75)`)，增强层级感与光影反射。
 - **边界强化**：卡片与表格增加微弱的白色边框 (`rgba(255, 255, 255, 0.2)`) 与更深的阴影，确保在纯黑背景下元素边界清晰可辨。
 
+### 10.9 AI 学习辅导 UI 重构 (Modern Glass)
+
+- **组件修复**：修复 `QuestionRenderer` 中导致题目组件无法挂载的逻辑错误。
+- **Drawer 升级**：应用 `ui-ux-pro-max` 规范，将测验抽屉升级为 Modern Glass 模态风格（Backdrop blur + 半透明背景），适配深色模式。
+- **题目卡片优化**：
+  - 重构 `SingleChoiceQuestion`，引入 Bento Grid 风格的选项卡片。
+  - 增加 Hover Scale、Selected Glow 等微交互动画。
+  - 优化进度条为 Pill Shape + 渐变填充。
+  - 底部导航按钮升级为大尺寸触控友好型。
+
+### 10.10 AI 学习辅导体验升级与独立页面重构
+
+- **独立页面 (QuizPage)**：从原抽屉式交互升级为独立全屏页面，支持沉浸式学习体验，增加顶部导航与返回交互。
+- **Modern Glass UI 全面适配**：
+  - **组件升级**：`QuestionRenderer` 及其子组件全面应用 Apple Style 设计（磨砂玻璃、物理动画、无边框设计）。
+  - **深色模式 (OLED)**：背景调整为纯黑 (#000000)，优化半透明背景色值 (`rgba(28, 28, 30, 0.75)`)，增强文字对比度与边界清晰度。
+- **交互优化**：
+  - 进度条与题号常驻显示。
+  - 底部控制栏（上一题/下一题）固定悬浮，方便单手操作。
+  - 增加重置测验的确认弹窗。
+
+### 10.11 答题页面布局极致优化 (Space Maximization)
+
+- **全屏沉浸式布局**：移除页面级滚动条 (`overflow: hidden`)，采用 Flex 布局确保内容垂直填充 (`height: 100vh`)，消除不必要的留白。
+- **空间利用最大化**：
+  - 移除容器的最大宽度限制 (`max-width: 1200px` -> `100%`)，使题目与选项在宽屏下充分展开。
+  - **简约列表布局**：选项列表回归垂直排列 (`flex-direction: column`)，遵循 AppStyle 简约原则：
+    - **去边框化**：移除选项卡边框，改用轻量化背景色 (`var(--el-fill-color-light)`) 区分。
+    - **紧凑交互**：减小内边距 (`14px 20px`)，增加微交互动画 (Scale/Color)，提升点击触感。
+- **无感滚动体验**：内容区域保留滚动能力但隐藏滚动条 (`scrollbar-width: none`)，提供类似原生 App 的流畅体验。
+- **视觉微调**：优化 Padding 与间距，适配不同屏幕尺寸，确保在移动端和桌面端均有最佳阅读体验。
+
+### 10.12 答题解析显示修复与逻辑优化
+
+- **Bug 修复**：修复了 `QuestionRenderer` 在传递状态时漏传 `isSubmitted` 属性，导致提交答案后题目解析 (`explanation-box`) 无法正确显示的 Bug。
+- **解析逻辑优化**：
+  - 优化了 `FillBlankQuestion` 和 `CodeSnippetQuestion` 的解析显示逻辑，确保无论答题正确与否，只要后端返回了解析内容 (`explanation`) 均会显示。
+  - 修复了 `FillBlankQuestion` 中计算变量 (`correctCount`) 未定义的运行时错误。
+  - 修复了 `FillBlankQuestion` 判断逻辑错误：原逻辑直接比较单个填空与完整答案字符串，导致多空答案判断恒为 `false`；修复为逐个比较分割后的答案数组。
+  - 统一了所有题型组件的解析显示体验：答对显示“答案正确”+解析，答错显示“正确答案”+解析。
+
+### 10.13 答题解析显示逻辑增强与填空题修正
+
+- **解析显示增强**：修复了 `QuizPage` 中 `isSubmitted` 状态在提交后未能正确传递给子组件的问题；通过 `watch` 监听 `isAllSubmitted` 状态变化，确保 `showAnswer` 响应式更新。
+- **题目组件稳健性提升**：统一了 `SingleChoiceQuestion`、`MultipleChoiceQuestion` 和 `TrueFalseQuestion` 的解析显示逻辑，移除冗余的 `showExplanation` 判断，并修复了 Vue 3 模板中 `explanation` 属性访问未定义警告（改为 `props.explanation`）。
+- **填空题索引修正**：修复了 `FillBlankQuestion` 中索引生成逻辑（从 1 开始改为 0 开始），解决多空填空题验证时的数组越界与正确率计算错误。
+- **填空题数据持久化**：修复 `QuizPage` 未监听 `answer-changed` 事件导致填空题答案在页面切换/翻页时丢失的问题。
+
+### 10.14 答题结果页 UI/UX 升级 (Modern Glass)
+
+- **UI 重构**：应用 `ui-ux-pro-max` 标准，重构答题结果弹窗。采用 "Hero Score + Bento Grid" 布局，移除 emoji，使用 Element Plus SVG 图标。
+- **动态交互**：根据正确率 (100%/80%/60%/<60%) 展示不同层级的主题色 (Gold/Purple/Blue/Gray) 与庆祝动画 (Pop Spring/Particles)。
+- **视觉升级**：
+  - **Glassmorphism**：深色模式下采用 `rgba(28, 28, 30, 0.85)` + 高斯模糊。
+  - **动画**：引入物理弹簧动画 (`cubic-bezier`) 和粒子旋转效果。
+  - **暗黑适配**：优化 OLED 屏幕显示效果，增强光影质感。
+
 ## 11. 技术债务（持续维护）
 
 | 优先级 | 债务描述 | 影响范围 | 建议方向 |
 |---|---|---|---|
 | P2 | 文档与代码一致性缺少自动校验 | 全局 | 增加 CI 校验项（API/表结构/关键流程变更提示） |
-

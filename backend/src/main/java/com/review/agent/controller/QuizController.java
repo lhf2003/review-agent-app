@@ -56,6 +56,7 @@ public class QuizController {
             qVo.setAnswer(q.getCorrectAnswer());
             qVo.setExplanation(q.getExplanation());
             qVo.setUserAnswer(q.getUserAnswer());
+            qVo.setBlankCount(q.getBlankCount()); // 添加填空题的空位数量
             qVo.setKnowledgePoint(q.getKnowledgePoint()); // 添加知识点
             try {
                 qVo.setOptions(objectMapper.readValue(q.getOptionsJson(), List.class));

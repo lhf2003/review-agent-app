@@ -71,6 +71,12 @@ public class QuizQuestion {
     private Integer timeLimit = 60;
 
     /**
+     * 填空题的空位数量（仅对 fill_blank 题型有效）
+     */
+    @Column(name = "blank_count")
+    private Integer blankCount;
+
+    /**
      * 被回答次数（用于题目质量评估）
      */
     @Column(name = "answer_count")

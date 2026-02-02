@@ -125,7 +125,7 @@ watch(() => props.userAnswer, (newAnswer) => {
     // 解析用户答案
     const answerArray = newAnswer.split(',').map(a => a.trim())
     selectedLines.value.clear()
-    
+
     answerArray.forEach(answer => {
       // 匹配行号 "line X" 格式
       const lineMatch = answer.match(/line\s*(\d+)/i)
@@ -144,13 +144,16 @@ watch(() => props.userAnswer, (newAnswer) => {
           return
         }
       }
-      
+
       // 精确匹配代码内容
       const exactMatch = codeLines.value.findIndex(line => line.trim().toLowerCase() === answer.toLowerCase())
       if (exactMatch >= 0) {
         selectedLines.value.add(exactMatch)
       }
     })
+  } else {
+    // userAnswer 为空或 null 时，清空选中状态
+    selectedLines.value.clear()
   }
 }, { immediate: true })
 
@@ -240,20 +243,22 @@ defineExpose({
             <div class="explanation-text">
               <strong>正确答案：</strong>{{ correctAnswer }}
             </div>
-            <div v-if="errorLocation" class="explanation-detail">
-              <p><strong>错误位置：</strong>{{ errorLocation }}</p>
-            </div>
-            <div class="explanation-detail">
-              <p><strong>说明：</strong>请找出代码中的问题并选择对应的代码行。</p>
-            </div>
           </div>
           <div v-else>
             <div class="explanation-text">
               <strong>正确答案：</strong>{{ correctAnswer }}
             </div>
-            <div class="explanation-detail">
-              <p><strong>说明：</strong>您的答案不正确。请再次检查代码。</p>
+            <div v-if="errorLocation" class="explanation-detail">
+              <p><strong>错误位置：</strong>{{ errorLocation }}</p>
             </div>
+          </div>
+          
+          <!-- 统一显示解析内容 -->
+          <div v-if="explanation" class="explanation-detail">
+            <p><strong>解析：</strong>{{ explanation }}</p>
+          </div>
+          <div v-else class="explanation-detail">
+             <p><strong>说明：</strong>{{ isCorrect ? '请找出代码中的问题并选择对应的代码行。' : '您的答案不正确。请再次检查代码。' }}</p>
           </div>
         </div>
       </div>
@@ -265,194 +270,229 @@ defineExpose({
 @import '../../styles/variables';
 
 .code-snippet-question {
-  --card-radius: 16px;
-  --transition-base: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  --card-radius: 24px;
+  --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   --primary-color: var(--el-color-primary);
-  --success-color: #67c23a;
-  --danger-color: #f56c6c;
+  --success-color: #34c759;
+  --danger-color: #ff3b30;
   --code-bg: #1e1e1e;
   --code-line-height: 28px;
   --code-font-size: 14px;
 
   background: var(--el-bg-color);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: var(--card-radius);
-  padding: 24px;
-  margin-bottom: 16px;
+  padding: 32px;
+  margin-bottom: 24px;
   border: 1px solid var(--el-border-color-light);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  transition: var(--transition-base);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.02),
+    0 10px 15px -3px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.02);
+  transition: var(--transition-smooth);
   position: relative;
+  opacity: 0.95;
 
   &.compact-mode {
-    padding: 16px;
+    padding: 20px;
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid var(--el-border-color-lighter);
+    backdrop-filter: none;
   }
   
   .knowledge-badge {
+    display: inline-flex;
+    align-items: center;
     font-size: 12px;
-    color: var(--primary-color);
-    background: var(--el-color-primary-light-9);
-    padding: 4px 12px;
-    border-radius: 8px;
-    display: inline-block;
-    margin-bottom: 12px;
     font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(var(--el-color-primary-rgb), 0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(4px);
   }
   
   .question-text {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 600;
     color: var(--el-text-color-primary);
-    margin-bottom: 20px;
+    line-height: 1.5;
+    margin-bottom: 32px;
+    letter-spacing: -0.01em;
   }
   
   .code-container {
     display: grid;
     grid-template-columns: 60px 1fr;
     gap: 0;
-    background: var(--code-bg);
-    border-radius: 8px;
-    padding: 20px;
-    overflow-x: auto;
+    background: #282c34; // Atom One Dark like
+    border-radius: 16px;
+    padding: 24px 0;
+    overflow: hidden;
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    position: relative;
+
+    // Window controls
+    &::before {
+      content: '';
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ff5f56;
+      box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27c93f;
+      z-index: 2;
+    }
   }
   
   .code-header {
+    grid-column: 1 / -1;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--el-border-color-light);
-    font-size: 13px;
+    padding: 0 20px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    margin-bottom: 12px;
+    margin-top: -10px; // Offset padding
   }
   
   .code-language {
     font-weight: 600;
-    color: var(--el-text-color-regular);
+    color: rgba(255, 255, 255, 0.6);
     text-transform: uppercase;
-    padding: 4px 12px;
-    background: var(--el-fill-color-dark);
-    border-radius: 4px;
+    letter-spacing: 1px;
+    font-size: 11px;
   }
   
   .error-hint {
-    color: var(--el-color-warning);
+    color: #ff3b30;
     font-size: 12px;
+    margin-right: auto;
+    margin-left: 80px; // Clear window controls
+    background: rgba(255, 59, 48, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
   }
   
   .line-numbers {
     text-align: right;
-    font-family: 'Fira Code', 'Monaco', 'Courier New', monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace;
     font-size: var(--code-font-size);
     line-height: var(--code-line-height);
-    color: var(--el-text-color-regular);
+    color: rgba(255, 255, 255, 0.3);
     user-select: none;
+    padding-right: 16px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.1);
   }
   
   .line-number {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    width: 36px;
+    justify-content: flex-end;
     height: var(--code-line-height);
-    border-radius: 4px;
-    margin-right: 8px;
+    padding-right: 8px;
     cursor: pointer;
-    transition: var(--transition-base);
+    transition: var(--transition-smooth);
     
     &.is-selected {
-      background: var(--primary-color);
       color: white;
-      transform: scale(1.05);
+      font-weight: 700;
     }
     
     &:hover:not(.is-disabled) {
-      border-color: var(--primary-color);
-    }
-    
-    &.is-correct {
-      border-color: var(--success-color);
-      background: var(--success-color);
-    }
-    
-    &.is-wrong {
-      border-color: var(--danger-color);
-      background: var(--danger-color);
-      animation: shake 0.5s ease-in-out;
-    }
-    
-    &.is-disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      
-      &:hover {
-        border-color: var(--el-border-color);
-      }
+      color: white;
     }
   }
   
   .code-content {
-    font-family: 'Fira Code', 'Monaco', 'Courier New', monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace;
     font-size: var(--code-font-size);
     line-height: var(--code-line-height);
     background: transparent;
     position: relative;
     white-space: pre-wrap;
     word-break: break-all;
+    padding-left: 16px;
   }
   
   .code-line {
     display: block;
-    padding: 0 4px 0 36px;
-    border-radius: 4px;
-    transition: var(--transition-base);
+    padding: 0 16px 0 4px;
+    transition: var(--transition-smooth);
+    color: #abb2bf;
     
     &.is-selected {
-      background: rgba(103, 194, 58, 0.05);
+      background: rgba(var(--el-color-primary-rgb), 0.2);
+      box-shadow: inset 3px 0 0 var(--primary-color);
       cursor: pointer;
     }
     
     &:hover:not(.is-disabled) {
-      background: rgba(103, 194, 58, 0.1);
+      background: rgba(255, 255, 255, 0.05);
     }
     
     &.is-correct {
-      background: rgba(103, 194, 58, 0.08);
+      background: rgba(52, 199, 89, 0.15);
+      box-shadow: inset 3px 0 0 var(--success-color);
     }
     
     &.is-wrong {
-      background: rgba(248, 113, 113, 0.08);
+      background: rgba(255, 59, 48, 0.15);
+      box-shadow: inset 3px 0 0 var(--danger-color);
     }
     
     &.is-disabled {
-      opacity: 0.3;
-    cursor: not-allowed;
+      opacity: 0.5;
+      cursor: default;
     }
   }
   
   .code-line-text {
+    margin: 0;
+    font-family: inherit;
     white-space: pre-wrap;
     word-break: break-all;
   }
   
   @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-    20%, 40%, 60%, 80% { transform: translateX(4px); }
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
   }
   
   .explanation-box {
-    margin-top: 20px;
-    padding: 20px;
-    background: var(--el-fill-color-light);
-    border-radius: 12px;
-    border-left: 4px solid var(--primary-color);
+    margin-top: 32px;
+    padding: 24px;
+    border-radius: 20px;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-light);
+    backdrop-filter: blur(10px);
+    animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    opacity: 0.95;
+  }
+  
+  @keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   
   .explanation-header {
     display: flex;
     gap: 12px;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
   
   .explanation-title {
@@ -462,7 +502,7 @@ defineExpose({
   }
   
   .explanation-content {
-    font-size: 14px;
+    font-size: 15px;
     color: var(--el-text-color-regular);
     line-height: 1.6;
   }
@@ -473,44 +513,38 @@ defineExpose({
   
   .explanation-detail {
     color: var(--el-text-color-secondary);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.5;
   }
-}
-
-// 深色模式
-.dark .code-snippet-question {
-    background: rgba(28, 28, 30, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  }
   
-  .dark .code-container {
-    background: #1a1a1a;
+  // Dark Mode Adaptation
+  :global(.dark) & {
+    background: rgba(28, 28, 30, 0.65);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    
+    &.compact-mode {
+      background: transparent;
+      border-color: rgba(255, 255, 255, 0.1);
     }
-  
-  .dark .line-number {
-    color: rgba(255, 255, 255, 0.6);
+    
+    .question-text {
+      color: #FFFFFF;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .code-container {
+      background: #1e1e1e; // Slightly darker for OLED
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .explanation-box {
+      background: rgba(44, 44, 46, 0.6);
+      border-color: rgba(255, 255, 255, 0.1);
+      
+      .explanation-content { color: rgba(255, 255, 255, 0.8); }
+      .explanation-detail { color: rgba(255, 255, 255, 0.7); }
+    }
   }
-  
-  .dark .code-line-text {
-    color: rgba(255, 255, 255, 1);
-  }
-  
-  .dark .code-line.is-selected {
-    background: rgba(103, 194, 58, 0.1);
-  }
-  
-  .dark .explanation-box {
-    background: rgba(255, 255, 255, 0.08);
-    border-left-color: rgba(255, 255, 255, 0.3);
-  }
-  
-  .dark .explanation-title {
-    color: rgba(255, 255, 255, 1);
-  }
-  
-  .dark .explanation-detail {
-    color: rgba(255, 255, 255, 0.7);
-  }
+}
 </style>

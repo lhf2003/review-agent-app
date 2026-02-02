@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { InfoFilled, SuccessFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 
 /**
  * 单选题组件
@@ -47,6 +48,11 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  // 是否有解析内容
+  hasExplanation: {
+    type: Boolean,
+    default: true
+  },
   // 是否紧凑模式（用于列表显示）
   compact: {
     type: Boolean,
@@ -87,9 +93,9 @@ const isSelected = (index) => {
 
 // 检查选项是否已提交且答案错误
 const isWrongAnswer = (index) => {
-  return props.isSubmitted && 
-         selectedIndex.value === index && 
-         !isCorrectAnswer(index)
+  return props.isSubmitted &&
+    selectedIndex.value === index &&
+    !isCorrectAnswer(index)
 }
 
 // 检查是否应该显示正确答案
@@ -97,18 +103,24 @@ const shouldShowCorrect = (index) => {
   return props.isSubmitted && isCorrectAnswer(index)
 }
 
-	// 处理选项选择
-	const handleOptionSelect = (index, option) => {
-	  if (props.isSubmitted) return
+// 检查当前用户答案是否正确
+const isCurrentAnswerCorrect = computed(() => {
+  if (!props.isSubmitted || selectedIndex.value === -1) return false
+  return isCorrectAnswer(selectedIndex.value)
+})
 
-	  const selectedLetter = optionLetters(index)
-	  emit('answer-selected', {
-	    letter: selectedLetter,
-	    fullOption: option,
-	    index: index
-	  })
-	  emit('answer-changed', selectedLetter)
-	}
+// 处理选项选择
+const handleOptionSelect = (index, option) => {
+  if (props.isSubmitted) return
+
+  const selectedLetter = optionLetters.value(index)
+  emit('answer-selected', {
+    letter: selectedLetter,
+    fullOption: option,
+    index: index
+  })
+  emit('answer-changed', selectedLetter)
+}
 
 // 监听 props.userAnswer 变化，同步选中状态
 watch(() => props.userAnswer, (newAnswer) => {
@@ -118,6 +130,9 @@ watch(() => props.userAnswer, (newAnswer) => {
     if (targetIndex >= 0) {
       selectedIndex.value = targetIndex
     }
+  } else {
+    // userAnswer 为空或 null 时，重置选中状态
+    selectedIndex.value = -1
   }
 }, { immediate: true })
 
@@ -133,14 +148,11 @@ defineExpose({
 </script>
 
 <template>
-  <div 
-    class="single-choice-question"
-    :class="{
-      'compact-mode': compact,
-      'has-knowledge-point': !!knowledgePoint,
-      'is-submitted': isSubmitted
-    }"
-  >
+  <div class="single-choice-question" :class="{
+    'compact-mode': compact,
+    'has-knowledge-point': !!knowledgePoint,
+    'is-submitted': isSubmitted
+  }">
     <!-- 知识点标签 -->
     <div v-if="knowledgePoint && !compact" class="knowledge-badge">
       {{ knowledgePoint }}
@@ -158,28 +170,20 @@ defineExpose({
 
     <!-- 选项列表 -->
     <div class="options-list">
-      <div
-        v-for="(option, idx) in options"
-        :key="idx"
-        class="option-item"
-        :class="{
-          'is-selected': isSelected(idx),
-          'is-correct': shouldShowCorrect(idx),
-          'is-wrong': isWrongAnswer(idx),
-          'is-hovered': hoveredIndex === idx,
-          'is-disabled': isSubmitted && !isSelected(idx)
-        }"
-        @mouseenter="hoveredIndex = idx"
-        @mouseleave="hoveredIndex = -1"
-        @click="handleOptionSelect(idx, option)"
-      >
+      <div v-for="(option, idx) in options" :key="idx" class="option-item" :class="{
+        'is-selected': isSelected(idx),
+        'is-correct': shouldShowCorrect(idx),
+        'is-wrong': isWrongAnswer(idx),
+        'is-hovered': hoveredIndex === idx,
+        'is-disabled': isSubmitted && !isSelected(idx)
+      }" @mouseenter="hoveredIndex = idx" @mouseleave="hoveredIndex = -1" @click="handleOptionSelect(idx, option)">
         <div class="option-marker">
           {{ optionLetters(idx) }}
         </div>
         <div class="option-content">
           {{ option.substring(2) || option }}
         </div>
-        
+
         <!-- 正确/错误图标 -->
         <transition name="icon-fade">
           <div v-if="isSubmitted" class="answer-icon">
@@ -193,6 +197,30 @@ defineExpose({
         </transition>
       </div>
     </div>
+
+    <!-- 答题后显示的解析 -->
+    <transition name="fade">
+      <div v-if="isSubmitted" class="explanation-box">
+        <div class="explanation-header">
+          <el-icon>
+            <InfoFilled />
+          </el-icon>
+          <div class="explanation-title">
+            {{ isCurrentAnswerCorrect ? '答案正确！' : '答案错误' }}
+          </div>
+        </div>
+        <div class="explanation-content">
+          <!-- 答错时显示正确答案 -->
+          <div v-if="!isCurrentAnswerCorrect" class="explanation-text">
+            <strong>正确答案：</strong>{{ correctAnswer }}
+          </div>
+          <!-- 有解析时显示解析内容 -->
+          <div v-if="props.hasExplanation && props.explanation" class="explanation-detail">
+            <p><strong>解析：</strong>{{ props.explanation }}</p>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -200,310 +228,370 @@ defineExpose({
 @import '../../styles/variables';
 
 .single-choice-question {
-  --card-radius: 16px;
-  --transition-base: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  --card-radius: 24px;
+  --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   --primary-color: var(--el-color-primary);
-  --success-color: #67c23a;
-  --danger-color: #f56c6c;
+  --success-color: #34c759; // Apple Green
+  --danger-color: #ff3b30;  // Apple Red
 
   background: var(--el-bg-color);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: var(--card-radius);
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 32px;
+  margin-bottom: 24px;
   border: 1px solid var(--el-border-color-light);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  transition: var(--transition-base);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.02),
+    0 10px 15px -3px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.02);
+  transition: var(--transition-smooth);
   position: relative;
+  opacity: 0.95;
 
   &.compact-mode {
-    padding: 12px;
-    margin-bottom: 8px;
-    
-    .question-number {
-      display: none;
-    }
-    
-    .question-text {
-      font-size: 14px;
-    }
-    
-    .options-list {
-      gap: 8px;
-    }
-    
-    .option-item {
-      padding: 10px 12px;
-    }
-    
-    .option-marker {
-      width: 24px;
-      height: 24px;
-      font-size: 13px;
-    }
-    
-    .option-content {
-      font-size: 13px;
-    }
+    padding: 20px;
+    margin-bottom: 16px;
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid var(--el-border-color-lighter);
+    backdrop-filter: none;
+
+    .question-number { display: none; }
+    .question-text { font-size: 15px; margin-bottom: 16px; }
+    .options-list { gap: 10px; }
+    .option-item { padding: 12px 16px; border-radius: 12px; }
+    .option-marker { width: 28px; height: 28px; font-size: 13px; border-radius: 8px; }
+    .option-content { font-size: 14px; }
   }
-  
-  &.is-submitted {
-    .option-item {
-      cursor: not-allowed;
-    }
+
+  &.is-submitted .option-item {
+    cursor: default;
+    &:active { transform: none; }
   }
-  
-  // 知识点标签
+
+  // Knowledge Badge
   .knowledge-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     font-size: 12px;
     font-weight: 600;
     color: var(--primary-color);
-    background: var(--el-color-primary-light-9);
-    padding: 4px 12px;
-    border-radius: 12px;
-    margin-bottom: 12px;
+    background: rgba(var(--el-color-primary-rgb), 0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(4px);
   }
-  
-  // 题号
+
+  // Question Number
   .question-number {
     font-size: 13px;
     font-weight: 700;
     color: var(--el-text-color-secondary);
-    margin-bottom: 8px;
-    font-family: monospace;
-    letter-spacing: 1px;
+    margin-bottom: 12px;
+    font-family: var(--el-font-family);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.8;
   }
-  
-  // 题目文本
+
+  // Question Text
   .question-text {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 600;
     color: var(--el-text-color-primary);
-    line-height: 1.6;
-    margin-bottom: 20px;
+    line-height: 1.5;
+    margin-bottom: 32px;
+    letter-spacing: -0.01em;
   }
-  
-  // 选项列表
+
+  // Options List
   .options-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
   }
-  
-  // 选项项
+
+  // Option Item
   .option-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px;
-    border: 1px solid var(--el-border-color);
-    border-radius: 12px;
+    gap: 16px;
+    padding: 14px 20px; // Reduced padding for minimalist look
+    border: none; // Remove border
+    border-radius: 16px;
     cursor: pointer;
-    transition: var(--transition-base);
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease; // Smoother transition
     position: relative;
+    background: var(--el-fill-color-light); // Default light background
+    min-height: 64px; // Reduced minimum height
+    box-sizing: border-box;
     
     &:hover:not(.is-disabled) {
-      border-color: var(--primary-color);
-      background-color: var(--el-color-primary-light-9);
-      transform: translateX(4px);
+      background: var(--el-fill-color); // Slightly darker on hover
+      transform: scale(1.01); // Subtle scale
+      z-index: 1;
+
+      .option-marker {
+        background: var(--el-color-primary-light-9);
+        color: var(--primary-color);
+      }
     }
-    
-    &.is-hovered:not(.is-disabled):not(.is-selected):not(.is-correct) {
-      border-color: var(--primary-color);
-      background-color: var(--el-color-primary-light-9);
+
+    &:active:not(.is-disabled) {
+      transform: scale(0.99);
     }
   }
-  
-  // 选项标记
+
+  // Option Marker
   .option-marker {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--el-fill-color-dark);
+    width: 36px; // Slightly smaller
+    height: 36px;
+    border-radius: 10px; // Softer radius
+    background: rgba(0, 0, 0, 0.04);
     color: var(--el-text-color-regular);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     flex-shrink: 0;
-    transition: var(--transition-base);
+    transition: var(--transition-smooth);
   }
-  
-  // 选项内容
+
+  // Option Content
   .option-content {
     flex: 1;
-    font-size: 15px;
+    font-size: 16px;
     color: var(--el-text-color-primary);
     line-height: 1.5;
-    word-break: break-word;
+    font-weight: 400;
+    transition: color 0.2s ease;
   }
-  
-  // 选中状态
+
+  // Selected State
   .option-item.is-selected {
-    border-color: var(--primary-color);
-    background-color: var(--el-color-primary-light-9);
-    box-shadow: 0 0 8px rgba(103, 194, 58, 0.15);
+    background: var(--el-color-primary-light-9); // Light primary background
+    box-shadow: none; // Remove shadow to keep it flat/minimal
+    z-index: 2;
+
+    .option-marker {
+      background: var(--primary-color);
+      color: white;
+      box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.3);
+    }
+
+    .option-content {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
   }
-  
-  .option-item.is-selected .option-marker {
-    background: var(--primary-color);
-    color: white;
-    transform: scale(1.1);
-  }
-  
-  .option-item.is-selected .option-content {
-    font-weight: 600;
-    color: var(--primary-color);
-  }
-  
-  // 正确答案状态
+
+  // Correct State
   .option-item.is-correct {
-    border-color: var(--success-color);
-    background-color: var(--el-color-success-light-9);
-    animation: success-pulse 0.6s ease-in-out;
+    background: var(--el-color-success-light-9);
+    box-shadow: none;
+    z-index: 2;
+
+    .option-marker {
+      background: var(--success-color);
+      color: white;
+      box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
+    }
+
+    .option-content {
+      color: #1a7f37;
+      font-weight: 600;
+    }
   }
-  
-  .option-item.is-correct .option-marker {
-    background: var(--success-color);
-    color: white;
-  }
-  
-  .option-item.is-correct .option-content {
-    color: var(--success-color);
-    font-weight: 600;
-  }
-  
-  // 错误答案状态
+
+  // Wrong State
   .option-item.is-wrong {
-    border-color: var(--danger-color);
-    background-color: var(--el-color-danger-light-9);
-    animation: shake 0.5s ease-in-out;
+    background: var(--el-color-danger-light-9);
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    
+    .option-marker {
+      background: var(--danger-color);
+      color: white;
+      opacity: 0.9;
+    }
+
+    .option-content {
+      color: var(--danger-color);
+      text-decoration: line-through;
+      opacity: 0.8;
+    }
   }
-  
-  .option-item.is-wrong .option-marker {
-    background: var(--danger-color);
-    color: white;
-    opacity: 0.8;
-  }
-  
-  .option-item.is-wrong .option-content {
-    color: var(--danger-color);
-    text-decoration: line-through;
-    opacity: 0.8;
-  }
-  
-  // 禁用状态
+
+  // Disabled State
   .option-item.is-disabled {
     opacity: 0.6;
-    cursor: not-allowed;
-    
+    cursor: default;
+    filter: grayscale(0.5);
+
     &:hover {
       transform: none;
-      background-color: transparent;
+      box-shadow: none;
+      background: var(--el-fill-color-light);
+    }
+  }
+
+  // Explanation Box
+  .explanation-box {
+    margin-top: 32px;
+    padding: 24px;
+    border-radius: 20px;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-light);
+    backdrop-filter: blur(10px);
+    animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    opacity: 0.95;
+
+    .explanation-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+      font-size: 16px;
+    }
+
+    .explanation-content {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--el-text-color-regular);
+
+      .explanation-text {
+        margin-bottom: 16px;
+        color: var(--el-text-color-primary);
+        padding: 8px 16px;
+        background: rgba(0, 0, 0, 0.04);
+        border-radius: 10px;
+        display: inline-block;
+        font-weight: 500;
+      }
+
+      .explanation-detail {
+        padding-left: 20px;
+        border-left: 3px solid var(--primary-color);
+        color: var(--el-text-color-regular);
+        
+        p { margin: 0; }
+      }
+    }
+  }
+
+  // Animations
+  @keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+  }
+
+  // Dark Mode Adaptation
+  :global(.dark) & {
+    background: var(--el-bg-color);
+    border-color: var(--el-border-color);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+    &.compact-mode {
+      background: transparent;
       border-color: var(--el-border-color);
     }
-  }
-  
-  // 答案图标
-  .answer-icon {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 20px;
-  }
-  
-  // 动画
-  @keyframes success-pulse {
-    0%, 100% {
-      box-shadow: 0 0 8px rgba(103, 194, 58, 0.15);
+
+    .question-text {
+      color: #FFFFFF;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
-    50% {
-      box-shadow: 0 0 16px rgba(103, 194, 58, 0.3);
+
+    .question-number {
+      color: rgba(255, 255, 255, 0.6);
     }
-  }
-  
-  @keyframes shake {
-    0%, 100% {
-      transform: translateX(0);
+
+    .option-item {
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+
+      &:hover:not(.is-disabled) {
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: none;
+        transform: scale(1.01);
+      }
     }
-    20%, 60% {
-      transform: translateX(-4px);
+
+    .option-marker {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.9);
     }
-    40%, 80% {
-      transform: translateX(4px);
+
+    .option-content {
+      color: rgba(255, 255, 255, 0.9);
     }
-  }
-  
-  .icon-fade-enter-active,
-  .icon-fade-leave-active {
-    transition: all 0.3s ease;
-  }
-  
-  .icon-fade-enter-from {
-    opacity: 0;
-    transform: translateY(-50%) scale(0.5);
-  }
-  
-  .icon-fade-leave-to {
-    opacity: 0;
-    transform: translateY(-50%) scale(0.5);
+
+    .option-item.is-selected {
+      background: rgba(var(--el-color-primary-rgb), 0.25);
+      border: none;
+
+      .option-content { color: white; }
+      
+      .option-marker {
+        background: var(--primary-color);
+        color: white;
+      }
+    }
+
+    .option-item.is-correct {
+      background: rgba(52, 199, 89, 0.2);
+      border: none;
+
+      .option-content { color: #4cd964; }
+      
+      .option-marker {
+        background: var(--success-color);
+        color: white;
+      }
+    }
+
+    .option-item.is-wrong {
+      background: rgba(255, 69, 58, 0.2);
+      border: none;
+
+      .option-content { color: #ff453a; }
+      
+      .option-marker {
+        background: var(--danger-color);
+        color: white;
+      }
+    }
+
+    .explanation-box {
+      background: var(--el-bg-color);
+      border-color: var(--el-border-color);
+
+      .explanation-text {
+        background: var(--el-fill-color-darker);
+        color: white;
+      }
+
+      .explanation-content {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .explanation-detail {
+        color: rgba(255, 255, 255, 0.7);
+      }
+    }
   }
 }
-
-// 深色模式
-.dark .single-choice-question {
-    background: rgba(28, 28, 30, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  }
-  
-  .dark .option-marker {
-    background: rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.9);
-  }
-  
-  .dark .option-item.is-selected {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-  
-  .dark .option-item.is-selected .option-marker {
-    background: rgba(255, 255, 255, 0.9);
-    color: rgba(28, 28, 30, 1);
-  }
-  
-  .dark .option-item.is-correct {
-    background: rgba(82, 196, 26, 0.2);
-    border-color: rgba(82, 196, 26, 0.4);
-  }
-  
-  .dark .option-item.is-correct .option-marker {
-    background: rgba(82, 196, 26, 0.9);
-    color: rgba(255, 255, 255, 1);
-  }
-  
-  .dark .option-item.is-wrong {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
-  }
-  
-  .dark .option-item.is-wrong .option-marker {
-    background: rgba(239, 68, 68, 0.9);
-    color: rgba(255, 255, 255, 1);
-  }
-  
-  .dark .option-content {
-    color: rgba(255, 255, 255, 1);
-  }
-  
-  .dark .question-text {
-    color: rgba(255, 255, 255, 1);
-  }
-  
-  .dark .knowledge-badge {
-    background: rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 1);
-  }
 </style>

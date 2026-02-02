@@ -1,25 +1,15 @@
 <script setup>
- import { ref, onMounted, onUnmounted, useTemplateRef, watch } from 'vue'
- import { useRoute, useRouter } from 'vue-router'
- import { ArrowLeft, Reading, Delete, FolderOpened, Aim, Timer, RefreshRight } from '@element-plus/icons-vue'
- import { api } from '../api/http'
- import { ElMessage, ElMessageBox } from 'element-plus'
- import AnimatedList from '../components/AnimatedList.vue'
- import QuestionRenderer from '../components/quiz/QuestionRenderer.vue'
+import { ref, onMounted, onUnmounted, useTemplateRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ArrowLeft, Reading, Delete, FolderOpened } from '@element-plus/icons-vue'
+import { api } from '../api/http'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import AnimatedList from '../components/AnimatedList.vue'
 
 const route = useRoute()
 const router = useRouter()
 const info = ref({})
 const loading = ref(false)
-const quizVisible = ref(false)
-const quizQuestions = ref([])
-const quizLoading = ref(false)
-const quizId = ref(null)
-
-// 当前答题状态
-const currentQuestionIndex = ref(0)
-const showAnswer = ref(false)
-const currentUserAnswer = ref(null)
 
 onMounted(() => {
   fetchDetail()
@@ -35,96 +25,12 @@ async function fetchDetail() {
   }
 }
 
-async function startLearning() {
+function startLearning() {
   if (!info.value.analysisResults || info.value.analysisResults.length === 0) {
     ElMessage.warning('合集为空，无法开始学习')
     return
   }
-  quizVisible.value = true
-  quizLoading.value = true
-  try {
-    const res = await api.generateQuiz(info.value.id)
-    quizId.value = res.id
-    quizQuestions.value = res.questions || []
-    currentQuestionIndex.value = 0
-    loadQuestionState(0)
-
-    // 检查是否成功生成题目
-    if (!quizQuestions.value || quizQuestions.value.length === 0) {
-      ElMessage.warning('未能生成题目，请确保合集有已分析的内容')
-    }
-  } catch(e) {
-    console.error('生成题目失败，详细错误:', e)
-    // 显示详细的错误信息
-    const errorMsg = e.message || '未知错误'
-    ElMessage.error(`生成题目失败: ${errorMsg}`)
-  } finally {
-    quizLoading.value = false
-  }
-}
-
-function loadQuestionState(index) {
-  const q = quizQuestions.value[index]
-  if (q && q.userAnswer) {
-    currentUserAnswer.value = q.userAnswer
-    showAnswer.value = true
-  } else {
-    currentUserAnswer.value = null
-    showAnswer.value = false
-  }
-}
-
-async function handleQuestionAnswer(answer) {
-  if (showAnswer.value) return // 已答题不可修改
-
-  const q = quizQuestions.value[currentQuestionIndex.value]
-
-  // Convert answer based on question type
-  let formattedAnswer = answer
-  if (q.type === 'multiple_choice') {
-    // Multiple choice: array of option keys -> comma-separated string
-    formattedAnswer = answer.join(',')
-  } else if (q.type === 'fill_blank') {
-    // Fill blank: object -> JSON string
-    formattedAnswer = JSON.stringify(answer)
-  } else if (q.type === 'code_snippet') {
-    // Code snippet: number -> string
-    formattedAnswer = String(answer)
-  }
-
-  currentUserAnswer.value = answer
-  showAnswer.value = true
-  q.userAnswer = answer // 本地更新状态
-
-  try {
-    await api.submitAnswer(q.id, formattedAnswer)
-  } catch (e) {
-    ElMessage.error('保存答案失败')
-  }
-}
-
-async function handleResetQuiz() {
-  try {
-    await api.resetQuiz(quizId.value)
-    ElMessage.success('答题记录已重置')
-    // 清空本地状态
-    quizQuestions.value.forEach(q => {
-        q.userAnswer = null
-    })
-    loadQuestionState(currentQuestionIndex.value)
-  } catch (e) {
-    ElMessage.error('重置失败')
-  }
-}
-
-function nextQuestion() {
-    currentQuestionIndex.value++
-    loadQuestionState(currentQuestionIndex.value)
-}
-
-function prevQuestion() {
-    currentQuestionIndex.value--
-    loadQuestionState(currentQuestionIndex.value)
+  router.push(`/collections/${info.value.id}/quiz`)
 }
 
 function confirmRemove(item) {
@@ -249,74 +155,6 @@ function viewOriginal(item) {
         </div>
       </div>
     </div>
-
-    <!-- 智能学习抽屉 -->
-    <el-drawer 
-      v-model="quizVisible" 
-      title="智能学习模式" 
-      size="500px"
-      direction="rtl"
-      destroy-on-close
-      class="quiz-drawer"
-    >
-      <div v-loading="quizLoading" class="quiz-container">
-        <div v-if="quizQuestions.length > 0">
-          <div class="quiz-progress-bar">
-            <div class="progress-header">
-              <span>进度 {{ currentQuestionIndex + 1 }}/{{ quizQuestions.length }}</span>
-              <el-button 
-                text 
-                type="primary" 
-                size="small" 
-                :icon="RefreshRight"
-                @click="handleResetQuiz"
-              >
-                重新答题
-              </el-button>
-            </div>
-            <el-progress 
-              :percentage="((currentQuestionIndex + 1) / quizQuestions.length) * 100" 
-              :show-text="false"
-              :stroke-width="8"
-            />
-          </div>
-          
-          <div class="question-card">
-            <QuestionRenderer
-              v-if="quizQuestions[currentQuestionIndex]"
-              :question="quizQuestions[currentQuestionIndex].question"
-              :type="quizQuestions[currentQuestionIndex].type || 'single_choice'"
-              :options="quizQuestions[currentQuestionIndex].options || []"
-              :correct-answer="quizQuestions[currentQuestionIndex].answer"
-              :explanation="quizQuestions[currentQuestionIndex].explanation"
-              :user-answer="currentUserAnswer"
-              :is-submitted="showAnswer"
-              :knowledge-point="quizQuestions[currentQuestionIndex].knowledgePoint"
-              :key="quizQuestions[currentQuestionIndex].id"
-              @answer-selected="handleQuestionAnswer"
-            />
-          </div>
-
-          <div class="quiz-footer">
-            <el-button 
-              :disabled="currentQuestionIndex === 0"
-              @click="prevQuestion"
-              plain
-            >
-              上一题
-            </el-button>
-            <el-button 
-              type="primary" 
-              :disabled="currentQuestionIndex === quizQuestions.length - 1"
-              @click="nextQuestion"
-            >
-              下一题
-            </el-button>
-          </div>
-        </div>
-        <el-empty v-else-if="!quizLoading" description="未能生成练习题，请稍后再试" />
-      </div>
-    </el-drawer>
   </div>
 </template>
 
@@ -344,7 +182,6 @@ function viewOriginal(item) {
   top: 0;
   z-index: 10;
   backdrop-filter: blur(10px);
-  background-color: rgba(255, 255, 255, 0.8);
   
   .header-title {
     font-weight: 600;
@@ -354,7 +191,8 @@ function viewOriginal(item) {
 }
 
 .dark .nav-header {
-  background-color: rgba(0, 0, 0, 0.6);
+  background: var(--el-bg-color);
+  opacity: 0.95;
 }
 
 .content-wrapper {
@@ -568,40 +406,6 @@ function viewOriginal(item) {
       }
     }
   }
-}
-
-// Quiz Drawer Styles
-.quiz-container {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.quiz-progress-bar {
-  margin-bottom: 24px;
-
-  .progress-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    font-size: 13px;
-    color: var(--el-text-color-secondary);
-  }
-}
-
-.question-card {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.quiz-footer {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--el-border-color-light);
-  display: flex;
-  justify-content: space-between;
 }
 
 // Transitions

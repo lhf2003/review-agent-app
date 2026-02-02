@@ -198,3 +198,77 @@ See `AGENTS.md` for comprehensive architecture documentation including:
 - Mermaid diagrams for core workflows
 - AppleStyle design specifications
 - Technical debt tracking
+
+## ROOT DIRECTORY DOCUMENT SPECIFICATION
+
+The project root directory only allows the following three documents to be retained:
+- `README.md` - Project Documentation (for Users)
+- `CLAUDE.md` - Claude Code Development Guide (this document)
+- `AGENTS.md` - Agent Development Guide
+- `CHANGELOG.md` - Project Changelog
+
+**All other documents must be placed under the 'docs/' directory**, Refer to the document directory structure that can be created
+```
+docs/
+├── analysis/ # Problem analysis and troubleshooting report
+├── reviews/ # Code review documentation
+├── fixes/ # Fix summary report
+├── architecture/ # Architecture design document
+└── api/ # API documentation
+```
+
+### Document naming conventions
+
+**Forced naming format**:
+- 'YYYY-MM-DD-CASE-NNN-DESCRIPTION_VERSION.md' - e.g. '2026-01-15-CASE-001-DataAnalysisError_01.md'
+
+**Naming Conventions**:
+1. **Date section**: 'YYYY-MM-DD' (YEAR-MONTH-DAY), SEPARATED USING A HYPHEN
+2. **CASE Number**: 'CASE-NNN' (Nth case/issue of the day)
+- For example: 'CASE-001', 'CASE-002', 'CASE-003'
+- Used to identify the first issue or case that was addressed that day
+3. **Description Section**: Concise and clear description in Chinese or English
+4. **Version Part**: '_V' or '_v' + Serial Number (two digits, less than zero)
+- For example: '_01', '_02', '_03' or '_v1.0', '_v2.0'
+
+**Example**:
+- ✅ '2026-01-15-CASE-001-DATA_ANALYSIS_ERROR_01.md'
+- ✅ '2026-01-15-CASE-002-MYSQL_CONNECTION_TIMEOUT_ISSUE_01.md'
+- ❌ 'Data Synchronization Failure Analysis Report_0115.md' (Date, CASE Number Missing)
+- ❌ '2026-01-15-Data Synchronization Failure Analysis_01.md' (CASE number missing)
+- ❌ 'temp.md' (unclear)
+
+**CASE Number Description**:
+- Number each day starting from 'CASE-001'
+- Incremental number for each issue or case handled on the same day
+- Easy to track and correlate all issues handled on the day
+- Example:
+  - '2026-01-15-CASE-001-StackOverflow Fix_01.md'
+  - '2026-01-15-CASE-002-MySQL connection timeout_01.md'
+  - '2026-01-15-CASE-003-Log4j2 Configuration Fix_01.md'
+
+### Document creation process
+1. If there is no subdirectory name in the docs/ directory that matches the document requirements, create a new subdirectory according to the document category.
+2. When creating a new document, place it directly in the 'docs/' directory or its subdirectory
+3. Use the specification file name (including date/version)
+4. Include the following meta information at the beginning of the document:
+   ```markdown
+   # Document title
+
+   Creation Date: YYYY-MM-DD
+   **Author**: xxx
+   Version: v1.0
+   **Status**: Draft/Under Review/Approved
+   ```
+   
+### Consequences of Breaking the Rules
+
+If you violate the document management rules:
+- Documents other than 'README.md' and 'CLAUDE.md' appear in the root directory
+- Document naming is not standardized
+- Document organization is disorganized
+
+**Consequences**:
+- Code review will be rejected
+- PRs cannot be merged
+- Documents need to be refreshed for submission

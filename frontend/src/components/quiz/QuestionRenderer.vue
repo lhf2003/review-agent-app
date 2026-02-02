@@ -61,6 +61,16 @@ const props = defineProps({
   compact: {
     type: Boolean,
     default: false
+  },
+  // 填空题的空位数量
+  blankCount: {
+    type: Number,
+    default: null
+  },
+  // 题目ID（用于组件key，确保切换题目时重新创建组件实例）
+  questionId: {
+    type: [Number, String],
+    required: true
   }
 })
 
@@ -108,94 +118,119 @@ defineExpose({
   <div class="question-renderer" :class="{ compact }">
     <!-- 单选题 -->
     <SingleChoiceQuestion
-      v-if="type === 'single_choice' && !componentsLoaded.single_choice"
+      v-if="type === 'single_choice'"
+      :key="questionId"
       ref="questionComponents.single_choice"
       :question="question"
       :options="options"
       :user-answer="userAnswer"
       :correct-answer="correctAnswer"
-      :show-explanation="isSubmitted && explanation"
+      :explanation="explanation"
+      :show-explanation="isSubmitted"
+      :is-submitted="isSubmitted"
+      :has-explanation="!!explanation"
       :index="index"
       :knowledge-point="knowledgePoint"
-      @answer-selected="() => $emit('answer-selected', $event.detail)"
-      @answer-changed="() => $emit('answer-changed', $event.detail)"
-      @mounted="componentsLoaded.single_choice = true"
+      :compact="compact"
+      @answer-selected="$emit('answer-selected', $event)"
+      @answer-changed="$emit('answer-changed', $event)"
     />
 
     <!-- 多选题 -->
     <MultipleChoiceQuestion
-      v-if="type === 'multiple_choice' && !componentsLoaded.multiple_choice"
+      v-if="type === 'multiple_choice'"
+      :key="questionId"
       ref="questionComponents.multiple_choice"
       :question="question"
       :options="options"
       :user-answer="userAnswer"
       :correct-answer="correctAnswer"
-      :show-explanation="isSubmitted && explanation"
+      :explanation="explanation"
+      :show-explanation="isSubmitted"
+      :is-submitted="isSubmitted"
+      :has-explanation="!!explanation"
       :index="index"
       :knowledge-point="knowledgePoint"
-      @answer-selected="() => $emit('answer-selected', $event.detail)"
-      @answer-changed="() => $emit('answer-changed', $event.detail)"
-      @mounted="componentsLoaded.multiple_choice = true"
+      :compact="compact"
+      @answer-selected="$emit('answer-selected', $event)"
+      @answer-changed="$emit('answer-changed', $event)"
     />
 
     <!-- 判断题 -->
     <TrueFalseQuestion
-      v-if="type === 'true_false' && !componentsLoaded.true_false"
+      v-if="type === 'true_false'"
+      :key="questionId"
       ref="questionComponents.true_false"
       :question="question"
       :options="options"
       :user-answer="userAnswer"
       :correct-answer="correctAnswer"
-      :show-explanation="isSubmitted && explanation"
+      :explanation="explanation"
+      :show-explanation="isSubmitted"
+      :is-submitted="isSubmitted"
+      :has-explanation="!!explanation"
       :index="index"
       :knowledge-point="knowledgePoint"
-      @answer-selected="() => $emit('answer-selected', $event.detail)"
-      @answer-changed="() => $emit('answer-changed', $event.detail)"
-      @mounted="componentsLoaded.true_false = true"
+      :compact="compact"
+      @answer-selected="$emit('answer-selected', $event)"
+      @answer-changed="$emit('answer-changed', $event)"
     />
 
     <!-- 填空题 -->
     <FillBlankQuestion
-      v-if="type === 'fill_blank' && !componentsLoaded.fill_blank"
+      v-if="type === 'fill_blank'"
+      :key="questionId"
       ref="questionComponents.fill_blank"
       :question="question"
       :user-answer="userAnswer"
       :correct-answer="correctAnswer"
-      :show-explanation="isSubmitted && explanation"
+      :explanation="explanation"
+      :show-explanation="isSubmitted"
+      :is-submitted="isSubmitted"
+      :has-explanation="!!explanation"
       :index="index"
       :knowledge-point="knowledgePoint"
-      @answer-selected="() => $emit('answer-selected', $event.detail)"
-      @answer-changed="() => $emit('answer-changed', $event.detail)"
-      @mounted="componentsLoaded.fill_blank = true"
+      :compact="compact"
+      :blank-count="blankCount"
+      @answer-selected="$emit('answer-selected', $event)"
+      @answer-changed="$emit('answer-changed', $event)"
     />
 
     <!-- 代码识别题 -->
     <CodeSnippetQuestion
-      v-if="type === 'code_snippet' && !componentsLoaded.code_snippet"
+      v-if="type === 'code_snippet'"
+      :key="questionId"
       ref="questionComponents.code_snippet"
       :question="question"
       :user-answer="userAnswer"
       :correct-answer="correctAnswer"
-      :show-explanation="isSubmitted && explanation"
+      :explanation="explanation"
+      :show-explanation="isSubmitted"
+      :is-submitted="isSubmitted"
+      :has-explanation="!!explanation"
       :index="index"
       :knowledge-point="knowledgePoint"
-      @answer-selected="() => $emit('answer-selected', $event.detail)"
-      @answer-changed="() => $emit('answer-changed', $event.detail)"
-      @mounted="componentsLoaded.code_snippet = true"
+      :compact="compact"
+      @answer-selected="$emit('answer-selected', $event)"
+      @answer-changed="$emit('answer-changed', $event)"
     />
 
     <!-- 未知题型降级 -->
     <SingleChoiceQuestion
       v-if="!['single_choice', 'multiple_choice', 'true_false', 'fill_blank', 'code_snippet'].includes(type)"
+      :key="questionId"
       :question="question"
       :options="options"
       :user-answer="userAnswer"
       :correct-answer="correctAnswer"
-      :show-explanation="isSubmitted && explanation"
+      :explanation="explanation"
+      :show-explanation="isSubmitted"
+      :is-submitted="isSubmitted"
+      :has-explanation="!!explanation"
       :index="index"
       :knowledge-point="knowledgePoint"
-      @answer-selected="() => $emit('answer-selected', $event.detail)"
-      @answer-changed="() => $emit('answer-changed', $event.detail)"
+      @answer-selected="$emit('answer-selected', $event)"
+      @answer-changed="$emit('answer-changed', $event)"
       @mounted="() => { console.warn(`Unknown question type: ${type}, falling back to single_choice`) }"
     />
   </div>
@@ -205,11 +240,13 @@ defineExpose({
 @import '../../styles/variables';
 
 .question-renderer {
-  // 无样式，由子组件提供
+  // 容器样式保持透明，布局由子组件自适应
+  width: 100%;
+  position: relative;
   
-  .compact {
-    padding: 12px;
-    margin-bottom: 8px;
+  &.compact {
+    // 紧凑模式下的容器调整
+    margin-bottom: 0;
   }
 }
 </style>

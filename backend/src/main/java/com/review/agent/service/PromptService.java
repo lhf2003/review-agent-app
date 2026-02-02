@@ -22,7 +22,8 @@ public class PromptService {
 
     // 提示词文件列表
     private static final String[] PROMPT_FILES = {"prompts/Analysis-agent-prompt.md", "prompts/Classify-agent-prompt.md",
-            "prompts/Extract-agent-prompt.md", "prompts/Report-agent-prompt.md", "prompts/Chat-agent-prompt.md"};
+            "prompts/Extract-agent-prompt.md", "prompts/Report-agent-prompt.md", "prompts/Chat-agent-prompt.md",
+            "prompts/Quiz-agent-prompt.md"};
 
     private Map<String, String> promptTemplates = new HashMap<>();
 
@@ -98,6 +99,8 @@ public class PromptService {
             return "Report." + promptName;
         } else if (fileName.contains("Chat")) {
             return "Chat." + promptName;
+        } else if (fileName.contains("Quiz")) {
+            return "Quiz." + promptName;
         }
         return promptName;
     }
@@ -274,6 +277,15 @@ public class PromptService {
         variables.put("originalContent", originalContent);
         variables.put("targetFormat", targetFormat);
         return buildPrompt("common.格式转换提示词", variables);
+    }
+
+    /**
+     * 获取习题生成提示词
+     */
+    public String getQuizGenerationPrompt(String cases) throws PromptProcessingException {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("cases", cases);
+        return buildPrompt("Quiz.习题生成提示词", variables);
     }
 
     /**

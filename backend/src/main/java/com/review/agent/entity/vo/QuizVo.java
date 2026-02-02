@@ -16,6 +16,7 @@ public class QuizVo {
         private String type; // 题目类型：single_choice, multiple_choice, true_false, fill_blank, code_snippet
         private List<String> options;
         private String answer;
+        private Integer blankCount; // 填空题的空位数量（仅对 fill_blank 题型有效）
         private String explanation;
         private String userAnswer;
         private String knowledgePoint; // 知识点

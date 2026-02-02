@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { InfoFilled } from '@element-plus/icons-vue'
 
 /**
  * 判断题组件
@@ -26,10 +27,35 @@ const props = defineProps({
     type: String,
     required: true
   },
+  // 解析内容
+  explanation: {
+    type: String,
+    default: ''
+  },
+  // 是否显示解析
+  showExplanation: {
+    type: Boolean,
+    default: false
+  },
+  // 是否有解析内容
+  hasExplanation: {
+    type: Boolean,
+    default: true
+  },
   // 是否紧凑模式
   compact: {
     type: Boolean,
     default: false
+  },
+  // 题号
+  index: {
+    type: Number,
+    default: 1
+  },
+  // 知识点
+  knowledgePoint: {
+    type: String,
+    default: null
   }
 })
 
@@ -76,6 +102,9 @@ const handleSelect = (value) => {
 watch(() => props.userAnswer, (newAnswer) => {
   if (newAnswer) {
     selectedValue.value = newAnswer.toLowerCase()
+  } else {
+    // userAnswer 为空或 null 时，重置选中状态
+    selectedValue.value = null
   }
 }, { immediate: true })
 
@@ -166,6 +195,30 @@ defineExpose({
         </transition>
       </div>
     </div>
+
+    <!-- 答题后显示的解析 -->
+    <transition name="fade">
+      <div v-if="isSubmitted" class="explanation-box">
+        <div class="explanation-header">
+          <el-icon>
+            <InfoFilled />
+          </el-icon>
+          <div class="explanation-title">
+            {{ isCorrect ? '答案正确！' : '答案错误' }}
+          </div>
+        </div>
+        <div class="explanation-content">
+          <!-- 答错时显示正确答案 -->
+          <div v-if="!isCorrect" class="explanation-text">
+            <strong>正确答案：</strong>{{ correctAnswer === 'true' ? '是' : '否' }}
+          </div>
+          <!-- 有解析时显示解析内容 -->
+          <div v-if="props.hasExplanation && props.explanation" class="explanation-detail">
+            <p><strong>解析：</strong>{{ props.explanation }}</p>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -173,49 +226,66 @@ defineExpose({
 @import '../../styles/variables';
 
 .true-false-question {
-  --card-radius: 16px;
-  --transition-base: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  --card-radius: 24px;
+  --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   --primary-color: var(--el-color-primary);
-  --success-color: #67c23a;
-  --danger-color: #f56c6c;
-  --true-bg: #ecfdf5;
-  --false-bg: #fef2f2;
-  --true-hover: #d1fae5;
-  --false-hover: #fee2e2;
+  --success-color: #34c759;
+  --danger-color: #ff3b30;
+
+  // Specific colors for True/False
+  --true-color: #34c759;
+  --false-color: #ff3b30;
 
   background: var(--el-bg-color);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: var(--card-radius);
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 32px;
+  margin-bottom: 24px;
   border: 1px solid var(--el-border-color-light);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  transition: var(--transition-base);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.02),
+    0 10px 15px -3px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.02);
+  transition: var(--transition-smooth);
   position: relative;
+  opacity: 0.95;
 
   &.compact-mode {
-    padding: 12px;
-    margin-bottom: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid var(--el-border-color-lighter);
+    backdrop-filter: none;
+    
+    .question-text { font-size: 15px; margin-bottom: 16px; }
+    .option-item { min-height: 80px; padding: 16px; }
+    .option-value { font-size: 20px; }
   }
 
   &.is-submitted .option-item {
-    cursor: not-allowed;
+    cursor: default;
   }
   
   .question-text {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 600;
     color: var(--el-text-color-primary);
-    line-height: 1.6;
-    margin-bottom: 20px;
+    line-height: 1.5;
+    margin-bottom: 32px;
+    letter-spacing: -0.01em;
   }
   
   .options-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 24px;
     
     @media (max-width: 768px) {
       grid-template-columns: 1fr;
+      gap: 16px;
     }
   }
   
@@ -224,66 +294,94 @@ defineExpose({
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    border-radius: 16px;
-    border: 2px solid var(--el-border-color);
-    background: var(--el-fill-color-blank);
+    padding: 32px;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--el-fill-color-light);
     cursor: pointer;
-    transition: var(--transition-base);
-    min-height: 120px;
+    transition: var(--transition-spring);
+    min-height: 160px;
+    position: relative;
+    overflow: hidden;
+    
+    // Glass shine effect
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    &:hover:not(.is-disabled) {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+      background: var(--el-bg-color);
+      z-index: 1;
+
+      &::before { opacity: 1; }
+    }
     
     &.option-true {
-      border-color: var(--el-border-color-light);
-      
       &:hover:not(.is-disabled) {
-        background: var(--true-hover);
-        border-color: var(--primary-color);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(103, 194, 58, 0.08);
+        border-color: var(--true-color);
+        box-shadow: 0 12px 24px -8px rgba(52, 199, 89, 0.25);
+        
+        .option-value { color: var(--true-color); }
       }
     }
     
     &.option-false {
-      border-color: var(--el-border-color-light);
-      
       &:hover:not(.is-disabled) {
-        background: var(--false-hover);
-        border-color: var(--primary-color);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(103, 194, 58, 0.08);
+        border-color: var(--false-color);
+        box-shadow: 0 12px 24px -8px rgba(255, 59, 48, 0.25);
+        
+        .option-value { color: var(--false-color); }
       }
     }
     
     &.is-selected {
-      border-width: 3px;
-      box-shadow: 0 0 16px rgba(0, 0, 0, 0.1);
+      border-width: 2px;
+      transform: scale(1.02);
+      z-index: 2;
     }
     
     &.option-true.is-selected {
-      border-color: var(--success-color);
-      background: var(--true-bg);
+      border-color: var(--true-color);
+      background: rgba(52, 199, 89, 0.1);
+      box-shadow: 0 12px 24px -8px rgba(52, 199, 89, 0.3);
+      
+      .option-value { color: var(--true-color); }
     }
     
     &.option-false.is-selected {
-      border-color: var(--success-color);
-      background: var(--false-bg);
+      border-color: var(--false-color);
+      background: rgba(255, 59, 48, 0.1);
+      box-shadow: 0 12px 24px -8px rgba(255, 59, 48, 0.3);
+      
+      .option-value { color: var(--false-color); }
     }
     
     &.is-show-correct {
       border-color: var(--success-color) !important;
-      background: var(--true-bg) !important;
-      animation: correct-pulse 1.5s ease-out;
+      background: rgba(52, 199, 89, 0.2) !important;
+      box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.2);
     }
     
     &.is-disabled {
       opacity: 0.6;
-      cursor: not-allowed;
+      cursor: default;
+      filter: grayscale(0.5);
       
       &:hover {
         transform: none;
         box-shadow: none;
-        border-color: var(--el-border-color);
-        background: var(--el-fill-color-blank);
+        border-color: rgba(0, 0, 0, 0.06);
+        background: var(--el-fill-color-light);
       }
     }
   }
@@ -292,98 +390,138 @@ defineExpose({
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
   }
   
   .option-label {
     font-size: 14px;
-    font-weight: 500;
-    color: var(--el-text-color-regular);
+    font-weight: 600;
+    color: var(--el-text-color-secondary);
     text-transform: uppercase;
+    letter-spacing: 2px;
   }
   
   .option-value {
-    font-size: 32px;
-    font-weight: 700;
+    font-size: 36px;
+    font-weight: 800;
     color: var(--el-text-color-primary);
+    transition: color 0.3s ease;
   }
   
   .answer-icon {
     position: absolute;
     right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 28px;
+    top: 20px;
+    font-size: 32px;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
   }
   
-  @keyframes correct-pulse {
-    0%, 100% {
-      box-shadow: 0 0 0 rgba(103, 194, 58, 0);
+  // Dark Mode Adaptation
+  :global(.dark) & {
+    background: rgba(28, 28, 30, 0.65);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    
+    &.compact-mode {
+      background: transparent;
+      border-color: rgba(255, 255, 255, 0.1);
     }
-    50% {
-      box-shadow: 0 0 20px rgba(103, 194, 58, 0.3);
+    
+    .question-text {
+      color: #FFFFFF;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .option-item {
+      background: rgba(44, 44, 46, 0.4);
+      border-color: rgba(255, 255, 255, 0.08);
+      
+      &::before {
+        background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+      }
+      
+      &:hover:not(.is-disabled) {
+        background: rgba(58, 58, 60, 0.8);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+    }
+    
+    .option-value {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .option-label {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .option-item.option-true:hover:not(.is-disabled),
+    .option-item.option-true.is-selected {
+      border-color: var(--true-color);
+      background: rgba(52, 199, 89, 0.2);
+      
+      .option-value { color: #4cd964; }
+    }
+    
+    .option-item.option-false:hover:not(.is-disabled),
+    .option-item.option-false.is-selected {
+      border-color: var(--false-color);
+      background: rgba(255, 69, 58, 0.2);
+      
+      .option-value { color: #ff453a; }
     }
   }
-  
-  .icon-fade-enter-active,
-  .icon-fade-leave-active {
-    transition: all 0.3s ease;
-  }
-  
-  .icon-fade-enter-from {
-    opacity: 0;
-    transform: translateY(-50%) scale(0.5);
-  }
-  
-  .icon-fade-leave-to {
-    opacity: 0;
-    transform: translateY(-50%) scale(1.2);
-  }
-  
-  .icon-fade-enter-to {
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
-  }
-  
-  .icon-fade-leave-from {
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
+
+  // Explanation Box
+  .explanation-box {
+    margin-top: 32px;
+    padding: 24px;
+    border-radius: 20px;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-light);
+
+    .explanation-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+
+      .el-icon {
+        font-size: 20px;
+      }
+    }
+
+    .explanation-content {
+      .explanation-text {
+        margin-bottom: 12px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: var(--danger-color, #ff3b30);
+        color: white;
+        font-size: 14px;
+      }
+
+      .explanation-detail {
+        padding: 16px;
+        border-radius: 12px;
+        background: var(--el-fill-color-light);
+        color: var(--el-text-color-regular);
+        line-height: 1.8;
+        font-size: 14px;
+
+        p {
+          margin: 0;
+        }
+
+        strong {
+          color: var(--el-text-color-primary);
+        }
+      }
+    }
   }
 }
-
-// 深色模式
-.dark .true-false-question {
-    background: rgba(28, 28, 30, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  }
-  
-  .dark .question-text {
-    color: rgba(255, 255, 255, 1);
-  }
-  
-  .dark .option-label {
-    color: rgba(255, 255, 255, 0.7);
-  }
-  
-  .dark .option-value {
-    color: rgba(255, 255, 255, 1);
-  }
-  
-  .dark .option-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-    
-    &.option-true {
-      &:hover:not(.is-disabled) {
-        background: rgba(255, 255, 255, 0.1);
-      }
-    }
-    
-    &.option-false {
-      &:hover:not(.is-disabled) {
-        background: rgba(255, 255, 255, 0.1);
-      }
-    }
-  }
 </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import {ref, computed, watch} from 'vue'
 
 /**
  * 填空题组件
@@ -41,9 +41,14 @@ const props = defineProps({
     type: Number,
     default: 100
   },
-  // 占位符数量（根据问题文本中的 _____ 自动计算）
+  // 占位符数量（由后端提供）
   blankCount: {
     type: Number,
+    required: true
+  },
+  // 知识点
+  knowledgePoint: {
+    type: String,
     default: null
   }
 })
@@ -52,18 +57,9 @@ const emit = defineEmits([
   'answer-changed'
 ])
 
-// 计算填空数量（如果未提供）
-const calculatedBlankCount = computed(() => {
-  if (props.blankCount !== null) {
-    const matches = props.question.match(/_/g)
-    return matches ? matches.length : 1
-  }
-  return props.blankCount || 1
-})
-
-// 填空索引（从1开始）
-const blankIndices = computed(() => 
-  Array.from({ length: calculatedBlankCount.value }, (_, i) => i + 1)
+// 填空索引（从0开始）
+const blankIndices = computed(() =>
+    Array.from({length: props.blankCount}, (_, i) => i)
 )
 
 // 用户答案数组（按逗号或分号分隔）
@@ -74,28 +70,40 @@ watch(() => props.userAnswer, (newAnswer) => {
   if (newAnswer) {
     // 尝试逗号分隔
     userAnswers.value = newAnswer.split(/,|;/)
+  } else {
+    // userAnswer 为空或 null 时，清空答案数组
+    userAnswers.value = []
   }
-}, { immediate: true })
+}, {immediate: true})
 
 // 输入框引用数组
 const inputRefs = ref([])
 
+// 正确答案数组
+const correctAnswersArray = computed(() => {
+  if (!props.correctAnswer) return []
+  return props.correctAnswer.split(/,|;/)
+})
+
 // 检查单个填空是否正确
 const isBlankCorrect = (index) => {
-  if (!props.correctAnswer || !userAnswers.value[index]) return false
-  const userVal = props.caseSensitive 
-    ? userAnswers.value[index]
-    : userAnswers.value[index].toLowerCase()
+  if (!correctAnswersArray.value[index] || !userAnswers.value[index]) return false
+  
+  const userVal = props.caseSensitive
+      ? userAnswers.value[index].trim()
+      : userAnswers.value[index].trim().toLowerCase()
+      
   const correctVal = props.caseSensitive
-    ? props.correctAnswer
-    : props.correctAnswer.toLowerCase()
+      ? correctAnswersArray.value[index].trim()
+      : correctAnswersArray.value[index].trim().toLowerCase()
+      
   return userVal === correctVal
 }
 
 // 检查是否所有填空都正确
 const isAllCorrect = computed(() => {
-  if (calculatedBlankCount.value === 0) return false
-  
+  if (props.blankCount === 0) return false
+
   return blankIndices.value.every(index => isBlankCorrect(index))
 })
 
@@ -104,28 +112,23 @@ const hasAnyFilled = computed(() => {
   return userAnswers.value.some(answer => answer && answer.trim() !== '')
 })
 
-// 聚焦处理
-const handleFocus = (index) => {
-  // 下一个自动聚焦
-  if (index < inputRefs.value.length - 1) {
-    const nextInput = inputRefs.value[index + 1]
-    if (nextInput) {
-      nextInput.focus()
-    }
-  }
-}
+// 计算正确填空的数量
+const correctCount = computed(() => {
+  if (props.blankCount === 0) return 0
+  return blankIndices.value.filter(index => isBlankCorrect(index)).length
+})
 
 // 输入处理
 const handleInput = (index, event) => {
   const value = event.target.value
   const newAnswers = [...userAnswers.value]
   newAnswers[index] = value
-  
+
   // 如果已经达到最大长度，截断
   if (value.length > props.maxLength) {
     newAnswers[index] = value.substring(0, props.maxLength)
   }
-  
+
   userAnswers.value = newAnswers
   emitAnswerChanged()
 }
@@ -141,7 +144,7 @@ defineExpose({
     const input = inputRefs.value[index]
     if (input) {
       input.focus()
-    input.select()
+      input.select()
     }
   },
   reset: () => {
@@ -154,9 +157,9 @@ defineExpose({
 </script>
 
 <template>
-  <div 
-    class="fill-blank-question"
-    :class="{
+  <div
+      class="fill-blank-question"
+      :class="{
       'compact-mode': compact,
       'is-submitted': isSubmitted,
       'is-all-correct': isSubmitted && isAllCorrect,
@@ -169,15 +172,15 @@ defineExpose({
     </div>
 
     <!-- 题目文本 -->
-    <div class="question-text" v-html="renderQuestion"></div>
+    <div class="question-text">{{ question }}</div>
 
     <!-- 填空区域 -->
     <div class="blanks-container">
       <div
-        v-for="(placeholder, index) in blankIndices"
-        :key="index"
-        class="blank-item"
-        :class="{
+          v-for="(placeholder, index) in blankIndices"
+          :key="index"
+          class="blank-item"
+          :class="{
           'is-correct': isSubmitted && isBlankCorrect(index),
           'is-wrong': isSubmitted && !isBlankCorrect(index) && userAnswers[index],
           'is-empty': !userAnswers[index],
@@ -185,29 +188,28 @@ defineExpose({
         }"
       >
         <!-- 编号 -->
-        <div class="blank-number">{{ index }}</div>
-        
+        <div class="blank-number">{{ index + 1 }}</div>
+
         <!-- 输入框 -->
         <input
-          :ref="(el) => { if (el) inputRefs[index] = el }"
-          type="text"
-          class="blank-input"
-          :placeholder="`第${index}空`"
-          :value="userAnswers[index]"
-          @input="handleInput(index, $event)"
-          @focus="handleFocus(index)"
-          :disabled="isSubmitted"
-          :maxlength="maxLength"
+            :ref="(el) => { if (el) inputRefs[index] = el }"
+            type="text"
+            class="blank-input"
+            :placeholder="`第${index+1}空`"
+            :value="userAnswers[index]"
+            @input="handleInput(index, $event)"
+            :disabled="isSubmitted"
+            :maxlength="maxLength"
         />
-        
+
         <!-- 正确/错误图标 -->
         <transition name="icon-fade">
           <div v-if="isSubmitted" class="blank-status-icon">
             <el-icon v-if="isBlankCorrect(index)" color="#67c23a">
-              <SuccessFilled />
+              <SuccessFilled/>
             </el-icon>
             <el-icon v-else-if="userAnswers[index]" color="#f56c6c">
-              <CircleCloseFilled />
+              <CircleCloseFilled/>
             </el-icon>
           </div>
         </transition>
@@ -218,23 +220,34 @@ defineExpose({
     <transition name="fade">
       <div v-if="isSubmitted" class="explanation-box">
         <div class="explanation-content">
-          <el-icon><InfoFilled /></el-icon>
+          <el-icon>
+            <InfoFilled/>
+          </el-icon>
           <div class="explanation-text">
             <template v-if="isAllCorrect">
               <div class="explanation-title">全部正确！</div>
-              <div class="explanation-detail">太棒了，所有答案都正确。</div>
             </template>
             <template v-else-if="hasAnyFilled">
               <div class="explanation-title">部分正确</div>
               <div class="explanation-detail">
-                正确率：{{ Math.round(correctCount / calculatedBlankCount * 100) }}%
-                {{ correctCount }}/{{ calculatedBlankCount }}
+                正确率：{{ Math.round(correctCount / props.blankCount * 100) }}%
+                {{ correctCount }}/{{ props.blankCount }}
+              </div>
+              <div class="explanation-detail" style="margin-top: 8px;">
+                <strong>正确答案：</strong>{{ correctAnswer }}
               </div>
             </template>
             <template v-else>
               <div class="explanation-title">未作答</div>
-              <div class="explanation-detail">请填写所有空格后提交。</div>
+              <div class="explanation-detail">
+                <strong>正确答案：</strong>{{ correctAnswer }}
+              </div>
             </template>
+            
+            <!-- 统一显示解析内容 -->
+            <div v-if="explanation" class="explanation-detail" style="margin-top: 12px; border-top: 1px solid var(--el-border-color-light); padding-top: 12px;">
+              <p><strong>解析：</strong>{{ explanation }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -246,55 +259,71 @@ defineExpose({
 @import '../../styles/variables';
 
 .fill-blank-question {
-  --card-radius: 16px;
-  --transition-base: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  --card-radius: 24px;
+  --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   --primary-color: var(--el-color-primary);
-  --success-color: #67c23a;
-  --danger-color: #f56c6c;
-  --warning-color: #e6a23c;
+  --success-color: #34c759;
+  --danger-color: #ff3b30;
+  --warning-color: #ff9f0a;
 
   background: var(--el-bg-color);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: var(--card-radius);
-  padding: 24px;
-  margin-bottom: 16px;
+  padding: 32px;
+  margin-bottom: 24px;
   border: 1px solid var(--el-border-color-light);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  transition: var(--transition-base);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02),
+  0 10px 15px -3px rgba(0, 0, 0, 0.04),
+  0 0 0 1px rgba(0, 0, 0, 0.02);
+  transition: var(--transition-smooth);
   position: relative;
+  opacity: 0.95;
 
   &.compact-mode {
-    padding: 16px;
+    padding: 20px;
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid var(--el-border-color-lighter);
+    backdrop-filter: none;
   }
 
   &.is-submitted {
     .blank-input {
       color: var(--el-text-color-primary);
-      background: var(--el-fill-color-light);
+      // background: transparent; // Let parent background show
     }
   }
 
   .knowledge-label {
+    display: inline-flex;
+    align-items: center;
     font-size: 12px;
-    color: var(--primary-color);
-    background: var(--el-color-primary-light-9);
-    padding: 4px 12px;
-    border-radius: 8px;
-    display: inline-block;
-    margin-bottom: 12px;
     font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(var(--el-color-primary-rgb), 0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(4px);
   }
 
   .question-text {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 600;
     color: var(--el-text-color-primary);
-    line-height: 1.8;
-    margin-bottom: 24px;
+    line-height: 1.6;
+    margin-bottom: 32px;
+    letter-spacing: -0.01em;
 
     :deep(.blank-placeholder) {
-      color: var(--el-text-color-placeholder);
-      font-weight: 500;
-      font-style: italic;
+      display: inline-block;
+      min-width: 60px;
+      border-bottom: 2px solid var(--el-text-color-placeholder);
+      margin: 0 4px;
+      vertical-align: bottom;
     }
   }
 
@@ -308,19 +337,26 @@ defineExpose({
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 16px;
-    border-radius: 12px;
+    padding: 12px 16px;
+    border-radius: 16px;
     background: var(--el-fill-color-light);
-    border: 2px dashed var(--el-border-color);
-    transition: var(--transition-base);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    transition: var(--transition-smooth);
+
+    &:focus-within {
+      background: var(--el-bg-color);
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.15);
+      transform: translateY(-1px);
+    }
   }
 
   .blank-number {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
-    background: var(--el-fill-color-dark);
-    color: var(--el-text-color-regular);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--el-text-color-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -332,46 +368,70 @@ defineExpose({
 
   .blank-input {
     flex: 1;
-    padding: 12px 16px;
-    font-size: 16px;
+    padding: 8px 0;
+    font-size: 18px;
     font-family: monospace;
-    background: var(--el-bg-color);
+    background: transparent;
     border: none;
-    border-radius: 8px;
     color: var(--el-text-color-primary);
     outline: none;
-    transition: var(--transition-base);
+    transition: var(--transition-smooth);
+    border-bottom: 2px solid transparent;
 
     &::placeholder {
       color: var(--el-text-color-placeholder);
+      opacity: 0.5;
     }
 
     &:focus {
-      background: var(--el-bg-color);
-      border: 2px solid var(--primary-color);
+      border-bottom-color: var(--primary-color);
     }
 
     &:disabled {
-      cursor: not-allowed;
-      opacity: 0.7;
+      cursor: default;
+      opacity: 0.8;
+      border-bottom-color: transparent;
     }
   }
 
   .blank-status-icon {
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
   }
 
   .blank-item.is-correct {
-    background: var(--success-light);
+    background: rgba(52, 199, 89, 0.1);
     border-color: var(--success-color);
+
+    .blank-input {
+      color: #1a7f37;
+    }
+
+    .blank-number {
+      background: rgba(52, 199, 89, 0.2);
+      color: #1a7f37;
+    }
   }
 
   .blank-item.is-wrong {
-    background: var(--danger-light);
+    background: rgba(255, 59, 48, 0.08);
     border-color: var(--danger-color);
     animation: shake 0.5s ease-in-out;
+
+    .blank-input {
+      color: var(--danger-color);
+      text-decoration: line-through;
+    }
+
+    .blank-number {
+      background: rgba(255, 59, 48, 0.2);
+      color: var(--danger-color);
+    }
   }
 
   .blank-item.is-empty {
@@ -379,24 +439,50 @@ defineExpose({
   }
 
   .blank-item.is-disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    border-color: var(--el-border-color);
-    background: var(--el-fill-color-blank);
+    opacity: 0.8;
+    cursor: default;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
   }
 
   @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-    20%, 40%, 60%, 80% { transform: translateX(4px); }
+    10%, 90% {
+      transform: translate3d(-1px, 0, 0);
+    }
+    20%, 80% {
+      transform: translate3d(2px, 0, 0);
+    }
+    30%, 50%, 70% {
+      transform: translate3d(-4px, 0, 0);
+    }
+    40%, 60% {
+      transform: translate3d(4px, 0, 0);
+    }
   }
 
   .explanation-box {
-    margin-top: 24px;
-    padding: 20px;
-    background: var(--el-fill-color-light);
-    border-radius: 12px;
-    border-left: 4px solid var(--primary-color);
+    margin-top: 32px;
+    padding: 24px;
+    border-radius: 20px;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-light);
+    backdrop-filter: blur(10px);
+    animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    opacity: 0.95;
+  }
+
+  @keyframes slideUpFade {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .explanation-content {
@@ -413,48 +499,91 @@ defineExpose({
   }
 
   .explanation-detail {
-    font-size: 14px;
+    font-size: 15px;
     color: var(--el-text-color-regular);
     line-height: 1.6;
   }
-}
 
-// 深色模式
-.dark .fill-blank-question {
-  background: rgba(28, 28, 30, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-}
+  // Dark Mode Adaptation
+  :global(.dark) & {
+    background: rgba(28, 28, 30, 0.65);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 
-.dark .knowledge-label {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 1);
-}
+    &.compact-mode {
+      background: transparent;
+      border-color: rgba(255, 255, 255, 0.1);
+    }
 
-.dark .question-text {
-  color: rgba(255, 255, 255, 1);
-}
+    .question-text {
+      color: #FFFFFF;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 
-.dark .blank-input {
-  background: rgba(0, 0, 0, 0.8);
-  color: rgba(255,  255, 255, 1);
-}
+      :deep(.blank-placeholder) {
+        border-bottom-color: rgba(255, 255, 255, 0.3);
+      }
+    }
 
-.dark .blank-number {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.9);
-}
+    .blank-item {
+      background: rgba(44, 44, 46, 0.4);
+      border-color: rgba(255, 255, 255, 0.08);
 
-.dark .explanation-box {
-  background: rgba(255, 255, 255, 0.08);
-  border-left-color: rgba(255, 255, 255, 0.3);
-}
+      &:focus-within {
+        background: rgba(58, 58, 60, 0.8);
+        border-color: var(--primary-color);
+        box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.6);
+      }
+    }
 
-.dark .explanation-title {
-  color: rgba(255, 255, 255, 1);
-}
+    .blank-number {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+    }
 
-.dark .explanation-detail {
-  color: rgba(255, 255, 255, 0.7);
+    .blank-input {
+      color: white;
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+      }
+    }
+
+    .blank-item.is-correct {
+      background: rgba(52, 199, 89, 0.2);
+      border-color: var(--success-color);
+
+      .blank-input {
+        color: #4cd964;
+      }
+
+      .blank-number {
+        background: rgba(52, 199, 89, 0.3);
+        color: white;
+      }
+    }
+
+    .blank-item.is-wrong {
+      background: rgba(255, 69, 58, 0.2);
+      border-color: var(--danger-color);
+
+      .blank-input {
+        color: #ff453a;
+      }
+
+      .blank-number {
+        background: rgba(255, 69, 58, 0.3);
+        color: white;
+      }
+    }
+
+    .explanation-box {
+      background: rgba(44, 44, 46, 0.6);
+      border-color: rgba(255, 255, 255, 0.1);
+
+      .explanation-detail {
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+  }
 }
 </style>
