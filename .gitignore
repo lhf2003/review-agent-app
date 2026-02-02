@@ -65,3 +65,6 @@ hs_err_pid*
 /logs/
 /config/
 
+# Git worktrees
+.worktrees/
+
