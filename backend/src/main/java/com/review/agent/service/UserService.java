@@ -395,13 +395,7 @@ public class UserService {
         // 9. 获取成就列表
         stats.setAchievements(getAchievementList(userId));
 
-        // 10. 获取测验分数趋势
-        stats.setQuizScoreTrend(getQuizScoreTrend(userId));
-
-        // 11. 获取知识点掌握度
-        stats.setKnowledgeMastery(getKnowledgeMastery(userId));
-
-        // 12. 计算学习进度
+        // 10. 计算学习进度
         stats.setLearningProgress(calculateLearningProgress(userId));
 
         return stats;
@@ -537,74 +531,6 @@ public class UserService {
     // endregion
 
     // region 学习成就相关
-
-    /**
-     * 获取用户测验分数趋势
-     * @param userId 用户ID
-     * @return 测验分数趋势列表（按时间升序）
-     */
-    public List<UserStatsVo.QuizScoreTrendVo> getQuizScoreTrend(Long userId) {
-        List<QuizRecord> quizRecords = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        List<UserStatsVo.QuizScoreTrendVo> trend = new ArrayList<>();
-        for (QuizRecord record : quizRecords) {
-            UserStatsVo.QuizScoreTrendVo vo = new UserStatsVo.QuizScoreTrendVo();
-            vo.setDate(record.getCreatedTime().format(formatter));
-            vo.setScore(record.getTotalScore());
-            trend.add(vo);
-        }
-        return trend;
-    }
-
-    /**
-     * 获取用户知识点掌握度
-     * @param userId 用户ID
-     * @return 知识点掌握度列表（按正确率降序）
-     */
-    public List<UserStatsVo.KnowledgeMasteryVo> getKnowledgeMastery(Long userId) {
-        // 查询用户所有已完成测验的问题（包含标签信息）
-        List<QuizRecord> quizRecords = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
-        Map<String, Integer> tagCorrectCount = new HashMap<>();
-        Map<String, Integer> tagTotalCount = new HashMap<>();
-
-        for (QuizRecord record : quizRecords) {
-            List<QuizQuestion> questions = quizQuestionRepository.findByQuizId(record.getId());
-            for (QuizQuestion question : questions) {
-                // 获取知识点标签
-                String knowledgePoint = question.getKnowledgePoint();
-                if (knowledgePoint == null || knowledgePoint.trim().isEmpty()) {
-                    continue; // 跳过没有标签的问题
-                }
-
-                // 统计该知识点下的题目总数
-                tagTotalCount.put(knowledgePoint, tagTotalCount.getOrDefault(knowledgePoint, 0) + 1);
-
-                // 统计正确数
-                Boolean isCorrect = question.getIsCorrect();
-                if (isCorrect != null && isCorrect) {
-                    tagCorrectCount.put(knowledgePoint, tagCorrectCount.getOrDefault(knowledgePoint, 0) + 1);
-                }
-            }
-        }
-
-        // 计算每个标签的正确率
-        List<UserStatsVo.KnowledgeMasteryVo> masteryList = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : tagCorrectCount.entrySet()) {
-            String tagName = entry.getKey();
-            int correctCount = entry.getValue();
-            int totalCount = tagTotalCount.getOrDefault(tagName, 0);
-            if (totalCount > 0) {
-                UserStatsVo.KnowledgeMasteryVo vo = new UserStatsVo.KnowledgeMasteryVo();
-                vo.setTagName(tagName);
-                vo.setAccuracyRate(correctCount * 100.0 / totalCount);
-                masteryList.add(vo);
-            }
-        }
-
-        // 按正确率降序排序
-        masteryList.sort((a, b) -> b.getAccuracyRate().compareTo(a.getAccuracyRate()));
-        return masteryList;
-    }
 
     /**
      * 检查并自动解锁用户成就

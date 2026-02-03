@@ -5,11 +5,16 @@ import { ArrowLeft, Reading, Delete, FolderOpened } from '@element-plus/icons-vu
 import { api } from '../api/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AnimatedList from '../components/AnimatedList.vue'
+import QuizLoadingModal from '../components/quiz/QuizLoadingModal.vue'
 
 const route = useRoute()
 const router = useRouter()
 const info = ref({})
 const loading = ref(false)
+const showQuizLoading = ref(false)
+const estimatedSeconds = ref(40)
+const quizCompletedId = ref(null) // 存储已完成生成的 quizId
+const apiCompleted = ref(false) // API 是否已完成
 
 onMounted(() => {
   fetchDetail()
@@ -25,12 +30,122 @@ async function fetchDetail() {
   }
 }
 
-function startLearning() {
+async function startLearning() {
   if (!info.value.analysisResults || info.value.analysisResults.length === 0) {
     ElMessage.warning('合集为空，无法开始学习')
     return
   }
-  router.push(`/collections/${info.value.id}/quiz`)
+
+  try {
+    // 1. 检测版本
+    const checkResult = await api.checkQuizVersion(info.value.id)
+
+    // 2. 没有历史记录，直接创建
+    if (!checkResult.hasExistingQuiz) {
+      await createQuiz()
+      return
+    }
+
+    // 3. 版本一致，直接使用
+    if (checkResult.isVersionMatch) {
+      router.push(`/collections/${info.value.id}/quiz?quizId=${checkResult.quizId}`)
+      return
+    }
+
+    // 4. 版本不一致，弹窗询问
+    showVersionMismatchDialog(checkResult)
+
+  } catch (error) {
+    ElMessage.error('版本检测失败: ' + error.message)
+  }
+}
+
+/**
+ * 显示版本不匹配对话框
+ */
+function showVersionMismatchDialog(checkResult) {
+  ElMessageBox.confirm(
+    '检测到合集内容已更新，题库可能不再完整。是否基于最新内容重新生成题目？',
+    '题库版本提示',
+    {
+      distinguishCancelAndClose: true,
+      confirmButtonText: '重新生成',
+      cancelButtonText: '继续当前题型',
+      type: 'warning',
+    }
+  ).then(() => {
+    regenerateQuiz()
+  }).catch((action) => {
+    if (action === 'cancel') {
+      router.push(`/collections/${info.value.id}/quiz?quizId=${checkResult.quizId}`)
+    }
+  })
+}
+
+/**
+ * 计算预估生成时间
+ */
+function calculateEstimatedTime() {
+  const resultCount = info.value.analysisResults?.length || 0
+
+  // 小合集（≤5个分析结果）：30-40秒
+  if (resultCount <= 5) {
+    estimatedSeconds.value = 30 + Math.floor(Math.random() * 11) // 30-40秒随机
+  } else {
+    // 大合集：基础30秒 + 每个分析结果1秒
+    const estimated = 30 + resultCount*2
+    // 限制在 30-90 秒之间
+    estimatedSeconds.value = Math.min(estimated, 90)
+  }
+}
+
+/**
+ * 创建新题库
+ */
+async function createQuiz() {
+  calculateEstimatedTime()
+  showQuizLoading.value = true
+  apiCompleted.value = false
+
+  try {
+    const quiz = await api.generateQuiz({ collectionId: info.value.id })
+    // API 完成，记录 quizId，等待进度条到 100%
+    quizCompletedId.value = quiz.id
+    apiCompleted.value = true
+  } catch (error) {
+    showQuizLoading.value = false
+    ElMessage.error('生成题库失败: ' + error.message)
+  }
+}
+
+/**
+ * 重新生成题库
+ */
+async function regenerateQuiz() {
+  calculateEstimatedTime()
+  showQuizLoading.value = true
+  apiCompleted.value = false
+
+  try {
+    const newQuiz = await api.regenerateQuiz(info.value.id)
+    // API 完成，记录 quizId，等待进度条到 100%
+    quizCompletedId.value = newQuiz.id
+    apiCompleted.value = true
+  } catch (error) {
+    showQuizLoading.value = false
+    ElMessage.error('重新生成题库失败: ' + error.message)
+  }
+}
+
+/**
+ * 题库生成完成后的跳转
+ */
+function onQuizCompleted() {
+  showQuizLoading.value = false
+  if (quizCompletedId.value) {
+    router.push(`/collections/${info.value.id}/quiz?quizId=${quizCompletedId.value}`)
+    quizCompletedId.value = null
+  }
 }
 
 function confirmRemove(item) {
@@ -155,6 +270,15 @@ function viewOriginal(item) {
         </div>
       </div>
     </div>
+
+    <!-- 题库生成加载弹窗 -->
+    <QuizLoadingModal
+      v-model="showQuizLoading"
+      :collection-name="info.name"
+      :estimated-seconds="estimatedSeconds"
+      :api-completed="apiCompleted"
+      @completed="onQuizCompleted"
+    />
   </div>
 </template>
 

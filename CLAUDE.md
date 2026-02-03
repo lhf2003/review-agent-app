@@ -152,6 +152,16 @@ Service methods that perform write operations must include:
 - Animation curve: `cubic-bezier(0.25, 1, 0.5, 1)`
 - No default browser focus outlines (globally disabled)
 
+### Date/Time Formatting Convention
+- **Backend**: ALL date/time fields in VO classes MUST use `@JsonFormat` annotation for formatting
+- **Frontend**: DO NOT format dates in JavaScript/Vue components - display backend-formatted values directly
+- Backend annotation example:
+  ```java
+  @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
+  private LocalDateTime createdTime;
+  ```
+- **Rationale**: Centralized formatting ensures consistency and reduces frontend code duplication
+
 ## Core Business Flows
 
 ### File Sync & Analysis Pipeline

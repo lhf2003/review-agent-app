@@ -85,7 +85,11 @@ async function request(path, { method = 'GET', params, body, headers } = {}) {
   let url = path.startsWith('http') ? path : (baseUrl + path)
 
   if (params) {
-    const usp = new URLSearchParams(params)
+    // 过滤掉 null 和 undefined 值，避免 URLSearchParams 将其转换为 "null" 字符串
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([_, v]) => v != null)
+    )
+    const usp = new URLSearchParams(cleanParams)
     url += `?${usp.toString()}`
   }
 
@@ -586,6 +590,42 @@ export const api = {
   deleteMistakes(questionIds) {
     return request('/mistake-book/delete', { method: 'DELETE', body: { questionIds } })
   },
+
+  // ========== Quiz API ==========
+  /**
+   * 获取习题历史
+   */
+  getQuizHistory(params) {
+    return request('/collection/quiz/history', { params })
+  },
+
+  /**
+   * 获取习题详情
+   */
+  getQuizDetail(quizId) {
+    return request(`/collection/quiz/${quizId}/detail`)
+  },
+
+  /**
+   * 检测题库版本
+   */
+  checkQuizVersion(collectionId) {
+    return request(`/collection/${collectionId}/quiz/version-check`)
+  },
+
+  /**
+   * 重新生成题库
+   */
+  regenerateQuiz(collectionId) {
+    return request(`/collection/${collectionId}/quiz/regenerate`, { method: 'POST' })
+  },
+
+  /**
+   * 获取习题统计数据
+   */
+  getQuizStats() {
+    return request('/collection/quiz/stats')
+  }
 }
 
 function normalizeResponse(resp) {

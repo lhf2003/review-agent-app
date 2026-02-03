@@ -9,10 +9,15 @@ import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.pojo.QuizRecord;
 import com.review.agent.entity.request.BatchSubmitRequest;
 import com.review.agent.entity.request.CollectionRequest;
+import com.review.agent.entity.vo.QuizDetailVO;
+import com.review.agent.entity.vo.QuizHistoryVO;
 import com.review.agent.entity.vo.QuizResultSummary;
+import com.review.agent.entity.vo.QuizStatsVO;
+import com.review.agent.entity.vo.QuizVersionCheckResult;
 import com.review.agent.entity.vo.QuizVo;
 import com.review.agent.service.QuizService;
 import jakarta.annotation.Resource;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -99,5 +104,83 @@ public class QuizController {
         Long quizId = Long.valueOf(body.get("quizId").toString());
         quizService.resetQuiz(quizId);
         return ResultUtil.success();
+    }
+
+    /**y
+     * 查询用户习题历史列表
+     *
+     * @param status 状态筛选（null=全部，0=进行中，1=已完成）
+     * @param collectionId 合集筛选（null=全部合集）
+     * @param page 页码（从0开始）
+     * @param size 每页大小
+     * @return 分页的习题历史
+     */
+    @GetMapping("/quiz/history")
+    public BaseResponse<Page<QuizHistoryVO>> getQuizHistory(
+        @RequestParam(required = false) Integer status,
+        @RequestParam(required = false) Long collectionId,
+        @RequestParam(defaultValue = "0") Integer page,
+        @RequestParam(defaultValue = "20") Integer size
+    ) {
+        Long userId = securityUtils.getCurrentUserId();
+        Page<QuizHistoryVO> history = quizService.getQuizHistory(
+            userId, status, collectionId, page, size
+        );
+        return ResultUtil.success(history);
+    }
+
+    /**
+     * 获取习题详情
+     *
+     * @param quizId 习题ID
+     * @return 习题详情
+     */
+    @GetMapping("/quiz/{quizId}/detail")
+    public BaseResponse<QuizDetailVO> getQuizDetail(@PathVariable Long quizId) {
+        Long userId = securityUtils.getCurrentUserId();
+        QuizDetailVO detail = quizService.getQuizDetail(userId, quizId);
+        return ResultUtil.success(detail);
+    }
+
+    /**
+     * 检测题库版本是否与合集版本一致
+     *
+     * @param collectionId 合集ID
+     * @return 版本检测结果
+     */
+    @GetMapping("/{collectionId}/quiz/version-check")
+    public BaseResponse<QuizVersionCheckResult> checkQuizVersion(
+        @PathVariable Long collectionId
+    ) {
+        Long userId = securityUtils.getCurrentUserId();
+        QuizVersionCheckResult result = quizService.checkQuizVersion(userId, collectionId);
+        return ResultUtil.success(result);
+    }
+
+    /**
+     * 重新生成题库（基于旧题知识点+新内容）
+     *
+     * @param collectionId 合集ID
+     * @return 新生成的QuizRecord
+     */
+    @PostMapping("/{collectionId}/quiz/regenerate")
+    public BaseResponse<QuizRecord> regenerateQuiz(
+        @PathVariable Long collectionId
+    ) {
+        Long userId = securityUtils.getCurrentUserId();
+        QuizRecord newQuiz = quizService.regenerateQuizWithNewContent(userId, collectionId);
+        return ResultUtil.success(newQuiz);
+    }
+
+    /**
+     * 获取习题统计数据
+     *
+     * @return 习题统计数据（分数趋势和知识点掌握度）
+     */
+    @GetMapping("/quiz/stats")
+    public BaseResponse<QuizStatsVO> getQuizStats() {
+        Long userId = securityUtils.getCurrentUserId();
+        QuizStatsVO stats = quizService.getQuizStats(userId);
+        return ResultUtil.success(stats);
     }
 }

@@ -289,6 +289,21 @@ public class PromptService {
     }
 
     /**
+     * 获取题型重构提示词
+     *
+     * @param historicalKnowledgePoints 历史题库知识点列表
+     * @param newCases 新增的分析案例
+     * @return 构建好的提示词
+     */
+    public String getQuizRegenerationPrompt(String historicalKnowledgePoints, String newCases)
+        throws PromptProcessingException {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("historicalKnowledgePoints", historicalKnowledgePoints);
+        variables.put("newCases", newCases);
+        return buildPrompt("Quiz.题型重构提示词", variables);
+    }
+
+    /**
      * 重新加载提示词
      */
     public void reloadPrompts() throws PromptProcessingException {

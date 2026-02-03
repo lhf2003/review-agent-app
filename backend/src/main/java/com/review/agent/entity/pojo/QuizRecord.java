@@ -53,4 +53,22 @@ public class QuizRecord {
      */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    /**
+     * 合集内容哈希值（用于版本检测）
+     */
+    @Column(name = "collection_version_hash", length = 64)
+    private String collectionVersionHash;
+
+    /**
+     * 生成题库时使用的分析结果ID列表（JSON格式）
+     */
+    @Column(name = "analysis_result_ids", columnDefinition = "TEXT")
+    private String analysisResultIds;
+
+    /**
+     * 题型是否已过期（合集有新内容）
+     */
+    @Column(name = "is_outdated")
+    private Boolean isOutdated = false;
 }

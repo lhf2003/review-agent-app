@@ -50,16 +50,6 @@ public class UserStatsVo {
     private List<AchievementVo> achievements;
 
     /**
-     * 测验分数趋势
-     */
-    private List<QuizScoreTrendVo> quizScoreTrend;
-
-    /**
-     * 知识点掌握度
-     */
-    private List<KnowledgeMasteryVo> knowledgeMastery;
-
-    /**
      * 学习进度
      */
     private LearningProgressVo learningProgress;
@@ -129,38 +119,6 @@ public class UserStatsVo {
          * 解锁时间
          */
         private String unlockedTime;
-    }
-
-    /**
-     * 测验分数趋势 VO
-     */
-    @Data
-    public static class QuizScoreTrendVo {
-        /**
-         * 测验日期（yyyy-MM-dd）
-         */
-        private String date;
-
-        /**
-         * 分数
-         */
-        private Integer score;
-    }
-
-    /**
-     * 知识点掌握度 VO
-     */
-    @Data
-    public static class KnowledgeMasteryVo {
-        /**
-         * 标签名
-         */
-        private String tagName;
-
-        /**
-         * 正确率（百分比）
-         */
-        private Double accuracyRate;
     }
 
     /**

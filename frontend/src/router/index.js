@@ -22,6 +22,8 @@ const history = isFileProtocol ? createWebHashHistory(import.meta.env.BASE_URL) 
 const CollectionListPage = () => import('../pages/CollectionListPage.vue')
 const CollectionDetailPage = () => import('../pages/CollectionDetailPage.vue')
 const QuizPage = () => import('../pages/QuizPage.vue')
+const QuizHistoryPage = () => import('../pages/quiz/QuizHistoryPage.vue')
+const QuizDetailPage = () => import('../pages/quiz/QuizDetailPage.vue')
 const MistakeBookPage = () => import('../pages/MistakeBookPage.vue')
 
 const router = createRouter({
@@ -51,6 +53,8 @@ const router = createRouter({
     { path: '/collections', component: CollectionListPage },
     { path: '/collections/:id', component: CollectionDetailPage },
     { path: '/collections/:id/quiz', component: QuizPage },
+    { path: '/quiz-history', component: QuizHistoryPage },
+    { path: '/quiz-history/:quizId', component: QuizDetailPage },
     { path: '/mistake-book', component: MistakeBookPage },
   ],
 })

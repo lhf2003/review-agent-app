@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, RefreshRight, Check, FolderChecked, Delete, SuccessFilled, WarningFilled, Collection, Edit, Loading, PriceTag, Clock, MoreFilled } from '@element-plus/icons-vue'
+import { Search, RefreshRight, Check, FolderChecked, Delete, SuccessFilled, WarningFilled, Collection, Edit, Loading, PriceTag, Clock, MoreFilled, ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CustomScroll from '../components/CustomScroll.vue'
 import MistakeDrawer from '../components/quiz/MistakeDrawer.vue'
@@ -103,6 +103,11 @@ const currentQuestionId = ref(null)
 onMounted(() => {
   fetchMistakes()
 })
+
+// 返回习题历史
+function goBack() {
+  router.push('/quiz-history')
+}
 
 // 获取错题列表
 async function fetchMistakes() {
@@ -361,8 +366,14 @@ const getQuestionTypeTagType = (type) => {
     <!-- 页面标题栏 -->
     <div class="page-header-bar">
       <div class="header-left">
-        <h1 class="page-title">错题本</h1>
-        <p class="page-subtitle">复习和巩固你的薄弱知识点</p>
+        <el-button @click="goBack" link class="back-button">
+          <el-icon><ArrowLeft /></el-icon>
+          返回习题
+        </el-button>
+        <div class="title-section">
+          <h1 class="page-title">错题本</h1>
+          <p class="page-subtitle">复习和巩固你的薄弱知识点</p>
+        </div>
       </div>
       <div class="header-right">
         <el-button
@@ -614,17 +625,33 @@ const getQuestionTypeTagType = (type) => {
 }
 
 .header-left {
-  .page-title {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--el-text-color-primary);
-    margin: 0 0 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .back-button {
+    align-self: flex-start;
+    font-size: 14px;
+    padding: 4px 8px;
+
+    &:hover {
+      background: var(--el-fill-color);
+    }
   }
 
-  .page-subtitle {
-    font-size: 14px;
-    color: var(--el-text-color-secondary);
-    margin: 0;
+  .title-section {
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--el-text-color-primary);
+      margin: 0 0 8px 0;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--el-text-color-secondary);
+      margin: 0;
+    }
   }
 }
 
