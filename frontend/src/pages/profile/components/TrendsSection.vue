@@ -64,13 +64,46 @@
         </div>
       </div>
     </div>
+
+    <!-- 统计图表 (Moved from QuizHistoryPage) -->
+    <div v-if="quizStats.quizScoreTrend.length > 0 || quizStats.knowledgeMastery.length > 0" class="stats-section">
+      <div class="section-divider"></div>
+      <div class="stats-grid">
+        <!-- 分数趋势图 -->
+        <div class="stat-card glass-card" v-if="quizStats.quizScoreTrend.length > 0">
+          <h4 class="section-title">
+            <el-icon><TrendCharts /></el-icon>
+            分数趋势
+          </h4>
+          <ScoreTrendChart
+            :data="quizStats.quizScoreTrend"
+            :loading="statsLoading"
+            height="240px"
+          />
+        </div>
+
+        <!-- 知识点掌握度 -->
+        <div class="stat-card glass-card" v-if="quizStats.knowledgeMastery.length > 0">
+          <h4 class="section-title">
+            <el-icon><Star /></el-icon>
+            知识点掌握度
+          </h4>
+          <KnowledgeRadarChart
+            :data="quizStats.knowledgeMastery"
+            :loading="statsLoading"
+            height="240px"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, ref, onMounted, watch } from 'vue'
-import { Star } from '@element-plus/icons-vue'
-import { ProgressGaugeChart } from '../../../components/charts'
+import { Star, TrendCharts } from '@element-plus/icons-vue'
+import { ProgressGaugeChart, ScoreTrendChart, KnowledgeRadarChart } from '../../../components/charts'
+import { api } from '../../../api/http'
 
 // 图表引用
 const progressGaugeChartRef = ref(null)
@@ -92,6 +125,31 @@ const props = defineProps({
 
 const emit = defineEmits(['charts-ready'])
 
+// 统计数据
+const quizStats = ref({
+  quizScoreTrend: [],
+  knowledgeMastery: []
+})
+const statsLoading = ref(false)
+
+/**
+ * 加载统计数据
+ */
+async function loadStats() {
+  statsLoading.value = true
+  try {
+    const data = await api.getQuizStats()
+    quizStats.value = {
+      quizScoreTrend: data.quizScoreTrend || [],
+      knowledgeMastery: data.knowledgeMastery || []
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
+  } finally {
+    statsLoading.value = false
+  }
+}
+
 // 当组件可见时，触发所有图表 resize
 function resizeAllCharts() {
   setTimeout(() => {
@@ -109,6 +167,7 @@ watch(() => props.achievementsData, () => {
 }, { deep: true })
 
 onMounted(() => {
+  loadStats()
   // 组件挂载后延迟 resize
   setTimeout(() => {
     resizeAllCharts()
@@ -142,6 +201,10 @@ const learningProgress = computed(() => props.achievementsData?.learningProgress
     0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   border: none;
   transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .section-title {
@@ -228,6 +291,30 @@ const learningProgress = computed(() => props.achievementsData?.learningProgress
   box-shadow: 0 2px 4px rgba(var(--el-color-primary-rgb), 0.2);
 }
 
+/* Stats Grid */
+.section-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 32px 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.stat-card {
+  /* Inherit some styles or add specific ones if needed, but glass-card class is not defined here.
+     The parent .trends-section is already a glass card.
+     We can just make these transparent or slightly distinct.
+  */
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 /* Dark Mode */
 html.dark .trends-section {
   background: rgba(30, 30, 30, 0.65);
@@ -243,5 +330,14 @@ html.dark .progress-bar {
 html.dark .progress-fill {
   background: linear-gradient(90deg, var(--el-color-primary) 0%, color-mix(in srgb, var(--el-color-primary), black 10%) 100%);
   box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.3);
+}
+
+html.dark .section-divider {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+html.dark .stat-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 </style>

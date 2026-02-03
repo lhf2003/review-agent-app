@@ -1,0 +1,657 @@
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { TrendCharts, CircleCheck, Clock } from '@element-plus/icons-vue'
+import { api } from '../../api/http'
+import CustomScroll from '../../components/CustomScroll.vue'
+
+const router = useRouter()
+
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['select-quiz'])
+
+// 筛选条件
+const statusFilter = ref(null)
+const collectionFilter = ref(null)
+const collectionOptions = ref([])
+
+// 习题历史数据
+const quizHistory = ref([])
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalItems = ref(0)
+const loading = ref(false)
+
+/**
+ * 加载习题历史
+ */
+async function loadHistory() {
+  loading.value = true
+  try {
+    const response = await api.getQuizHistory({
+      status: statusFilter.value,
+      collectionId: collectionFilter.value,
+      page: currentPage.value - 1,
+      size: pageSize.value
+    })
+    quizHistory.value = response.content || []
+    totalItems.value = response.totalElements || 0
+  } catch (error) {
+    ElMessage.error('加载习题历史失败: ' + error.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+/**
+ * 跳转到习题详情
+ */
+function goToDetail(quizId) {
+  if (props.embedded) {
+    emit('select-quiz', quizId)
+  } else {
+    router.push(`/quiz-history/${quizId}`)
+  }
+}
+
+/**
+ * 获取状态样式
+ */
+function getStatusClass(quiz) {
+  if (quiz.isOutdated) return 'status-outdated'
+  if (quiz.status === 1) return 'status-completed'
+  return 'status-progress'
+}
+
+/**
+ * 获取状态文本
+ */
+function getStatusText(quiz) {
+  if (quiz.isOutdated) return '已过期'
+  if (quiz.status === 1) return '已完成'
+  return '进行中'
+}
+
+/**
+ * 获取分数颜色
+ */
+function getScoreClass(score) {
+  if (score >= 90) return 'score-excellent'
+  if (score >= 75) return 'score-good'
+  if (score >= 60) return 'score-pass'
+  return 'score-fail'
+}
+
+/**
+ * 加载合集列表
+ */
+async function loadCollections() {
+  try {
+    const result = await api.getCollectionList()
+    collectionOptions.value = result.list || []
+  } catch (error) {
+    console.error('加载合集列表失败:', error)
+  }
+}
+
+/**
+ * 页码变化
+ */
+function handlePageChange(page) {
+  currentPage.value = page
+  loadHistory()
+}
+
+onMounted(() => {
+  loadHistory()
+  loadCollections()
+})
+</script>
+
+<template>
+  <div class="quiz-history-page">
+    <!-- 筛选器栏 -->
+    <div class="filter-bar glass-card">
+      <div class="filter-controls">
+        <div class="filter-tabs">
+          <button
+            :class="['filter-tab', { active: statusFilter === null }]"
+            @click="statusFilter = null; loadHistory()"
+          >全部</button>
+          <button
+            :class="['filter-tab', { active: statusFilter === 1 }]"
+            @click="statusFilter = 1; loadHistory()"
+          >已完成</button>
+          <button
+            :class="['filter-tab', { active: statusFilter === 0 }]"
+            @click="statusFilter = 0; loadHistory()"
+          >进行中</button>
+        </div>
+
+        <el-select
+          v-model="collectionFilter"
+          @change="loadHistory"
+          placeholder="选择合集"
+          clearable
+          class="collection-select"
+          size="small"
+        >
+          <el-option
+            v-for="collection in collectionOptions"
+            :key="collection.id"
+            :label="collection.name"
+            :value="collection.id"
+          />
+        </el-select>
+      </div>
+    </div>
+
+    <!-- 加载状态 -->
+    <div v-if="loading && quizHistory.length === 0" class="loading-container">
+      <el-icon class="is-loading loading-icon" :size="32"><Loading /></el-icon>
+      <p class="loading-text">加载中...</p>
+    </div>
+
+    <!-- 习题列表 -->
+    <div v-else-if="quizHistory.length > 0" class="quiz-list-wrapper">
+      <CustomScroll>
+        <div class="quiz-list">
+          <div
+            v-for="quiz in quizHistory"
+            :key="quiz.quizId"
+            class="quiz-card glass-card"
+            @click="goToDetail(quiz.quizId)"
+          >
+            <div class="card-header">
+              <h3 class="card-title">{{ quiz.collectionName }}</h3>
+              <span :class="['status-badge', getStatusClass(quiz)]">
+                {{ getStatusText(quiz) }}
+              </span>
+            </div>
+
+            <div class="card-stats">
+              <div class="stat-group">
+                <div class="stat-item">
+                  <el-icon class="stat-icon"><TrendCharts /></el-icon>
+                  <span class="stat-label">得分</span>
+                  <span :class="['stat-value', getScoreClass(quiz.totalScore)]">
+                    {{ quiz.totalScore ?? '-' }}
+                  </span>
+                </div>
+                <div class="stat-item">
+                  <el-icon class="stat-icon"><CircleCheck /></el-icon>
+                  <span class="stat-label">正确</span>
+                  <span class="stat-value">{{ quiz.correctCount }}/{{ quiz.questionCount }}</span>
+                </div>
+              </div>
+
+              <div class="stat-item stat-time">
+                <el-icon class="stat-icon"><Clock /></el-icon>
+                <span class="stat-value">{{ quiz.createdTime }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CustomScroll>
+    </div>
+
+    <!-- 空状态 -->
+    <div v-else class="empty-state glass-card">
+      <div class="empty-icon">
+        <el-icon :size="64"><TrendCharts /></el-icon>
+      </div>
+      <h3 class="empty-title">暂无习题记录</h3>
+      <p class="empty-desc">创建题库后，即可开始练习巩固知识点</p>
+      <button class="create-btn" @click="router.push('/collections')">
+        去创建题库
+      </button>
+    </div>
+
+    <!-- 分页 -->
+    <div v-if="totalItems > 0" class="pagination-container">
+      <el-pagination
+        v-model:current-page="currentPage"
+        :page-size="pageSize"
+        :total="totalItems"
+        layout="prev, pager, next, total"
+        @current-change="handlePageChange"
+      />
+    </div>
+  </div>
+</template>
+
+<script>
+import { Loading } from '@element-plus/icons-vue'
+export default {
+  components: { Loading }
+}
+</script>
+
+<style scoped>
+.quiz-history-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow: hidden;
+}
+
+/* ============ Glassmorphism 效果 ============ */
+.glass-card {
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 2px 16px -1px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px -2px rgba(0, 0, 0, 0.08);
+}
+
+/* ============ 筛选栏 ============ */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  gap: 12px;
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 3px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.filter-tab {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: #86868b;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  white-space: nowrap;
+}
+
+.filter-tab:hover {
+  color: #1d1d1f;
+}
+
+.filter-tab.active {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1d1d1f;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.filter-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.collection-select {
+  width: 140px;
+}
+
+.collection-select :deep(.el-input__wrapper) {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+  transition: all 0.2s ease;
+  padding: 1px 11px;
+}
+
+.collection-select :deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.collection-select :deep(.el-input__wrapper.is-focus) {
+    border-color: #0071e3;
+    background: white;
+  }
+
+  /* ============ 加载状态 ============ */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  color: #86868b;
+  flex: 1;
+}
+
+.loading-icon {
+  color: #86868b;
+  margin-bottom: 16px;
+}
+
+.loading-text {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ============ 习题列表 ============ */
+.quiz-list-wrapper {
+  flex: 1;
+  min-height: 0; /* Important for flex child scroll */
+}
+
+.quiz-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px;
+}
+
+.quiz-card {
+  padding: 16px;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quiz-card:hover {
+  transform: scale(1.01);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.quiz-card:active {
+  transform: scale(0.99);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: #1d1d1f;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  margin-right: 8px;
+}
+
+/* ============ 状态标签 ============ */
+.status-badge {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-completed {
+  background: rgba(52, 199, 89, 0.12);
+  color: #34c759;
+}
+
+.status-progress {
+  background: rgba(0, 122, 255, 0.12);
+  color: #007aff;
+}
+
+.status-outdated {
+  background: rgba(255, 149, 0, 0.12);
+  color: #ff9500;
+}
+
+/* ============ 统计信息 ============ */
+.card-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.stat-group {
+  display: flex;
+  gap: 16px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-icon {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #86868b;
+  display: none; /* Hide label to save space in compact view */
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.stat-time {
+  color: #86868b;
+  font-size: 12px;
+}
+
+.stat-time .stat-value {
+  font-weight: 400;
+  color: #86868b;
+}
+
+/* ============ 分数颜色 ============ */
+.score-excellent { color: #34c759; }
+.score-good { color: #007aff; }
+.score-pass { color: #ff9500; }
+.score-fail { color: #ff3b30; }
+
+/* ============ 空状态 ============ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  border-radius: 16px;
+  margin-top: 40px;
+}
+
+.empty-icon {
+  color: #c7c7cc;
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 6px 0;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: #86868b;
+  margin: 0 0 20px 0;
+}
+
+.create-btn {
+  padding: 8px 16px;
+  background: #0071e3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.create-btn:hover {
+  background: #0077ed;
+  transform: scale(1.02);
+}
+
+.create-btn:active {
+  transform: scale(0.98);
+}
+
+/* ============ 分页 ============ */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  padding: 0;
+}
+
+.pagination-container :deep(.el-pagination) {
+  gap: 4px;
+  --el-pagination-button-width: 28px;
+  --el-pagination-button-height: 28px;
+}
+
+.pagination-container :deep(.el-pager li),
+.pagination-container :deep(.btn-prev),
+.pagination-container :deep(.btn-next) {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.pagination-container :deep(.el-pager li.is-active) {
+  background: #0071e3;
+  border-color: #0071e3;
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 1200px) {
+  /* No special handling needed as it's flex column */
+}
+
+@media (max-width: 768px) {
+  .quiz-history-page {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .filter-controls {
+    flex-wrap: wrap;
+  }
+
+  .collection-select {
+    width: 100%;
+    flex: 1;
+  }
+}
+
+/* ============ 暗色模式 ============ */
+@media (prefers-color-scheme: dark) {
+  .glass-header {
+    background: rgba(30, 30, 30, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-card {
+    background: rgba(40, 40, 42, 0.64);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-card:hover {
+    background: rgba(50, 50, 52, 0.8);
+  }
+
+  .card-title {
+    color: #f5f5f7;
+  }
+
+  .filter-tabs {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .filter-tab {
+    color: #86868b;
+  }
+
+  .filter-tab.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #f5f5f7;
+  }
+
+  .stat-icon,
+  .stat-label,
+  .stat-time {
+    color: #86868b;
+  }
+  
+  .stat-time .stat-value {
+    color: #86868b;
+  }
+
+  .stat-value {
+    color: #f5f5f7;
+  }
+
+  .empty-icon {
+    color: #48484a;
+  }
+
+  .empty-title {
+    color: #f5f5f7;
+  }
+
+  .empty-desc {
+    color: #86868b;
+  }
+}
+</style>

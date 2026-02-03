@@ -12,6 +12,13 @@ import { api } from '../api/http'
  * 错题本页面
  * 查看和复习历史错题
  */
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
 const router = useRouter()
 const loading = ref(false)
 const searchKeyword = ref('')
@@ -362,11 +369,11 @@ const getQuestionTypeTagType = (type) => {
 </script>
 
 <template>
-  <div class="mistake-book-page">
+  <div class="mistake-book-page" :class="{ 'is-embedded': embedded }">
     <!-- 页面标题栏 -->
     <div class="page-header-bar">
       <div class="header-left">
-        <el-button @click="goBack" link class="back-button">
+        <el-button v-if="!embedded" @click="goBack" link class="back-button">
           <el-icon><ArrowLeft /></el-icon>
           返回习题
         </el-button>
@@ -613,6 +620,12 @@ const getQuestionTypeTagType = (type) => {
   flex-direction: column;
   height: 100%;
   gap: 20px;
+  box-sizing: border-box;
+}
+
+/* Remove padding when embedded - padding is provided by wrapper */
+.mistake-book-page.is-embedded {
+  gap: 16px;
 }
 
 // 页面标题栏

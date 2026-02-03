@@ -7,6 +7,7 @@
 | 版本 | 日期 | 变更摘要 |
 |---|---|---|
 | v1.0 | 2026-01-24 ~ 2026-01-31 | AppleStyle 视觉体系演进；学习成就模块落地；后端认证/SSE/线程池/软删除/性能优化 |
+| v1.1 | 2026-02-03 | 习题模块页面间距规范化（参考 DataPage 顶栏设计） |
 
 ## 1. 项目定位与边界
 
@@ -150,7 +151,7 @@ flowchart LR
   A --> D[checkAndUnlockAchievements]
   B --> D
   D --> E[calculateLearningProgress]
-  E --> R[返回 UserStatsVo\n(成就/趋势/掌握度/进度)]
+  E --> R[返回 UserStatsVo(成就/趋势/掌握度/进度)]
 ```
 
 ## 7. 数据模型与数据库约定
@@ -247,124 +248,70 @@ flowchart LR
 }
 ```
 
+### 9.4 页面布局间距规范（参考 DataPage.vue）
+
+**核心原则**：使用容器级 `gap` 控制间距，而非在子组件中设置 padding，以获得更灵活和统一的布局控制。
+
+**典型页面布局结构**：
+
+```css
+/* 1. 页面根容器 - 使用 gap 控制工具栏与内容的间距 */
+.page-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  gap: 16px;           /* 统一的组件间距 */
+  padding: 0 4px;      /* 轻微的左右边距 */
+  min-height: 0;        /* 关键：确保 flex 子项正确收缩 */
+}
+
+/* 2. 顶部工具栏 - 最小垂直 padding */
+.toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 4px 0;      /* 最小垂直 padding，非 16px+ */
+  gap: 16px;
+}
+
+/* 3. 内容区域 - 零 padding，依赖容器 gap */
+.content-area {
+  flex: 1;
+  padding: 0;          /* 无 padding，间距由父容器 gap 控制 */
+  overflow: hidden;
+  min-height: 0;        /* 关键：确保 flex 子项正确收缩 */
+}
+```
+
+**关键设计决策**：
+
+| 场景 | 推荐值 | 原因 |
+|------|--------|------|
+| 工具栏垂直 padding | `4px 0` | 最小化留白，保持紧凑 |
+| 页面容器 gap | `16px` | 统一的组件间间距 |
+| 内容区域 padding | `0` | 依赖容器 gap 控制，避免累积 |
+| flex 子项 min-height | `0` | 确保 flex 子项能正确收缩，避免溢出 |
+
+**示例参考**：
+- ✅ **正例**：`DataPage.vue` (toolbar: `padding: 4px 0`, content-area: `padding: 0`)
+- ✅ **正例**：`quiz/index.vue` (已优化，遵循此规范)
+- ❌ **反例**：工具栏使用 `padding: 16px 24px`（过大）+ 内容区域使用 `padding: 16px 24px 24px 24px`（冗余）
+
 ## 10. 近期变更摘要（沉淀归档）
 
 ### 10.1 错题本模块（Mistake Book）- 完整实现
 错题本模块**详细文档：** [docs/modules/mistake-book.md](docs/modules/mistake-book.md)
-
-### 10.2 学习成就模块（迭代 1）
-
-- 数据表：`achievement_definition`（成就定义）、`user_achievement`（用户成就）
-- 后端：UserService 增加趋势/掌握度/解锁/进度计算，并在 `getUserStats()` 汇总返回
-- 前端：ProfileNav / AchievementsSection / TrendsSection + `useAchievements.js`（图表初始化、主题切换、自适应与释放）
-
-### 10.3 后端架构优化（认证、线程池、SSE、事务、软删除、性能）
-
-- 认证：从 `@RequestHeader("userId")` 迁移为 Security Context（`SecurityUtils.getCurrentUserId()`）
-- 线程池：为分析/SSE/默认异步任务提供专用线程池，替换 `new Thread()`，支持优雅关闭
-- SSE：连接管理器 + 心跳任务，完善异常清理与连接上限
-- 事务：关键写方法增加显式事务边界，保证异常回滚
-- 软删除：核心实体统一 `deleted/deleted_at` 与恢复能力
-- 性能：消除 N+1，批量查询与 Map 加速路径
 
 ### 10.4 AppleStyle 视觉演进（设置页与全局体验）
 
 - 设置页：分组布局、侧边栏高亮、输入无边框、底部悬浮保存条、离开未保存确认
 - 统一：Glassmorphism、圆角、阴影、深浅色自适应
 
-### 10.5 成就通知 UI 重构（Apple Style）
-
-- **视觉升级**：采用高通透 Glassmorphism 背景、Mesh Gradient 光效、悬浮图标与微阴影。
-- **动画优化**：引入 `spring` 物理动画曲线，替换生硬的 `bounce`；优化进度条填充与卡片入场动画。
-- **排版优化**：重构文字层级（Badge/Title/Description），优化按钮交互反馈（Scale/Shadow）。
-
-### 10.6 趋势分析 UI 优化（ui-ux-pro-max）
-
-- **视觉升级**：基于 ui-ux-pro-max 的 "Modern Glass" 建议，优化 TrendsSection 背景模糊度、阴影深度与圆角（24px）。
-- **细节打磨**：
-  - 进度条升级为 Pill Shape + 渐变填充 + 辉光阴影。
-  - 标题字体优化为 System Font Stack，增加 Tracking 与 Drop Shadow。
-  - Dark Mode 适配优化，确保磨砂玻璃质感在深色背景下自然过渡。
-
 ### 10.7 侧边栏与全局样式微调
 
 - **侧边栏优化**：将侧边栏左间距从 20px 收紧至 12px（响应式同步调整），优化空间利用率。
 - **全局样式修复**：移除全局 focus outline（黄色边框），修复深色模式下的视觉干扰问题；禁用全局 `html/body` 滚动条，防止双重滚动条问题；实施强力 CSS Reset (`*:focus { outline: none }`) 以彻底消除浏览器默认的焦点高亮。
-
-### 10.8 深色模式体验重构（High Contrast OLED）
-
-- **背景优化**：全局背景强制为纯黑 (`#000000`)，消除原有灰色调背景的“灰蒙蒙”感，适配 OLED 屏幕。
-- **高对比度文字**：主要文字变量 (`--el-text-color-primary`) 强制覆盖为 100% 白色 (`#FFFFFF`)，并使用 `!important` 确保优先级；禁用 `antialiased` 平滑处理，使文字在深色背景下更实更亮。
-- **Glass 质感升级**：替换原有的半透明黑色遮罩，采用更具质感的深灰玻璃 (`rgba(28, 28, 30, 0.75)`)，增强层级感与光影反射。
-- **边界强化**：卡片与表格增加微弱的白色边框 (`rgba(255, 255, 255, 0.2)`) 与更深的阴影，确保在纯黑背景下元素边界清晰可辨。
-
-### 10.9 AI 学习辅导 UI 重构 (Modern Glass)
-
-- **组件修复**：修复 `QuestionRenderer` 中导致题目组件无法挂载的逻辑错误。
-- **Drawer 升级**：应用 `ui-ux-pro-max` 规范，将测验抽屉升级为 Modern Glass 模态风格（Backdrop blur + 半透明背景），适配深色模式。
-- **题目卡片优化**：
-  - 重构 `SingleChoiceQuestion`，引入 Bento Grid 风格的选项卡片。
-  - 增加 Hover Scale、Selected Glow 等微交互动画。
-  - 优化进度条为 Pill Shape + 渐变填充。
-  - 底部导航按钮升级为大尺寸触控友好型。
-
-### 10.10 AI 学习辅导体验升级与独立页面重构
-
-- **独立页面 (QuizPage)**：从原抽屉式交互升级为独立全屏页面，支持沉浸式学习体验，增加顶部导航与返回交互。
-- **Modern Glass UI 全面适配**：
-  - **组件升级**：`QuestionRenderer` 及其子组件全面应用 Apple Style 设计（磨砂玻璃、物理动画、无边框设计）。
-  - **深色模式 (OLED)**：背景调整为纯黑 (#000000)，优化半透明背景色值 (`rgba(28, 28, 30, 0.75)`)，增强文字对比度与边界清晰度。
-- **交互优化**：
-  - 进度条与题号常驻显示。
-  - 底部控制栏（上一题/下一题）固定悬浮，方便单手操作。
-  - 增加重置测验的确认弹窗。
-
-### 10.11 答题页面布局极致优化 (Space Maximization)
-
-- **全屏沉浸式布局**：移除页面级滚动条 (`overflow: hidden`)，采用 Flex 布局确保内容垂直填充 (`height: 100vh`)，消除不必要的留白。
-- **空间利用最大化**：
-  - 移除容器的最大宽度限制 (`max-width: 1200px` -> `100%`)，使题目与选项在宽屏下充分展开。
-  - **简约列表布局**：选项列表回归垂直排列 (`flex-direction: column`)，遵循 AppStyle 简约原则：
-    - **去边框化**：移除选项卡边框，改用轻量化背景色 (`var(--el-fill-color-light)`) 区分。
-    - **紧凑交互**：减小内边距 (`14px 20px`)，增加微交互动画 (Scale/Color)，提升点击触感。
-- **无感滚动体验**：内容区域保留滚动能力但隐藏滚动条 (`scrollbar-width: none`)，提供类似原生 App 的流畅体验。
-- **视觉微调**：优化 Padding 与间距，适配不同屏幕尺寸，确保在移动端和桌面端均有最佳阅读体验。
-
-### 10.12 答题解析显示修复与逻辑优化
-
-- **Bug 修复**：修复了 `QuestionRenderer` 在传递状态时漏传 `isSubmitted` 属性，导致提交答案后题目解析 (`explanation-box`) 无法正确显示的 Bug。
-- **解析逻辑优化**：
-  - 优化了 `FillBlankQuestion` 和 `CodeSnippetQuestion` 的解析显示逻辑，确保无论答题正确与否，只要后端返回了解析内容 (`explanation`) 均会显示。
-  - 修复了 `FillBlankQuestion` 中计算变量 (`correctCount`) 未定义的运行时错误。
-  - 修复了 `FillBlankQuestion` 判断逻辑错误：原逻辑直接比较单个填空与完整答案字符串，导致多空答案判断恒为 `false`；修复为逐个比较分割后的答案数组。
-  - 统一了所有题型组件的解析显示体验：答对显示“答案正确”+解析，答错显示“正确答案”+解析。
-
-### 10.13 答题解析显示逻辑增强与填空题修正
-
-- **解析显示增强**：修复了 `QuizPage` 中 `isSubmitted` 状态在提交后未能正确传递给子组件的问题；通过 `watch` 监听 `isAllSubmitted` 状态变化，确保 `showAnswer` 响应式更新。
-- **题目组件稳健性提升**：统一了 `SingleChoiceQuestion`、`MultipleChoiceQuestion` 和 `TrueFalseQuestion` 的解析显示逻辑，移除冗余的 `showExplanation` 判断，并修复了 Vue 3 模板中 `explanation` 属性访问未定义警告（改为 `props.explanation`）。
-- **填空题索引修正**：修复了 `FillBlankQuestion` 中索引生成逻辑（从 1 开始改为 0 开始），解决多空填空题验证时的数组越界与正确率计算错误。
-- **填空题数据持久化**：修复 `QuizPage` 未监听 `answer-changed` 事件导致填空题答案在页面切换/翻页时丢失的问题。
-
-### 10.14 答题结果页 UI/UX 升级 (Modern Glass)
-
-- **UI 重构**：应用 `ui-ux-pro-max` 标准，重构答题结果弹窗。采用 "Hero Score + Bento Grid" 布局，移除 emoji，使用 Element Plus SVG 图标。
-- **动态交互**：根据正确率 (100%/80%/60%/<60%) 展示不同层级的主题色 (Gold/Purple/Blue/Gray) 与庆祝动画 (Pop Spring/Particles)。
-- **视觉升级**：
-  - **Glassmorphism**：深色模式下采用 `rgba(28, 28, 30, 0.85)` + 高斯模糊。
-  - **动画**：引入物理弹簧动画 (`cubic-bezier`) 和粒子旋转效果。
-  - **暗黑适配**：优化 OLED 屏幕显示效果，增强光影质感。
-
-### 10.15 学习成就 UI 深度优化 (Modern Glass Pro)
-
-- **深色模式重构 (OLED Ready)**：
-  - **背景升级**：从半透明黑升级为高通透深灰玻璃 (`rgba(28, 28, 30, 0.75)`)，增强景深。
-  - **文字增强**：强制主要文字为纯白 (`#FFFFFF`)，次要文字为高亮灰 (`rgba(255, 255, 255, 0.7)`)，彻底解决“灰字看不清”问题。
-  - **光影质感**：增加微弱的白色内描边 (`1px solid rgba(255, 255, 255, 0.15)`) 和更深的投影 (`box-shadow: 0 8px 32px ...`)，模拟真实玻璃边缘反光。
-- **细节打磨**：
-  - **进度环**：SVG 路径增加投影 (`drop-shadow`) 和圆角端点 (`stroke-linecap: round`)。
-  - **动画**：全局应用 `cubic-bezier(0.25, 1, 0.5, 1)` 物理弹簧曲线。
-  - **解锁状态**：优化“未解锁”卡片的视觉降级处理，使其看起来是“被磨砂玻璃遮挡”而非简单的变灰。
 
 ### 10.16 习题模块完整重构 (Phase 2 - Quiz Enhancements)
 
@@ -482,6 +429,33 @@ const stages = [
 统计图表：
 1. 分数趋势图 - 折线图，最近 10 次答题分数变化
 2. 知识点掌握度 - 雷达图，各知识点掌握水平
+
+### 10.17 习题模块 UI 导航重构与统计迁移
+
+- **导航重构**：移除习题模块左侧边栏，改用顶部左侧 `el-radio-group` 切换“习题历史”与“趋势分析”，优化页面空间利用率，与 Profile 页面交互保持一致。
+- **统计图表迁移**：将原 `QuizHistoryPage` 中的“分数趋势”与“知识点掌握度”图表迁移至 `TrendsSection` 组件中，使习题历史页专注于列表展示，同时在趋势分析视图中聚合所有学习数据（进度、趋势、掌握度）。
+
+### 10.18 习题历史分栏布局重构 (Split View)
+
+- **Master-Detail 布局**：`QuizHistoryPage` 重构为左侧列表窗格，`QuizDetailPage` 重构为右侧详情窗格，支持无缝浏览与快速切换。
+- **空间优化**：
+  - 移除 `QuizHistoryPage` 顶部标题栏，将“错题本”入口上移至 `index.vue` 顶部导航栏右侧。
+  - 优化列表卡片样式，适配窄栏显示。
+  - `QuizDetailPage` 支持 `embedded` 模式，隐藏返回按钮并调整头部布局。
+- **UI/UX 升级**：遵循 `ui-ux-pro-max` 指导，采用 Grid 布局 (`grid-template-columns: 360px 1fr`) 实现响应式分栏，并增加空状态指引。
+
+### 10.19 习题模块导航栏布局调整
+
+- **布局优化**：将错题本入口从顶部导航栏右侧移动至左侧，与视图切换组件（`el-radio-group`）整合，采用紧凑布局（Flex + Gap），提升顶部空间利用率与交互连贯性。
+- **错题本集成**：将错题本页面 (`MistakeBookPage`) 完整嵌入到习题模块的主视图中，支持无缝切换 (`history` / `trends` / `mistake`)，并在嵌入模式下隐藏返回按钮。
+
+### 10.20 习题模块页面布局间距规范化（参考 DataPage 顶栏设计）
+
+- **间距规范**：参考 `DataPage.vue` 的紧凑型顶栏设计，将 `quiz/index.vue` 的顶栏间距从 `padding: 16px 24px` 优化为 `padding: 4px 0`。
+- **容器级间距控制**：采用页面根容器 `gap: 16px` 统一控制工具栏与内容区域的间距，内容区域 `padding: 0` 避免冗余累积。
+- **Flex 布局优化**：为页面根容器和内容区域添加 `min-height: 0`，确保 flex 子项能够正确收缩，避免内容溢出。
+- **设计文档**：将此间距模式写入 AGENTS.md 9.4 节，作为前端页面布局的标准化参考。
+
 ## 11. 技术债务（持续维护）
 
 | 优先级 | 债务描述 | 影响范围 | 建议方向 |

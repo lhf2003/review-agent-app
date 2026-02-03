@@ -203,7 +203,7 @@ watch(() => auth.isAuthenticated, (val) => {
         <router-link to="/quiz-history" class="dock-item">
           <div class="dock-icon" :class="{ 'is-active': $route.path === '/quiz-history' }">
             <el-icon><Reading /></el-icon>
-            <span class="dock-text">习题</span>
+            <span class="dock-text">学习</span>
           </div>
         </router-link>
         <router-link to="/analysis" class="dock-item">
@@ -258,7 +258,7 @@ watch(() => auth.isAuthenticated, (val) => {
             </el-menu-item>
             <el-menu-item index="/quiz-history" @click="drawerVisible = false">
               <el-icon><Reading /></el-icon>
-              <span>习题</span>
+              <span>学习</span>
             </el-menu-item>
             <el-menu-item index="/analysis" @click="drawerVisible = false">
               <el-icon><Folder /></el-icon>
