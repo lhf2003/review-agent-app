@@ -93,6 +93,158 @@ flowchart LR
 
 - JavaFX 应用入口：负责加载 WebView、提供本地文件系统访问与能力桥接（用于扫描导入）
 
+### 4.4 前端组件化与架构规范
+
+**组件化原则**：
+
+| 原则 | 说明 |
+|------|------|
+| 单一职责 | 每个组件只负责一个功能域，便于测试和维护 |
+| 路由优于滚动 | 使用路由切换替代页面内滚动，符合 SPA 最佳实践 |
+| Props/Emits 明确 | 组件输入输出清晰，避免直接操作父组件状态 |
+| 样式复用 | 公共样式通过全局样式或样式文件复用 |
+
+**目录组织规范**：
+
+```
+pages/
+├── config/                    # 功能模块目录
+│   ├── index.vue              # 布局容器（侧边栏 + router-view）
+│   ├── BasicInfoPage.vue      # 独立页面组件
+│   ├── ScanConfigPage.vue
+│   └── components/           # 模块内共享组件
+│       ├── ConfigSidebar.vue   # 可复用组件
+│       └── PasswordDialog.vue
+├── profile/                   # 另一个功能模块目录
+│   ├── index.vue
+│   ├── components/
+│   └── composables/
+└── ...
+```
+
+**Vue Router 路由嵌套规范**：
+
+```javascript
+{
+  path: '/config',
+  component: ConfigPage,        // 布局容器
+  redirect: '/config/basic',   // 默认子路由
+  children: [
+    { path: 'basic', component: BasicInfoPage },
+    { path: 'scan', component: ScanConfigPage },
+    { path: 'push', component: PushConfigPage },
+    { path: 'model-provider', component: ModelProviderConfig },
+    { path: 'default-model', component: DefaultModelConfig },
+    { path: 'about', component: AboutUsPage }
+  ]
+}
+```
+
+**常见陷阱与解决方案**：
+
+| 问题 | 原因 | 解决方案 |
+|------|------|----------|
+| `onBeforeRouteLeave` 导入错误 | 从 `vue` 导入而非 `vue-router` | `import { onBeforeRouteLeave } from 'vue-router'` |
+| v-model 绑定 props 报错 | `v-model="modelValue"` 直接绑定 props 是只读的 | 使用 computed getter/setter |
+| 嵌套 ref 属性 v-model 不稳定 | `passwordForm.oldPassword` 嵌套属性 | 为每个字段创建独立 computed |
+| API 路径错误 | 移动文件后相对路径变化 | 移动后更新 import 路径 |
+
+**Computed Getter/Setter 模式**：
+
+```vue
+<script setup>
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['update:modelValue'])
+
+// Dialog visibility
+const dialogVisible = computed({
+  get: () => props.modelValue,
+  set: (val) => emit('update:modelValue', val)
+})
+
+// Form field bindings
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirm: ''
+})
+
+const oldPassword = computed({
+  get: () => passwordForm.value.oldPassword,
+  set: (val) => passwordForm.value.oldPassword = val
+})
+</script>
+
+<template>
+  <el-dialog v-model="dialogVisible">
+    <el-input v-model="oldPassword" />
+  </el-dialog>
+</template>
+```
+
+**路由守卫与状态管理**：
+
+```vue
+<script setup>
+import { onBeforeRouteLeave } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
+
+const originalForm = ref(null)
+const form = ref({ /* ... */ })
+
+onMounted(async () => {
+  await loadData()
+  // 保存原始配置用于变更检测
+  originalForm.value = JSON.parse(JSON.stringify(form.value))
+})
+
+onBeforeRouteLeave((to, from, next) => {
+  if (!originalForm.value) {
+    next()
+    return
+  }
+
+  const normalize = (f) => JSON.stringify(JSON.parse(JSON.stringify(f)))
+  if (normalize(form.value) !== normalize(originalForm.value)) {
+    ElMessageBox.confirm(
+      '您有未保存的更改，确定要离开吗？',
+      '未保存更改',
+      {
+        confirmButtonText: '保存并离开',
+        cancelButtonText: '放弃修改',
+        distinguishCancelAndClose: true,
+        type: 'warning',
+      }
+    )
+      .then(async () => {
+        await saveConfig()
+        next()
+      })
+      .catch((action) => {
+        if (action === 'cancel') next()
+        else next(false)
+      })
+  } else {
+    next()
+  }
+})
+</script>
+```
+
+**组件设计最佳实践**：
+
+1. **Props 设计**：明确组件接受的输入参数，使用 TypeScript 或 JSDoc 注释类型
+2. **Emits 设计**：明确组件触发的事件，使用 `defineEmits` 声明
+3. **默认值处理**：为可选 props 提供合理的默认值
+4. **事件命名**：遵循 Vue 3 规范，使用 kebab-case（如 `update:modelValue`）
+5. **样式隔离**：使用 `scoped` 或 CSS Modules 避免样式污染
+
 ## 5. 核心模块索引（业务视角）
 
 | 模块 | 职责边界 | 核心组件（示例） | 关键数据表 |
