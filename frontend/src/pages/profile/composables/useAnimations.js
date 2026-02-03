@@ -2,13 +2,13 @@ import { ref, onMounted, nextTick } from 'vue'
 
 export function useAnimations() {
   const showContent = ref(false)
-  const cardsVisible = ref([])
+  const cardsVisible = ref(false)
 
   function initAnimations() {
     nextTick(() => {
       showContent.value = true
       setTimeout(() => {
-        cardsVisible.value = Array(22).fill(false).map((_, i) => true)
+        cardsVisible.value = true
       }, 100)
     })
   }

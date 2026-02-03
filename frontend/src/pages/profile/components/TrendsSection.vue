@@ -6,12 +6,12 @@
         <el-icon><TrendCharts /></el-icon>
         测验分数趋势
       </h4>
-      <div v-if="loading.trends" v-loading="true" class="loading-container">
-        <el-skeleton :rows="3" animated />
-      </div>
-      <div v-else class="chart-container-wrapper">
-        <div ref="scoreTrendChartRef" class="chart"></div>
-      </div>
+      <ScoreTrendChart
+        ref="scoreTrendChartRef"
+        :data="quizScoreTrend"
+        :loading="loading.trends"
+        height="300px"
+      />
     </div>
 
     <!-- 知识点掌握度分布 -->
@@ -20,13 +20,12 @@
         <el-icon><Star /></el-icon>
         知识点掌握度
       </h4>
-      <div v-if="loading.trends" v-loading="true" class="loading-container">
-        <el-skeleton :rows="1" animated />
-      </div>
-      <div v-else class="chart-container-wrapper">
-        <div ref="masteryRadarChartRef" class="chart"></div>
-        <el-empty v-if="!knowledgeMastery || knowledgeMastery.length === 0" description="暂无数据" />
-      </div>
+      <KnowledgeRadarChart
+        ref="knowledgeRadarChartRef"
+        :data="knowledgeMastery"
+        :loading="loading.trends"
+        height="300px"
+      />
     </div>
 
     <!-- 薄弱知识点列表 -->
@@ -56,8 +55,13 @@
         <div class="progress-grid">
           <!-- 环形进度图 -->
           <div class="progress-gauge-wrapper">
-            <div ref="progressGaugeChartRef" class="progress-gauge"></div>
-            <div class="progress-label">总体进度</div>
+            <ProgressGaugeChart
+              ref="progressGaugeChartRef"
+              :value="learningProgress.overallProgress"
+              :loading="loading.progress"
+              size="160px"
+              label="总体进度"
+            />
           </div>
 
           <!-- 各维度进度条 -->
@@ -106,12 +110,18 @@
 </template>
 
 <script setup>
-import { defineProps, computed, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { TrendCharts, Star, PriceTag } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import WeaknessList from '../../../components/quiz/WeaknessList.vue'
+import { ScoreTrendChart, KnowledgeRadarChart, ProgressGaugeChart } from '../../../components/charts'
 
 const router = useRouter()
+
+// 图表引用
+const scoreTrendChartRef = ref(null)
+const knowledgeRadarChartRef = ref(null)
+const progressGaugeChartRef = ref(null)
 
 const props = defineProps({
   achievementsData: {
@@ -125,28 +135,45 @@ const props = defineProps({
   cardsVisible: {
     type: Boolean,
     default: true
-  },
-  // Chart refs and methods from parent
-  scoreTrendChartRef: {
-    type: Object,
-    required: true
-  },
-  masteryRadarChartRef: {
-    type: Object,
-    required: true
-  },
-  progressGaugeChartRef: {
-    type: Object,
-    required: true
-  },
-  updateCharts: {
-    type: Function,
-    required: true
   }
 })
 
-const knowledgeMastery = computed(() => props.achievementsData.knowledgeMastery || [])
-const learningProgress = computed(() => props.achievementsData.learningProgress || {
+const emit = defineEmits(['charts-ready'])
+
+// 当组件可见时，触发所有图表 resize
+function resizeAllCharts() {
+  setTimeout(() => {
+    scoreTrendChartRef.value?.resize()
+    knowledgeRadarChartRef.value?.resize()
+    progressGaugeChartRef.value?.resize()
+  }, 150)
+}
+
+// 监听数据变化，数据更新后也 resize
+watch(() => props.achievementsData, () => {
+  if (props.achievementsData && Object.keys(props.achievementsData).length > 0) {
+    setTimeout(() => {
+      resizeAllCharts()
+    }, 200)
+  }
+}, { deep: true })
+
+onMounted(() => {
+  // 组件挂载后延迟 resize
+  setTimeout(() => {
+    resizeAllCharts()
+    emit('charts-ready')
+  }, 300)
+})
+
+// 暴露方法给父组件
+defineExpose({
+  resizeAllCharts
+})
+
+const quizScoreTrend = computed(() => props.achievementsData?.quizScoreTrend || [])
+const knowledgeMastery = computed(() => props.achievementsData?.knowledgeMastery || [])
+const learningProgress = computed(() => props.achievementsData?.learningProgress || {
   overallProgress: 0,
   syncProgress: 0,
   analysisProgress: 0,
@@ -154,17 +181,12 @@ const learningProgress = computed(() => props.achievementsData.learningProgress 
   achievementProgress: 0
 })
 
-// 监听数据变化，更新图表
-watch(() => [props.achievementsData.quizScoreTrend, props.achievementsData.knowledgeMastery, props.achievementsData.learningProgress], () => {
-  props.updateCharts()
-}, { deep: true })
-
 // 开始练习薄弱知识点
 function handleStartPractice(point) {
   // 跳转到合集页面，并传递知识点筛选
   router.push({
     path: '/collections',
-    query: { tag: point.knowledgePoint }
+    query: { tag: point.tagName }
   })
 }
 
@@ -172,7 +194,7 @@ function handleStartPractice(point) {
 function viewRelatedCollections(point) {
   router.push({
     path: '/collections',
-    query: { tag: point.knowledgePoint }
+    query: { tag: point.tagName }
   })
 }
 </script>
@@ -217,23 +239,9 @@ function viewRelatedCollections(point) {
   margin-bottom: 40px;
 }
 
-.loading-container {
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
 .chart-container-wrapper {
   position: relative;
   height: 300px;
-}
-
-.chart {
-  width: 100%;
-  height: 100%;
-  min-height: 250px;
 }
 
 .progress-section {
@@ -252,18 +260,6 @@ function viewRelatedCollections(point) {
   flex-direction: column;
   align-items: center;
   gap: 16px;
-}
-
-.progress-gauge {
-  width: 160px;
-  height: 160px;
-}
-
-.progress-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--el-text-color-secondary);
-  text-align: center;
 }
 
 .progress-bars {

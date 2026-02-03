@@ -305,11 +305,23 @@ public class QuizService {
             }
         }
 
-        // 5. 设置统计数据
+        // 5. 更新测验记录状态为已完成
+        quizRecord.setStatus(1); // Completed
+
+        // 计算总分（百分制）
+        int totalQuestions = answers.size();
+        double scorePercent = totalQuestions > 0 ? (correct * 100.0 / totalQuestions) : 0;
+        quizRecord.setTotalScore((int) Math.round(scorePercent));
+
+        // 保存测验记录
+        quizRecordRepository.save(quizRecord);
+
+        // 6. 设置统计数据
         summary.setCorrectCount(correct);
         summary.setIncorrectCount(incorrect);
         summary.setUnansweredCount(unanswered);
 
+        log.info("Quiz {} completed with score: {}", quizId, quizRecord.getTotalScore());
         return summary;
     }
 

@@ -570,9 +570,20 @@ public class UserService {
         for (QuizRecord record : quizRecords) {
             List<QuizQuestion> questions = quizQuestionRepository.findByQuizId(record.getId());
             for (QuizQuestion question : questions) {
-                // 这里简化处理，假设 QuizQuestion 有标签信息
-                // 实际可能需要通过其他方式获取问题对应的标签
-                // 暂时跳过，等待数据库结构调整
+                // 获取知识点标签
+                String knowledgePoint = question.getKnowledgePoint();
+                if (knowledgePoint == null || knowledgePoint.trim().isEmpty()) {
+                    continue; // 跳过没有标签的问题
+                }
+
+                // 统计该知识点下的题目总数
+                tagTotalCount.put(knowledgePoint, tagTotalCount.getOrDefault(knowledgePoint, 0) + 1);
+
+                // 统计正确数
+                Boolean isCorrect = question.getIsCorrect();
+                if (isCorrect != null && isCorrect) {
+                    tagCorrectCount.put(knowledgePoint, tagCorrectCount.getOrDefault(knowledgePoint, 0) + 1);
+                }
             }
         }
 

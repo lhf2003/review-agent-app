@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api/http'
 import { useAuthStore } from '../../stores/auth'
@@ -24,6 +24,22 @@ const themeStore = useThemeStore()
 
 // Navigation state
 const activeSection = ref('overview')
+
+// TrendsSection ref
+const trendsSectionRef = ref(null)
+
+// 监听 tab 切换，当切换到趋势分析时触发图表 resize
+watch(activeSection, (newSection) => {
+  if (newSection === 'trends') {
+    console.log('[Profile] Switched to trends section, resizing charts...')
+    // 使用 nextTick 和 setTimeout 确保 DOM 完全渲染
+    nextTick(() => {
+      setTimeout(() => {
+        trendsSectionRef.value?.resizeAllCharts()
+      }, 200)
+    })
+  }
+})
 
 // User Info
 const {
@@ -58,13 +74,7 @@ const {
 const {
   achievementsData,
   loading,
-  scoreTrendChartRef,
-  masteryRadarChartRef,
-  progressGaugeChartRef,
-  loadAchievementsData,
-  updateCharts,
-  handleResize,
-  disposeCharts
+  loadAchievementsData
 } = useAchievements()
 
 // Dialogs
@@ -76,38 +86,11 @@ const passwordForm = ref({
   confirm: ''
 })
 
-// 监听主题切换，重新初始化图表
-watch(() => themeStore.isDark, () => {
-  if (activeSection.value === 'trends') {
-    disposeCharts()
-    updateCharts()
-  }
-})
-
-// 监听 section 切换
-watch(activeSection, (newVal, oldVal) => {
-  if (oldVal === 'trends') {
-    disposeCharts()
-  }
-  if (newVal === 'trends') {
-    // 等待 DOM 更新后初始化图表
-    setTimeout(() => {
-      updateCharts()
-    }, 100)
-  }
-})
-
 onMounted(() => {
   loadUserInfo()
   loadStats()
   loadAchievementsData()
   initAnimations()
-  window.addEventListener('resize', handleResize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  disposeCharts()
 })
 
 async function changePassword() {
@@ -190,15 +173,12 @@ async function changePassword() {
 
       <!-- Trends Section - 趋势分析 -->
       <TrendsSection
+        ref="trendsSectionRef"
         v-show="activeSection === 'trends'"
         class="section-transition"
         :achievements-data="achievementsData"
         :loading="loading"
         :cards-visible="cardsVisible"
-        :score-trend-chart-ref="scoreTrendChartRef"
-        :mastery-radar-chart-ref="masteryRadarChartRef"
-        :progress-gauge-chart-ref="progressGaugeChartRef"
-        :update-charts="updateCharts"
       />
 
       <!-- Learning Path Section - 学习路径推荐 -->

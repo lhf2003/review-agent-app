@@ -42,8 +42,8 @@ const weakPoints = computed(() => {
   }
 
   return props.knowledgeData
-    .filter(item => (item.masteryRate || 0) < props.threshold)
-    .sort((a, b) => (a.masteryRate || 0) - (b.masteryRate || 0))
+    .filter(item => (item.accuracyRate || 0) < props.threshold)
+    .sort((a, b) => (a.accuracyRate || 0) - (b.accuracyRate || 0))
     .slice(0, props.limit)
 })
 
@@ -74,7 +74,7 @@ function viewRelatedCollections(point) {
   // 跳转到合集页面，并传递知识点筛选
   router.push({
     path: '/collections',
-    query: { tag: point.knowledgePoint }
+    query: { tag: point.tagName }
   })
 }
 
@@ -108,9 +108,9 @@ const getSuggestion = (rate) => {
     <div v-else class="weakness-items">
       <div
         v-for="(point, index) in weakPoints"
-        :key="point.knowledgePoint || index"
+        :key="point.tagName || index"
         class="weakness-item"
-        :class="`level-${getMasteryLevel(point.masteryRate).level}`"
+        :class="`level-${getMasteryLevel(point.accuracyRate).level}`"
       >
         <!-- 左侧：序号和图标 -->
         <div class="item-left">
@@ -118,8 +118,8 @@ const getSuggestion = (rate) => {
             {{ index + 1 }}
           </div>
           <div class="point-icon">
-            <el-icon :size="24" :color="getMasteryLevel(point.masteryRate).color">
-              <WarningFilled v-if="point.masteryRate < 30" />
+            <el-icon :size="24" :color="getMasteryLevel(point.accuracyRate).color">
+              <WarningFilled v-if="point.accuracyRate < 30" />
               <TrendCharts v-else />
             </el-icon>
           </div>
@@ -128,14 +128,14 @@ const getSuggestion = (rate) => {
         <!-- 中间：知识点信息 -->
         <div class="item-content">
           <div class="content-header">
-            <h4 class="point-name">{{ point.knowledgePoint || '未知知识点' }}</h4>
+            <h4 class="point-name">{{ point.tagName || '未知知识点' }}</h4>
             <el-tag
-              :type="getMasteryLevel(point.masteryRate).level === 'critical' ? 'danger' :
-                     getMasteryLevel(point.masteryRate).level === 'warning' ? 'warning' : 'primary'"
+              :type="getMasteryLevel(point.accuracyRate).level === 'critical' ? 'danger' :
+                     getMasteryLevel(point.accuracyRate).level === 'warning' ? 'warning' : 'primary'"
               size="small"
               effect="plain"
             >
-              {{ getMasteryLevel(point.masteryRate).label }}
+              {{ getMasteryLevel(point.accuracyRate).label }}
             </el-tag>
           </div>
 
@@ -143,13 +143,13 @@ const getSuggestion = (rate) => {
           <div class="mastery-progress">
             <div class="progress-info">
               <span class="progress-label">掌握度</span>
-              <span class="progress-value" :style="{ color: getProgressColor(point.masteryRate) }">
-                {{ formatPercent(point.masteryRate) }}
+              <span class="progress-value" :style="{ color: getProgressColor(point.accuracyRate) }">
+                {{ formatPercent(point.accuracyRate) }}
               </span>
             </div>
             <el-progress
-              :percentage="point.masteryRate"
-              :color="getProgressColor(point.masteryRate)"
+              :percentage="point.accuracyRate"
+              :color="getProgressColor(point.accuracyRate)"
               :show-text="false"
               :stroke-width="8"
             />
@@ -163,14 +163,14 @@ const getSuggestion = (rate) => {
             </div>
             <div class="stat-item">
               <el-icon><WarningFilled /></el-icon>
-              <span>错误率: {{ formatPercent(100 - (point.masteryRate || 0)) }}</span>
+              <span>错误率: {{ formatPercent(100 - (point.accuracyRate || 0)) }}</span>
             </div>
           </div>
 
           <!-- 建议文案 -->
           <div class="suggestion" v-if="!compact">
             <el-icon class="suggestion-icon"><ArrowRight /></el-icon>
-            <span class="suggestion-text">{{ getSuggestion(point.masteryRate) }}</span>
+            <span class="suggestion-text">{{ getSuggestion(point.accuracyRate) }}</span>
           </div>
         </div>
 
