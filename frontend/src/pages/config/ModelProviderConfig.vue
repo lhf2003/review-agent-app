@@ -117,8 +117,8 @@
 import { ref, onMounted, watch } from 'vue'
 import { Check, Plus, QuestionFilled, Tools } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { api } from '../api/http'
-import { useAuthStore } from '../stores/auth'
+import { api } from '../../api/http'
+import { useAuthStore } from '../../stores/auth'
 
 const auth = useAuthStore()
 const loading = ref(false)

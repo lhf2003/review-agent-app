@@ -120,8 +120,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { api } from '../api/http'
-import { useAuthStore } from '../stores/auth'
+import { api } from '../../api/http'
+import { useAuthStore } from '../../stores/auth'
 
 const auth = useAuthStore()
 
@@ -344,7 +344,7 @@ async function saveDefaultModels() {
 
 .save-section {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid var(--el-border-color-light);

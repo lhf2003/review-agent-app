@@ -4,9 +4,12 @@ import { useAuthStore } from '../stores/auth'
 const LoginPage = () => import('../pages/LoginPage.vue')
 const RegisterPage = () => import('../pages/RegisterPage.vue')
 const IndexPage = () => import('../pages/profile/index.vue')
-const ConfigPage = () => import('../pages/ConfigPage.vue')
-const ModelProviderConfig = () => import('../pages/ModelProviderConfig.vue')
-const DefaultModelConfig = () => import('../pages/DefaultModelConfig.vue')
+const ConfigPage = () => import('../pages/config/index.vue')
+const BasicInfoPage = () => import('../pages/config/BasicInfoPage.vue')
+const ScanConfigPage = () => import('../pages/config/ScanConfigPage.vue')
+const PushConfigPage = () => import('../pages/config/PushConfigPage.vue')
+const ModelProviderConfig = () => import('../pages/config/ModelProviderConfig.vue')
+const DefaultModelConfig = () => import('../pages/config/DefaultModelConfig.vue')
 const TagPage = () => import('../pages/TagPage.vue')
 const DataPage = () => import('../pages/DataPage.vue')
 const AnalysisResultPage = () => import('../pages/AnalysisResult.vue')
@@ -36,7 +39,11 @@ const router = createRouter({
     {
       path: '/config',
       component: ConfigPage,
+      redirect: '/config/basic',
       children: [
+        { path: 'basic', component: BasicInfoPage },
+        { path: 'scan', component: ScanConfigPage },
+        { path: 'push', component: PushConfigPage },
         { path: 'model-provider', component: ModelProviderConfig },
         { path: 'default-model', component: DefaultModelConfig },
         { path: 'about', component: AboutUsPage }
