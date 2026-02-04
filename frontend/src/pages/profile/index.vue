@@ -12,7 +12,6 @@ import ProfileEditDialog from './components/ProfileEditDialog.vue'
 import PasswordDialog from './components/PasswordDialog.vue'
 // import ProfileNav from './components/ProfileNav.vue'
 import AchievementsSection from './components/AchievementsSection.vue'
-import TrendsSection from './components/TrendsSection.vue'
 import LearningPathRecommender from '../../components/quiz/LearningPathRecommender.vue'
 import { useUserInfo } from './composables/useUserInfo'
 import { useStats } from './composables/useStats'
@@ -24,22 +23,6 @@ const themeStore = useThemeStore()
 
 // Navigation state
 const activeSection = ref('overview')
-
-// TrendsSection ref
-const trendsSectionRef = ref(null)
-
-// 监听 tab 切换，当切换到趋势分析时触发图表 resize
-watch(activeSection, (newSection) => {
-  if (newSection === 'trends') {
-    console.log('[Profile] Switched to trends section, resizing charts...')
-    // 使用 nextTick 和 setTimeout 确保 DOM 完全渲染
-    nextTick(() => {
-      setTimeout(() => {
-        trendsSectionRef.value?.resizeAllCharts()
-      }, 200)
-    })
-  }
-})
 
 // User Info
 const {
@@ -67,6 +50,7 @@ const {
 const {
   showContent,
   cardsVisible,
+  achievementsVisible,
   initAnimations
   } = useAnimations()
 
@@ -136,7 +120,6 @@ async function changePassword() {
       <el-radio-group v-model="activeSection" class="nav-radio-group">
         <el-radio-button value="overview">数据概览</el-radio-button>
         <el-radio-button value="achievements">学习成就</el-radio-button>
-        <el-radio-button value="trends">趋势分析</el-radio-button>
         <el-radio-button value="learning-path">学习路径</el-radio-button>
       </el-radio-group>
 
@@ -168,17 +151,7 @@ async function changePassword() {
         class="section-transition"
         :achievements="achievementsData.achievements"
         :loading="loading"
-        :cards-visible="cardsVisible"
-      />
-
-      <!-- Trends Section - 趋势分析 -->
-      <TrendsSection
-        ref="trendsSectionRef"
-        v-show="activeSection === 'trends'"
-        class="section-transition"
-        :achievements-data="achievementsData"
-        :loading="loading"
-        :cards-visible="cardsVisible"
+        :cards-visible="achievementsVisible"
       />
 
       <!-- Learning Path Section - 学习路径推荐 -->

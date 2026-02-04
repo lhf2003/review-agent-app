@@ -323,31 +323,41 @@ watch(() => props.visible, (newVal) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 100;
 
   :global(.dark) & {
-    background: rgba(40, 40, 40, 0.8);
+    background: rgba(30, 30, 30, 0.8);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 }
 
 .header-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 18px;
+  gap: 12px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--el-text-color-primary);
+  letter-spacing: -0.3px;
 }
 
 .title-icon {
-  font-size: 22px;
+  font-size: 20px;
   color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  padding: 6px;
+  border-radius: 8px;
+  
+  :global(.dark) & {
+    background: rgba(64, 158, 255, 0.2);
+  }
 }
 
 .header-actions {
@@ -360,20 +370,24 @@ watch(() => props.visible, (newVal) => {
 .mastery-section,
 .history-section {
   padding: 24px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  
+  :global(.dark) & {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+  }
 }
 
 .section-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--el-text-color-primary);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 
   .el-icon {
-    font-size: 20px;
+    font-size: 18px;
     color: var(--el-color-primary);
   }
 
@@ -387,66 +401,84 @@ watch(() => props.visible, (newVal) => {
   background: var(--el-bg-color);
   border-radius: 16px;
   padding: 20px;
-  border: 1px solid var(--el-border-color-light);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+  
+  :global(.dark) & {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+  }
 }
 
 // 知识点掌握度
 .mastery-card {
-  background: linear-gradient(135deg, var(--el-color-primary-light-9) 0%, var(--el-bg-color) 100%);
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.08) 0%, rgba(64, 158, 255, 0.02) 100%);
   border-radius: 16px;
   padding: 20px;
-  border: 1px solid var(--el-color-primary-light-5);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(64, 158, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  
+  :global(.dark) & {
+    background: linear-gradient(135deg, rgba(64, 158, 255, 0.15) 0%, rgba(64, 158, 255, 0.05) 100%);
+    border-color: rgba(64, 158, 255, 0.2);
+  }
 }
 
 .mastery-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .knowledge-point {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--el-text-color-primary);
 }
 
 .mastery-stats {
   display: flex;
-  gap: 32px;
-  margin-bottom: 16px;
+  gap: 40px;
+  margin-bottom: 20px;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .stat-value {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--el-text-color-primary);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .progress-bar {
-  height: 8px;
-  background: var(--el-fill-color-dark);
-  border-radius: 4px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
   overflow: hidden;
+  
+  :global(.dark) & {
+    background: rgba(255, 255, 255, 0.1);
+  }
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 4px;
-  transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 // 错误历史
@@ -454,33 +486,60 @@ watch(() => props.visible, (newVal) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: rgba(0, 0, 0, 0.05);
+    z-index: 0;
+    
+    :global(.dark) & {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
 }
 
 .history-item {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px;
   background: var(--el-bg-color);
   border-radius: 12px;
-  border: 1px solid var(--el-border-color-light);
-  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  z-index: 1;
 
   &:hover {
-    border-color: var(--el-color-primary-light-5);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    background: rgba(0, 0, 0, 0.02);
+    
+    :global(.dark) & {
+      background: rgba(255, 255, 255, 0.03);
+    }
   }
 }
 
 .history-icon {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: rgba(245, 108, 108, 0.1);
+  background: var(--el-bg-color);
+  border: 4px solid var(--el-bg-color-page); // Creates spacing from line
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  
+  :global(.dark) & {
+    background: #2c2c2e;
+    border-color: #1c1c1e;
+  }
 }
 
 .history-content {
@@ -488,17 +547,20 @@ watch(() => props.visible, (newVal) => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  padding-top: 2px;
 }
 
 .history-date {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
+  font-weight: 500;
 }
 
 .history-detail {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 4px;
   font-size: 14px;
 }
 
@@ -514,9 +576,10 @@ watch(() => props.visible, (newVal) => {
 
 .history-time {
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
   font-variant-numeric: tabular-nums;
+  padding-top: 4px;
 }
 
 // 响应式

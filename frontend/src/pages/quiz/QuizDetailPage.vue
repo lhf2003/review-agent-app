@@ -114,7 +114,7 @@ onMounted(() => {
     </div>
 
     <!-- 习题详情内容 -->
-    <div v-else-if="quizDetail.quizId">
+    <div v-else-if="quizDetail.quizId" class="quiz-content-container">
       <!-- 顶部导航 -->
       <div class="page-header" :class="{ 'is-embedded': embedded }">
         <el-button v-if="!embedded" @click="goBack" link>
@@ -207,11 +207,39 @@ export default {
   flex-direction: column;
   height: 100%;
   width: 100%;
+  overflow: hidden; /* Ensure it doesn't overflow parent */
 }
 
-/* Remove padding when embedded - padding is provided by wrapper */
+.quiz-detail-page * {
+  box-sizing: border-box; /* Prevent padding from affecting width */
+}
+
+.quiz-content-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Embedded mode adjustments */
 .quiz-detail-page.is-embedded {
-  padding: 24px;
+  padding: 0;
+  max-width: none;
+}
+
+.quiz-detail-page.is-embedded .page-header {
+  padding: 24px 24px 0 24px;
+  margin-bottom: 24px;
+}
+
+.quiz-detail-page.is-embedded .statistics-bar {
+  margin: 0 24px 24px 24px;
+}
+
+.quiz-detail-page.is-embedded .questions-list {
+  padding: 4px 24px 24px 24px;
 }
 
 .loading-container,
@@ -292,5 +320,47 @@ export default {
   font-weight: 600;
   color: var(--el-text-color-secondary);
   margin-bottom: 16px;
+}
+
+/* ============ Dark Mode ============ */
+html.dark .quiz-detail-page {
+  .loading-container,
+  .error-state {
+    background: rgba(0, 0, 0, 0.2);
+
+    .el-icon {
+      color: var(--el-color-primary);
+    }
+  }
+
+  .statistics-bar {
+    background: rgba(28, 28, 30, 0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .question-review {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  .question-number {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .stat-label {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .stat-value {
+    color: #ffffff;
+  }
 }
 </style>

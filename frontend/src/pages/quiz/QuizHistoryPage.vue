@@ -54,10 +54,12 @@ async function loadHistory() {
  * 跳转到习题详情
  */
 function goToDetail(quizId) {
+  // Ensure quizId is converted to String
+  const quizIdStr = String(quizId)
   if (props.embedded) {
-    emit('select-quiz', quizId)
+    emit('select-quiz', quizIdStr)
   } else {
-    router.push(`/quiz-history/${quizId}`)
+    router.push(`/quiz-history/${quizIdStr}`)
   }
 }
 
@@ -595,8 +597,8 @@ export default {
   }
 }
 
-/* ============ 暗色模式 ============ */
-@media (prefers-color-scheme: dark) {
+/* ============ html.dark 深色模式兼容 ============ */
+html.dark .quiz-history-page {
   .glass-header {
     background: rgba(30, 30, 30, 0.72);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -633,7 +635,7 @@ export default {
   .stat-time {
     color: #86868b;
   }
-  
+
   .stat-time .stat-value {
     color: #86868b;
   }

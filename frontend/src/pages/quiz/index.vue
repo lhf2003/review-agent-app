@@ -4,15 +4,21 @@ import { useRouter } from 'vue-router'
 import { TrendCharts, Document, WarningFilled } from '@element-plus/icons-vue'
 import QuizHistoryPage from './QuizHistoryPage.vue'
 import QuizDetailPage from './QuizDetailPage.vue'
-import MistakeBookPage from './MistakeBookPage.vue'
-import TrendsSection from '../profile/components/TrendsSection.vue'
+import MistakeListPane from '../../components/quiz/MistakeListPane.vue'
+import MistakeDetailPane from '../../components/quiz/MistakeDetailPane.vue'
+import TrendsSection from '../../components/quiz/TrendsSection.vue'
 import { useAchievements } from '../profile/composables/useAchievements'
 import { api } from '../../api/http'
 
 const router = useRouter()
-const activeView = ref('history') // history, trends
+const activeView = ref('history') // history, trends, mistake
 const currentQuizId = ref('')
 const mistakeCount = ref(0)
+
+// 错题本 split-layout 状态
+const currentMistakeId = ref(null)
+const currentQuestionId = ref(null)
+const mistakeListPaneRef = ref(null)
 
 // 复用成就数据逻辑
 const { achievementsData, loading, loadAchievementsData } = useAchievements()
@@ -24,6 +30,24 @@ function handleSelectQuiz(quizId) {
 
 function handleGoBack() {
   currentQuizId.value = ''
+}
+
+// 错题本事件处理
+function handleSelectMistake(mistake) {
+  currentMistakeId.value = mistake.id
+  currentQuestionId.value = mistake.questionId
+}
+
+function handleMarkedMastered(questionId) {
+  mistakeListPaneRef.value?.refreshMistakes()
+  currentMistakeId.value = null
+  currentQuestionId.value = null
+}
+
+function handleDeleted(questionId) {
+  mistakeListPaneRef.value?.refreshMistakes()
+  currentMistakeId.value = null
+  currentQuestionId.value = null
 }
 
 async function loadMistakeCount() {
@@ -100,9 +124,35 @@ onMounted(() => {
         </div>
 
         <!-- 错题本 -->
-        <div v-else-if="activeView === 'mistake'" key="mistake" class="view-container">
-           <div class="embedded-page-wrapper glass-panel">
-             <MistakeBookPage :embedded="true" />
+        <div v-else-if="activeView === 'mistake'" key="mistake" class="view-container split-layout">
+           <!-- 左侧列表 -->
+           <div class="list-pane glass-panel">
+             <MistakeListPane
+               ref="mistakeListPaneRef"
+               :embedded="true"
+               @select-mistake="handleSelectMistake"
+             />
+           </div>
+
+           <!-- 右侧详情 -->
+           <div class="detail-pane glass-panel">
+             <Transition name="fade" mode="out-in">
+               <MistakeDetailPane
+                 v-if="currentMistakeId"
+                 :key="currentQuestionId"
+                 :mistake-id="currentMistakeId"
+                 :question-id="currentQuestionId"
+                 @marked-mastered="handleMarkedMastered"
+                 @deleted="handleDeleted"
+               />
+               <div v-else class="empty-detail-state">
+                 <div class="empty-icon-wrapper">
+                   <el-icon :size="48"><Document /></el-icon>
+                 </div>
+                 <h3>选择错题查看详情</h3>
+                 <p>点击左侧列表中的错题，在此处查看完整解析和掌握情况</p>
+               </div>
+             </Transition>
            </div>
         </div>
       </Transition>
@@ -114,8 +164,8 @@ onMounted(() => {
 .app-root {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   background-color: #f5f5f7;
   overflow: hidden;
   gap: 16px;
@@ -150,9 +200,8 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(10px);
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  margin-right: 4px;
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 6px 12px;
   min-width: 90px;
   font-size: 14px;
 }
@@ -193,16 +242,16 @@ onMounted(() => {
 .split-layout {
   display: grid;
   grid-template-columns: 360px 1fr;
-  gap: 20px;
+  gap: 16px;
   height: 100%;
   overflow: visible; /* Allow shadow to be visible */
-  padding: 4px 12px 4px 4px; /* Add padding to prevent shadow clipping */
+  padding: 4px;
 }
 
 .list-pane {
   height: 100%;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
 }
@@ -210,20 +259,20 @@ onMounted(() => {
 .detail-pane {
   height: 100%;
   overflow: hidden; /* Detail page has its own scroll */
-  border-radius: 20px;
+  border-radius: 16px;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Adjust inner components to fit pane */
 .detail-pane :deep(.quiz-detail-page) {
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  max-width: 1000px; /* Limit max width for better readability */
-  margin: 0 auto;    /* Center content */
-  box-sizing: border-box;
+  /* 移除所有覆盖性设置，让组件保持自己的样式 */
+  flex: 1;
+  min-height: 0;
 }
+
+/* MistakeBookPage 已有自己的布局，不需要额外宽度设置 */
 
 /* Scrollbar for detail pane - Not needed as inner list scrolls */
 /* Empty State */
@@ -267,18 +316,20 @@ onMounted(() => {
 .trends-wrapper {
   height: 100%;
   overflow-y: auto;
-  border-radius: 24px;
+  border-radius: 16px;
   max-width: 1200px;
   margin: 0 auto;
   box-sizing: border-box;
+  padding: 16px;
 }
 
 .embedded-page-wrapper {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 16px;
   box-sizing: border-box;
+  padding: 16px;
 }
 
 .page-header {
@@ -304,7 +355,7 @@ onMounted(() => {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 
+  box-shadow:
     0 4px 24px -1px rgba(0, 0, 0, 0.06),
     0 0 0 1px rgba(255, 255, 255, 0.4) inset;
 }
@@ -351,36 +402,34 @@ onMounted(() => {
   /* Need a way to show detail pane on mobile, but for now assuming desktop focus */
 }
 
-/* ============ Dark Mode ============ */
-@media (prefers-color-scheme: dark) {
-  .app-root {
-    background-color: #000000;
-  }
+/* ============ html.dark 深色模式兼容 ============ */
+html.dark .app-root {
+  background-color: #000000;
+}
 
-  .glass-panel {
-    background: rgba(28, 28, 30, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-  }
+html.dark .glass-panel {
+  background: rgba(28, 28, 30, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
 
-  .detail-pane :deep(.quiz-detail-page)::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.15);
-  }
+html.dark .detail-pane :deep(.quiz-detail-page)::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+}
 
-  .nav-radio-group :deep(.el-radio-button__inner) {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--el-text-color-regular);
-  }
+html.dark .nav-radio-group :deep(.el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--el-text-color-regular);
+}
 
-  .nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-    background-color: var(--el-color-primary);
-    color: white;
-  }
+html.dark .nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background-color: var(--el-color-primary);
+  color: white;
+}
 
-  .empty-icon-wrapper {
-    background: rgba(255, 255, 255, 0.05);
-  }
+html.dark .empty-icon-wrapper {
+  background: rgba(255, 255, 255, 0.05);
 }
 </style>

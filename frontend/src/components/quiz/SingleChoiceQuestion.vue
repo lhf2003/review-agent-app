@@ -352,7 +352,7 @@ defineExpose({
     width: 36px; // Slightly smaller
     height: 36px;
     border-radius: 10px; // Softer radius
-    background: rgba(0, 0, 0, 0.04);
+    background: var(--el-fill-color-light);
     color: var(--el-text-color-regular);
     display: flex;
     align-items: center;
@@ -500,97 +500,98 @@ defineExpose({
   }
 
   // Dark Mode Adaptation
-  :global(.dark) & {
-    background: var(--el-bg-color);
+}
+
+html.dark .single-choice-question {
+  background: var(--el-bg-color);
+  border-color: var(--el-border-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  &.compact-mode {
+    background: transparent;
     border-color: var(--el-border-color);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
 
-    &.compact-mode {
-      background: transparent;
-      border-color: var(--el-border-color);
+  .question-text {
+    color: #FFFFFF;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .question-number {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .option-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+
+    &:hover:not(.is-disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+      transform: scale(1.01);
     }
+  }
 
-    .question-text {
-      color: #FFFFFF;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
+  .option-marker {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+  }
 
-    .question-number {
-      color: rgba(255, 255, 255, 0.6);
-    }
+  .option-content {
+    color: rgba(255, 255, 255, 0.9);
+  }
 
-    .option-item {
-      background: rgba(255, 255, 255, 0.05);
-      border: none;
+  .option-item.is-selected {
+    background: rgba(var(--el-color-primary-rgb), 0.25);
+    border: none;
 
-      &:hover:not(.is-disabled) {
-        background: rgba(255, 255, 255, 0.1);
-        box-shadow: none;
-        transform: scale(1.01);
-      }
-    }
+    .option-content { color: white; }
 
     .option-marker {
-      background: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.9);
+      background: var(--primary-color);
+      color: white;
+    }
+  }
+
+  .option-item.is-correct {
+    background: rgba(52, 199, 89, 0.2);
+    border: none;
+
+    .option-content { color: #4cd964; }
+
+    .option-marker {
+      background: var(--success-color);
+      color: white;
+    }
+  }
+
+  .option-item.is-wrong {
+    background: rgba(255, 69, 58, 0.2);
+    border: none;
+
+    .option-content { color: #ff453a; }
+
+    .option-marker {
+      background: var(--danger-color);
+      color: white;
+    }
+  }
+
+  .explanation-box {
+    background: var(--el-bg-color);
+    border-color: var(--el-border-color);
+
+    .explanation-text {
+      background: var(--el-fill-color-darker);
+      color: white;
     }
 
-    .option-content {
-      color: rgba(255, 255, 255, 0.9);
+    .explanation-content {
+      color: rgba(255, 255, 255, 0.8);
     }
 
-    .option-item.is-selected {
-      background: rgba(var(--el-color-primary-rgb), 0.25);
-      border: none;
-
-      .option-content { color: white; }
-      
-      .option-marker {
-        background: var(--primary-color);
-        color: white;
-      }
-    }
-
-    .option-item.is-correct {
-      background: rgba(52, 199, 89, 0.2);
-      border: none;
-
-      .option-content { color: #4cd964; }
-      
-      .option-marker {
-        background: var(--success-color);
-        color: white;
-      }
-    }
-
-    .option-item.is-wrong {
-      background: rgba(255, 69, 58, 0.2);
-      border: none;
-
-      .option-content { color: #ff453a; }
-      
-      .option-marker {
-        background: var(--danger-color);
-        color: white;
-      }
-    }
-
-    .explanation-box {
-      background: var(--el-bg-color);
-      border-color: var(--el-border-color);
-
-      .explanation-text {
-        background: var(--el-fill-color-darker);
-        color: white;
-      }
-
-      .explanation-content {
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      .explanation-detail {
-        color: rgba(255, 255, 255, 0.7);
-      }
+    .explanation-detail {
+      color: rgba(255, 255, 255, 0.7);
     }
   }
 }
