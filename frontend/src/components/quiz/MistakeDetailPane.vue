@@ -400,7 +400,7 @@ watch(() => props.questionId, (newId) => {
 }
 
 .title-icon {
-  font-size: 18px;
+  font-size: 26px;
   color: var(--el-color-primary);
   background: var(--el-color-primary-light-9);
   padding: 6px;

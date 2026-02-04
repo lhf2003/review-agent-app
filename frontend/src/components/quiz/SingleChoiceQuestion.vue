@@ -163,14 +163,10 @@ defineExpose({
     'has-knowledge-point': !!knowledgePoint,
     'is-submitted': isSubmitted
   }">
-    <!-- 知识点标签 -->
-    <div v-if="knowledgePoint && !compact" class="knowledge-badge">
-      {{ knowledgePoint }}
-    </div>
-
-    <!-- 题号 -->
-    <div v-if="!compact" class="question-number">
-      Question {{ index }}
+    <!-- 题目头部：题号 + 知识点标签 -->
+    <div v-if="!compact" class="question-header">
+      <div class="question-number">Question {{ index }}</div>
+      <div v-if="knowledgePoint" class="knowledge-badge">{{ knowledgePoint }}</div>
     </div>
 
     <!-- 题目文本 -->
@@ -235,15 +231,17 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@import '../../styles/quiz-common';
 @import '../../styles/variables';
 
 .single-choice-question {
-  --card-radius: 24px;
-  --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-  --primary-color: var(--el-color-primary);
-  --success-color: #34c759; // Apple Green
-  --danger-color: #ff3b30;  // Apple Red
+  // 使用共享的 CSS 变量
+  --card-radius: var(--quiz-card-radius);
+  --transition-spring: var(--quiz-transition-spring);
+  --transition-smooth: var(--quiz-transition-smooth);
+  --primary-color: var(--quiz-primary-color);
+  --success-color: var(--quiz-success-color);
+  --danger-color: var(--quiz-danger-color);
 
   background: var(--el-bg-color);
   backdrop-filter: blur(20px);
@@ -281,43 +279,6 @@ defineExpose({
     &:active { transform: none; }
   }
 
-  // Knowledge Badge
-  .knowledge-badge {
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--primary-color);
-    background: rgba(var(--el-color-primary-rgb), 0.1);
-    padding: 6px 12px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    letter-spacing: 0.3px;
-    backdrop-filter: blur(4px);
-  }
-
-  // Question Number
-  .question-number {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--el-text-color-secondary);
-    margin-bottom: 12px;
-    font-family: var(--el-font-family);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    opacity: 0.8;
-  }
-
-  // Question Text
-  .question-text {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
-    line-height: 1.5;
-    margin-bottom: 32px;
-    letter-spacing: -0.01em;
-  }
-
   // Options List
   .options-list {
     display: flex;
@@ -331,19 +292,19 @@ defineExpose({
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 14px 20px; // Reduced padding for minimalist look
-    border: none; // Remove border
+    padding: 14px 20px;
+    border: none;
     border-radius: 16px;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease; // Smoother transition
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
     position: relative;
-    background: var(--el-fill-color-light); // Default light background
-    min-height: 64px; // Reduced minimum height
+    background: var(--el-fill-color-light);
+    min-height: 64px;
     box-sizing: border-box;
-    
+
     &:hover:not(.is-disabled) {
-      background: var(--el-fill-color); // Slightly darker on hover
-      transform: scale(1.01); // Subtle scale
+      background: var(--el-fill-color);
+      transform: scale(1.01);
       z-index: 1;
 
       .option-marker {
@@ -359,9 +320,9 @@ defineExpose({
 
   // Option Marker
   .option-marker {
-    width: 36px; // Slightly smaller
+    width: 36px;
     height: 36px;
-    border-radius: 10px; // Softer radius
+    border-radius: 10px;
     background: var(--el-fill-color-light);
     color: var(--el-text-color-regular);
     display: flex;
@@ -385,8 +346,8 @@ defineExpose({
 
   // Selected State
   .option-item.is-selected {
-    background: var(--el-color-primary-light-9); // Light primary background
-    box-shadow: none; // Remove shadow to keep it flat/minimal
+    background: var(--el-color-primary-light-9);
+    box-shadow: none;
     z-index: 2;
 
     .option-marker {
@@ -423,7 +384,7 @@ defineExpose({
   .option-item.is-wrong {
     background: var(--el-color-danger-light-9);
     animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-    
+
     .option-marker {
       background: var(--danger-color);
       color: white;
@@ -450,65 +411,6 @@ defineExpose({
     }
   }
 
-  // Explanation Box
-  .explanation-box {
-    margin-top: 32px;
-    padding: 24px;
-    border-radius: 20px;
-    background: var(--el-bg-color);
-    border: 1px solid var(--el-border-color-light);
-    backdrop-filter: blur(10px);
-    animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-    opacity: 0.95;
-
-    .explanation-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      font-weight: 600;
-      color: var(--el-text-color-primary);
-      font-size: 16px;
-    }
-
-    .explanation-content {
-      font-size: 15px;
-      line-height: 1.7;
-      color: var(--el-text-color-regular);
-
-      .explanation-text {
-        margin-bottom: 16px;
-        color: var(--el-text-color-primary);
-        padding: 8px 16px;
-        background: rgba(0, 0, 0, 0.04);
-        border-radius: 10px;
-        display: inline-block;
-        font-weight: 500;
-      }
-
-      .explanation-detail {
-        padding-left: 20px;
-        border-left: 3px solid var(--primary-color);
-        color: var(--el-text-color-regular);
-        
-        p { margin: 0; }
-      }
-    }
-  }
-
-  // Animations
-  @keyframes slideUpFade {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes shake {
-    10%, 90% { transform: translate3d(-1px, 0, 0); }
-    20%, 80% { transform: translate3d(2px, 0, 0); }
-    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-    40%, 60% { transform: translate3d(4px, 0, 0); }
-  }
-
   // Dark Mode Adaptation
 }
 
@@ -520,15 +422,6 @@ html.dark .single-choice-question {
   &.compact-mode {
     background: transparent;
     border-color: var(--el-border-color);
-  }
-
-  .question-text {
-    color: #FFFFFF;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-  }
-
-  .question-number {
-    color: rgba(255, 255, 255, 0.6);
   }
 
   .option-item {
@@ -584,24 +477,6 @@ html.dark .single-choice-question {
     .option-marker {
       background: var(--danger-color);
       color: white;
-    }
-  }
-
-  .explanation-box {
-    background: var(--el-bg-color);
-    border-color: var(--el-border-color);
-
-    .explanation-text {
-      background: var(--el-fill-color-darker);
-      color: white;
-    }
-
-    .explanation-content {
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .explanation-detail {
-      color: rgba(255, 255, 255, 0.7);
     }
   }
 }

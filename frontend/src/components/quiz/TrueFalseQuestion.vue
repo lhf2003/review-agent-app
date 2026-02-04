@@ -126,6 +126,12 @@ defineExpose({
       'is-submitted': isSubmitted
     }"
   >
+    <!-- 题目头部：题号 + 知识点标签 -->
+    <div v-if="!compact" class="question-header">
+      <div class="question-number">Question {{ index }}</div>
+      <div v-if="knowledgePoint" class="knowledge-badge">{{ knowledgePoint }}</div>
+    </div>
+
     <!-- 题目文本 -->
     <div class="question-text">
       {{ question }}
@@ -223,15 +229,17 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@import '../../styles/quiz-common';
 @import '../../styles/variables';
 
 .true-false-question {
-  --card-radius: 24px;
-  --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-  --primary-color: var(--el-color-primary);
-  --success-color: #34c759;
-  --danger-color: #ff3b30;
+  // 使用共享的 CSS 变量
+  --card-radius: var(--quiz-card-radius);
+  --transition-spring: var(--quiz-transition-spring);
+  --transition-smooth: var(--quiz-transition-smooth);
+  --primary-color: var(--quiz-primary-color);
+  --success-color: var(--quiz-success-color);
+  --danger-color: var(--quiz-danger-color);
 
   // Specific colors for True/False
   --true-color: #34c759;
@@ -259,8 +267,7 @@ defineExpose({
     box-shadow: none;
     border: 1px solid var(--el-border-color-lighter);
     backdrop-filter: none;
-    
-    .question-text { font-size: 15px; margin-bottom: 16px; }
+
     .option-item { min-height: 80px; padding: 16px; }
     .option-value { font-size: 20px; }
   }
@@ -268,16 +275,7 @@ defineExpose({
   &.is-submitted .option-item {
     cursor: default;
   }
-  
-  .question-text {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
-    line-height: 1.5;
-    margin-bottom: 32px;
-    letter-spacing: -0.01em;
-  }
-  
+
   .options-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -470,57 +468,6 @@ defineExpose({
       background: rgba(255, 69, 58, 0.2);
       
       .option-value { color: #ff453a; }
-    }
-  }
-
-  // Explanation Box
-  .explanation-box {
-    margin-top: 32px;
-    padding: 24px;
-    border-radius: 20px;
-    background: var(--el-bg-color);
-    border: 1px solid var(--el-border-color-light);
-
-    .explanation-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--el-text-color-primary);
-
-      .el-icon {
-        font-size: 20px;
-      }
-    }
-
-    .explanation-content {
-      .explanation-text {
-        margin-bottom: 12px;
-        padding: 12px 16px;
-        border-radius: 12px;
-        background: var(--danger-color, #ff3b30);
-        color: white;
-        font-size: 14px;
-      }
-
-      .explanation-detail {
-        padding: 16px;
-        border-radius: 12px;
-        background: var(--el-fill-color-light);
-        color: var(--el-text-color-regular);
-        line-height: 1.8;
-        font-size: 14px;
-
-        p {
-          margin: 0;
-        }
-
-        strong {
-          color: var(--el-text-color-primary);
-        }
-      }
     }
   }
 }

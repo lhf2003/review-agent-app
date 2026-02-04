@@ -11,6 +11,7 @@
 | v1.2 | 2026-02-04 | 错题本模块 UI/UX 深度优化（Glassmorphism + AppleStyle） |
 | v1.3 | 2026-02-04 | 趋势分析模块 UI/UX 重构（卡片式布局 + Modern Glass） |
 | v1.4 | 2026-02-04 | 习题模块加载体验优化（骨架屏） |
+| v1.5 | 2026-02-04 | 题型组件公共代码重构（样式抽取 + Composables + 布局优化） |
 
 ## 1. 项目定位与边界
 
@@ -689,3 +690,103 @@ html.dark .my-component { }
 
 - **骨架屏（Skeleton Screen）**：将 `QuizHistoryPage` 和 `QuizDetailPage` 的加载状态从简单的 Loading 图标升级为布局保真的骨架屏，提升感知性能和视觉流畅度。
 - **一致性**：骨架屏结构严格映射真实内容布局（卡片、统计栏、题目列表），避免加载完成后的布局跳动。
+
+### 10.10 题型组件公共代码重构（样式抽取 + Composables + 布局优化）
+
+#### 10.10.1 背景与问题
+
+在 `frontend/src/components/quiz/` 目录下存在 5 个题型组件（单选、多选、判断、填空、代码题），这些组件之间存在大量重复代码：
+
+| 重复类型 | 重复次数 | 影响 |
+|---------|---------|-----|
+| CSS 变量定义 | 5 处 | 修改一处需同步修改 5 个文件 |
+| 样式类（.knowledge-badge, .explanation-box 等） | ~500 行 | 维护成本高，容易不一致 |
+| 动画定义（slideUpFade, shake） | 8 处 | 动画效果不统一 |
+| Dark Mode 适配代码 | 5 处 | 深色模式样式不一致 |
+| Props 定义 | 10+ 个公共 props | 类型定义分散 |
+
+#### 10.10.2 解决方案
+
+##### 阶段 1：共享样式文件抽取
+
+**新建文件**：
+
+1. **`frontend/src/styles/quiz-variables.scss`**
+   - 定义题型组件公共 CSS 变量
+   - 包括：`--quiz-card-radius`, `--quiz-transition-spring`, `--quiz-primary-color` 等
+
+2. **`frontend/src/styles/quiz-common.scss`**
+   - 导入 `quiz-variables.scss`
+   - 包含公共样式类：
+     - `.question-header`（题号 + 知识点标签容器）
+     - `.knowledge-badge`（知识点标签样式）
+     - `.question-number`（题号样式）
+     - `.question-text`（题目文本样式）
+     - `.explanation-box`（解析框样式）
+   - 包含公共动画：`@keyframes slideUpFade`, `@keyframes shake`
+   - 包含 Dark Mode 适配基础样式
+
+##### 阶段 2：TypeScript Composables 抽取
+
+**新建文件**：
+
+1. **`frontend/src/composables/useQuestionBase.ts`**
+   - 定义 `QuestionBaseProps` 接口（统一 Props 类型）
+   - 定义 `QuestionEmits` 接口（统一事件类型）
+   - 提供 `useQuestionBase` composable 函数
+
+2. **`frontend/src/composables/useAnswerValidation.ts`**
+   - 定义答案验证策略接口
+   - 提供默认验证策略（单选、多选、判断、填空）
+   - 提供 `useAnswerValidation` composable 函数
+
+#### 10.10.3 组件更新
+
+所有 5 个题型组件均已更新：
+
+| 组件 | 修改内容 |
+|------|---------|
+| `SingleChoiceQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
+| `MultipleChoiceQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
+| `TrueFalseQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
+| `FillBlankQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
+| `CodeSnippetQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
+
+#### 10.10.4 布局优化
+
+1. **题号与知识点标签对齐**
+   - 新增 `.question-header` 容器，使题号和知识点标签处于同一水平线
+   - 知识点标签位于题号右侧
+
+2. **QuizDetailPage 容器优化**
+   - 移除冗余的 `.question-review` 容器（减少视觉噪音）
+   - 移除重复的题号显示
+   - 优化 `.questions-list` 的 `gap` 和 `padding`
+
+#### 10.10.5 收益指标
+
+| 指标 | 重构前 | 重构后 | 改善 |
+|------|-------|-------|-----|
+| 重复的 CSS 变量定义 | 5 处 | 1 处 | **-80%** |
+| 重复的样式类代码 | ~500 行 | ~100 行 | **-80%** |
+| 重复的动画定义 | 8 处 | 2 处 | **-75%** |
+| 代码维护成本 | 高 | 低 | 显著降低 |
+
+#### 10.10.6 相关文档
+
+- **详细重构计划**：`.claude/plans/jazzy-conjuring-metcalfe.md`
+- **修复案例**：
+  - `docs/2026-02-04-CASE-004-fix-questionrenderer-props_01.md`
+  - `docs/2026-02-04-CASE-005-mistake-detail-pane-ui-optimization_01.md`
+  - `docs/fixes/2026-02-04-CASE-006-fix-quiz-variables-scope_01.md`
+
+#### 10.10.7 验证方法
+
+1. **样式一致性检查**：确认所有题型的知识点标签、题目文本、解析框样式一致
+2. **Dark Mode 检查**：切换到暗黑模式，确认所有题型样式正确适配
+3. **功能测试**：确认所有题型功能正常，解析显示正常
+4. **视觉回归测试**：对比重构前后的页面截图，确保视觉效果一致
+
+---
+
+**状态**：✅ 已完成（2026-02-04）

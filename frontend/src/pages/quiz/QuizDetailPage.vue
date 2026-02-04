@@ -2,7 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { Collection } from '@element-plus/icons-vue'
 import { api } from '../../api/http'
 import QuestionRenderer from '../../components/quiz/QuestionRenderer.vue'
 import CustomScroll from '../../components/CustomScroll.vue'
@@ -129,11 +129,11 @@ onMounted(() => {
           <div class="questions-list-wrapper">
             <CustomScroll>
               <div class="questions-list">
-                <div v-for="j in 2" :key="j" class="question-review">
+                <div v-for="j in 2" :key="j" style="margin-bottom: 24px;">
                   <el-skeleton-item variant="text" style="width: 60px; margin-bottom: 16px;" />
                   <el-skeleton-item variant="p" style="width: 100%; margin-bottom: 8px;" />
                   <el-skeleton-item variant="p" style="width: 80%; margin-bottom: 24px;" />
-                  
+
                   <div v-for="k in 4" :key="k" style="margin-bottom: 12px; display: flex; align-items: center;">
                     <el-skeleton-item variant="circle" style="width: 20px; height: 20px; margin-right: 12px;" />
                     <el-skeleton-item variant="text" style="width: 60%;" />
@@ -150,38 +150,37 @@ onMounted(() => {
     <div v-else-if="quizDetail.quizId" class="quiz-content-container">
       <!-- 顶部导航 -->
       <div class="page-header" :class="{ 'is-embedded': embedded }">
-        <el-button v-if="!embedded" @click="goBack" link>
-          <el-icon><ArrowLeft /></el-icon>
-          返回习题历史
-        </el-button>
-        <h1>{{ quizDetail.collectionName }} - 习题详情</h1>
-      </div>
-
-      <!-- 统计信息 -->
-      <div class="statistics-bar">
-        <div class="stat-item">
-          <span class="stat-label">正确率:</span>
-          <span class="stat-value">{{ accuracy }}%</span>
+        <div class="header-left">
+          <div class="header-title">
+            <el-icon class="title-icon"><Collection /></el-icon>
+            <span class="title-text">{{ quizDetail.collectionName }}</span>
+            <span class="subtitle-text">习题详情</span>
+          </div>
         </div>
-        <div class="stat-item">
-          <span class="stat-label">正确数:</span>
-          <span class="stat-value">{{ correctCount }}/{{ totalCount }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">得分:</span>
-          <span class="stat-value">{{ quizDetail.totalScore || '-' }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">状态:</span>
-          <span class="stat-value">
-            <el-tag v-if="quizDetail.isOutdated" type="warning">已过期</el-tag>
-            <el-tag v-else-if="quizDetail.status === 1" type="success">已完成</el-tag>
-            <el-tag v-else type="info">进行中</el-tag>
-          </span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">完成时间:</span>
-          <span class="stat-value">{{ quizDetail.createdTime }}</span>
+        
+        <!-- 统计信息 (整合到 Header) -->
+        <div class="header-right statistics-inline">
+          <div class="stat-item">
+            <span class="stat-label">正确率</span>
+            <span class="stat-value">{{ accuracy }}%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">正确数</span>
+            <span class="stat-value">{{ correctCount }}/{{ totalCount }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">得分</span>
+            <span class="stat-value">{{ quizDetail.totalScore || '-' }}</span>
+          </div>
+          <div class="stat-item status-item">
+            <el-tag v-if="quizDetail.isOutdated" type="warning" size="small" effect="dark">已过期</el-tag>
+            <el-tag v-else-if="quizDetail.status === 1" type="success" size="small" effect="dark">已完成</el-tag>
+            <el-tag v-else type="info" size="small" effect="dark">进行中</el-tag>
+          </div>
+          <div class="stat-item time-item">
+            <span class="stat-label">时间</span>
+            <span class="stat-value">{{ quizDetail.createdTime }}</span>
+          </div>
         </div>
       </div>
 
@@ -189,26 +188,21 @@ onMounted(() => {
       <div class="questions-list-wrapper">
         <CustomScroll>
           <div class="questions-list">
-            <div
+            <QuestionRenderer
               v-for="(question, index) in quizDetail.questions"
               :key="question.questionId"
-              class="question-review"
-            >
-              <div class="question-number">第 {{ index + 1 }} 题</div>
-              <QuestionRenderer
-                :question="question.questionText"
-                :type="getQuestionType(question.questionType)"
-                :options="parseOptions(question.optionsJson)"
-                :user-answer="question.userAnswer"
-                :correct-answer="question.correctAnswer"
-                :explanation="question.explanation"
-                :is-submitted="true"
-                :question-id="question.questionId"
-                :index="index + 1"
-                :knowledge-point="question.knowledgePoint"
-                :blank-count="question.blankCount"
-              />
-            </div>
+              :question="question.questionText"
+              :type="getQuestionType(question.questionType)"
+              :options="parseOptions(question.optionsJson)"
+              :user-answer="question.userAnswer"
+              :correct-answer="question.correctAnswer"
+              :explanation="question.explanation"
+              :is-submitted="true"
+              :question-id="question.questionId"
+              :index="index + 1"
+              :knowledge-point="question.knowledgePoint"
+              :blank-count="question.blankCount"
+            />
           </div>
         </CustomScroll>
       </div>
@@ -258,10 +252,7 @@ onMounted(() => {
   max-width: none;
 }
 
-.quiz-detail-page.is-embedded .page-header {
-  padding: 24px 24px 0 24px;
-  margin-bottom: 24px;
-}
+/* Removed .quiz-detail-page.is-embedded .page-header override */
 
 .quiz-detail-page.is-embedded .statistics-bar {
   margin: 0 24px 24px 24px;
@@ -282,18 +273,65 @@ onMounted(() => {
 }
 
 .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
   margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
 }
 
-.page-header h1 {
-  font-size: 24px;
+.page-header.is-embedded {
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: transparent;
+  box-shadow: none;
+  padding: 20px 24px;
+  margin: 0 0 24px 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-icon {
+  font-size: 26px;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  transition: all 0.2s ease;
+}
+
+.title-text {
+  font-size: 18px;
   font-weight: 600;
-  margin: 12px 0 0 0;
   color: var(--el-text-color-primary);
+  letter-spacing: -0.3px;
 }
 
-.page-header.is-embedded h1 {
-  margin-top: 0;
+.subtitle-text {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  padding-left: 12px;
+  border-left: 1px solid var(--el-border-color);
+  line-height: 1.2;
 }
 
 .statistics-bar {
@@ -333,26 +371,28 @@ onMounted(() => {
 .questions-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 4px;
-}
-
-.question-review {
-  padding: 24px;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color);
-  border-radius: 12px;
-}
-
-.question-number {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--el-text-color-secondary);
-  margin-bottom: 16px;
+  gap: 16px;
+  padding: 4px 24px 24px 24px;
 }
 
 /* ============ Dark Mode ============ */
 html.dark .quiz-detail-page {
+  .page-header {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+
+    &.is-embedded {
+      background: transparent;
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+    }
+  }
+
+  .title-icon {
+    background: rgba(64, 158, 255, 0.15);
+  }
+
   .loading-container,
   .error-state {
     background: rgba(0, 0, 0, 0.2);
@@ -367,21 +407,6 @@ html.dark .quiz-detail-page {
     backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  }
-
-  .question-review {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.15);
-    }
-  }
-
-  .question-number {
-    color: rgba(255, 255, 255, 0.7);
   }
 
   .stat-label {

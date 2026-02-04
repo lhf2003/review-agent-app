@@ -183,7 +183,7 @@ defineExpose({
     }"
   >
     <!-- 知识点标签 -->
-    <div class="knowledge-label" v-if="knowledgePoint">
+    <div v-if="knowledgePoint && !compact" class="knowledge-badge">
       {{ knowledgePoint }}
     </div>
 
@@ -272,16 +272,18 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@import '../../styles/quiz-common';
 @import '../../styles/variables';
 
 .fill-blank-question {
-  --card-radius: 24px;
-  --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-  --primary-color: var(--el-color-primary);
-  --success-color: #34c759;
-  --danger-color: #ff3b30;
-  --warning-color: #ff9f0a;
+  // 使用共享的 CSS 变量
+  --card-radius: var(--quiz-card-radius);
+  --transition-spring: var(--quiz-transition-spring);
+  --transition-smooth: var(--quiz-transition-smooth);
+  --primary-color: var(--quiz-primary-color);
+  --success-color: var(--quiz-success-color);
+  --danger-color: var(--quiz-danger-color);
+  --warning-color: var(--quiz-warning-color);
 
   background: var(--el-bg-color);
   backdrop-filter: blur(20px);
@@ -308,31 +310,12 @@ defineExpose({
   &.is-submitted {
     .blank-input {
       color: var(--el-text-color-primary);
-      // background: transparent; // Let parent background show
     }
   }
 
-  .knowledge-label {
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--primary-color);
-    background: rgba(var(--el-color-primary-rgb), 0.1);
-    padding: 6px 12px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    letter-spacing: 0.3px;
-    backdrop-filter: blur(4px);
-  }
-
   .question-text {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
+    @extend .question-text;
     line-height: 1.6;
-    margin-bottom: 32px;
-    letter-spacing: -0.01em;
 
     :deep(.blank-placeholder) {
       display: inline-block;
@@ -479,47 +462,6 @@ defineExpose({
     }
   }
 
-  .explanation-box {
-    margin-top: 32px;
-    padding: 24px;
-    border-radius: 20px;
-    background: var(--el-bg-color);
-    border: 1px solid var(--el-border-color-light);
-    backdrop-filter: blur(10px);
-    animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-    opacity: 0.95;
-  }
-
-  @keyframes slideUpFade {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .explanation-content {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .explanation-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--primary-color);
-    margin-bottom: 4px;
-  }
-
-  .explanation-detail {
-    font-size: 15px;
-    color: var(--el-text-color-regular);
-    line-height: 1.6;
-  }
-
   // Dark Mode Adaptation
   :global(.dark) & {
     background: rgba(28, 28, 30, 0.65);
@@ -589,15 +531,6 @@ defineExpose({
       .blank-number {
         background: rgba(255, 69, 58, 0.3);
         color: white;
-      }
-    }
-
-    .explanation-box {
-      background: rgba(44, 44, 46, 0.6);
-      border-color: rgba(255, 255, 255, 0.1);
-
-      .explanation-detail {
-        color: rgba(255, 255, 255, 0.8);
       }
     }
   }

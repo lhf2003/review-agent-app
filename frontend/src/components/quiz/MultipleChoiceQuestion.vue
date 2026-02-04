@@ -171,21 +171,17 @@ defineExpose({
 </script>
 
 <template>
-  <div 
+  <div
     class="multiple-choice-question"
     :class="{
       'compact-mode': compact,
       'has-options': options && options.length > 0
     }"
   >
-    <!-- 知识点标签 -->
-    <div v-if="knowledgePoint && !compact" class="knowledge-badge">
-      {{ knowledgePoint }}
-    </div>
-
-    <!-- 题号 -->
-    <div v-if="!compact" class="question-number">
-      Question {{ index }}
+    <!-- 题目头部：题号 + 知识点标签 -->
+    <div v-if="!compact" class="question-header">
+      <div class="question-number">Question {{ index }}</div>
+      <div v-if="knowledgePoint" class="knowledge-badge">{{ knowledgePoint }}</div>
     </div>
 
     <!-- 题目文本 -->
@@ -267,15 +263,17 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@import '../../styles/quiz-common';
 @import '../../styles/variables';
 
 .multiple-choice-question {
-  --card-radius: 24px;
-  --transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-  --primary-color: var(--el-color-primary);
-  --success-color: #34c759;
-  --danger-color: #ff3b30;
+  // 使用共享的 CSS 变量
+  --card-radius: var(--quiz-card-radius);
+  --transition-spring: var(--quiz-transition-spring);
+  --transition-smooth: var(--quiz-transition-smooth);
+  --primary-color: var(--quiz-primary-color);
+  --success-color: var(--quiz-success-color);
+  --danger-color: var(--quiz-danger-color);
 
   background: var(--el-bg-color);
   backdrop-filter: blur(20px);
@@ -298,21 +296,11 @@ defineExpose({
     box-shadow: none;
     border: 1px solid var(--el-border-color-lighter);
     backdrop-filter: none;
-    
-    .question-text { font-size: 15px; margin-bottom: 16px; }
+
     .options-list { gap: 10px; grid-template-columns: 1fr; }
     .option-item { padding: 12px 16px; }
   }
-  
-  .question-text {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
-    line-height: 1.5;
-    margin-bottom: 32px;
-    letter-spacing: -0.01em;
-  }
-  
+
   .options-list {
     display: flex;
     flex-direction: column;
@@ -440,34 +428,7 @@ defineExpose({
       line-height: 1;
     }
   }
-  
-    // Knowledge Badge
-  .knowledge-badge {
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--primary-color);
-    background: rgba(var(--el-color-primary-rgb), 0.1);
-    padding: 6px 12px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    letter-spacing: 0.3px;
-    backdrop-filter: blur(4px);
-  }
 
-  // Question Number
-  .question-number {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--el-text-color-secondary);
-    margin-bottom: 12px;
-    font-family: var(--el-font-family);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    opacity: 0.8;
-  }
-  
   .option-content {
     flex: 1;
     font-size: 16px;
@@ -476,7 +437,7 @@ defineExpose({
     word-break: break-word;
     transition: color 0.2s ease;
   }
-  
+
   .answer-status-icon {
     position: absolute;
     right: 12px;
@@ -484,14 +445,7 @@ defineExpose({
     font-size: 20px;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
   }
-  
-  @keyframes shake {
-    10%, 90% { transform: translate3d(-1px, 0, 0); }
-    20%, 80% { transform: translate3d(2px, 0, 0); }
-    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-    40%, 60% { transform: translate3d(4px, 0, 0); }
-  }
-  
+
   // Dark Mode
   :global(.dark) & {
     background: rgba(28, 28, 30, 0.65);
@@ -550,57 +504,6 @@ defineExpose({
       border: none;
       
       .option-content { color: #ff453a; }
-    }
-  }
-
-  // Explanation Box
-  .explanation-box {
-    margin-top: 32px;
-    padding: 24px;
-    border-radius: 20px;
-    background: var(--el-bg-color);
-    border: 1px solid var(--el-border-color-light);
-
-    .explanation-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--el-text-color-primary);
-
-      .el-icon {
-        font-size: 20px;
-      }
-    }
-
-    .explanation-content {
-      .explanation-text {
-        margin-bottom: 12px;
-        padding: 12px 16px;
-        border-radius: 12px;
-        background: var(--danger-color, #ff3b30);
-        color: white;
-        font-size: 14px;
-      }
-
-      .explanation-detail {
-        padding: 16px;
-        border-radius: 12px;
-        background: var(--el-fill-color-light);
-        color: var(--el-text-color-regular);
-        line-height: 1.8;
-        font-size: 14px;
-
-        p {
-          margin: 0;
-        }
-
-        strong {
-          color: var(--el-text-color-primary);
-        }
-      }
     }
   }
 }
