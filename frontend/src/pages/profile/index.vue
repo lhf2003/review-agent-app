@@ -207,7 +207,7 @@ async function changePassword() {
 /* Profile Navigation - 分栏导航 */
 .nav-radio-group {
   margin-top: -16px;
-  margin-bottom: 24px;
+  margin-bottom: 10px;
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-radius: 14px;
@@ -292,7 +292,7 @@ html.dark .nav-radio-group :deep(.el-radio-button.is-active .el-radio-button__in
   font-size: 20px;
   font-weight: 600;
   color: var(--el-text-color-primary);
-  margin: 32px 0 20px 0;
+  margin-bottom: 20px;
   opacity: 0;
   animation: fadeSlideUp 0.6s ease forwards;
 }

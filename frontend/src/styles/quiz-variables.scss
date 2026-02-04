@@ -1,0 +1,11 @@
+// 题型组件公共 CSS 变量
+:root {
+  --quiz-card-radius: 24px;
+  --quiz-transition-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --quiz-transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  --quiz-primary-color: var(--el-color-primary);
+  --quiz-success-color: #34c759;
+  --quiz-danger-color: #ff3b30;
+  --quiz-warning-color: #ff9f0a;
+  --quiz-code-bg: #1e1e1e;
+}

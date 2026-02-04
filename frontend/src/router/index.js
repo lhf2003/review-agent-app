@@ -15,7 +15,6 @@ const DataPage = () => import('../pages/DataPage.vue')
 const AnalysisResultPage = () => import('../pages/AnalysisResult.vue')
 const SyncHistoryPage = () => import('../pages/SyncHistoryPage.vue')
 const FileDetailPage = () => import('../pages/FileDetailPage.vue')
-const WordCloudPage = () => import('../pages/WordCloudPage.vue')
 const ReportPage = () => import('../pages/ReportPage.vue')
 const SessionTracePage = () => import('../pages/SessionTracePage.vue')
 const AboutUsPage = () => import('../pages/config/AboutUs.vue')
@@ -27,7 +26,6 @@ const CollectionDetailPage = () => import('../pages/collection/CollectionDetailP
 const QuizPage = () => import('../pages/collection/QuizPage.vue')
 const LearningPage = () => import('../pages/quiz/index.vue')
 const QuizDetailPage = () => import('../pages/quiz/QuizDetailPage.vue')
-const MistakeBookPage = () => import('../pages/quiz/MistakeBookPage.vue')
 
 const router = createRouter({
   history,
@@ -54,7 +52,6 @@ const router = createRouter({
     { path: '/analysis', component: AnalysisResultPage },
     { path: '/sync', component: SyncHistoryPage },
     { path: '/analysis/:id', component: FileDetailPage },
-    { path: '/word-cloud', component: WordCloudPage },
     { path: '/report', component: ReportPage },
     { path: '/trace/:fileId', component: SessionTracePage },
     { path: '/collections', component: CollectionListPage },
@@ -62,7 +59,7 @@ const router = createRouter({
     { path: '/collections/:id/quiz', component: QuizPage },
     { path: '/quiz-history', component: LearningPage },
     { path: '/quiz-history/:quizId', component: QuizDetailPage },
-    { path: '/mistake-book', component: MistakeBookPage },
+    { path: '/mistake-book', component: LearningPage },
   ],
 })
 
