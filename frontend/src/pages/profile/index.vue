@@ -208,8 +208,6 @@ async function changePassword() {
 .nav-radio-group {
   margin-top: -16px;
   margin-bottom: 24px;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-radius: 14px;

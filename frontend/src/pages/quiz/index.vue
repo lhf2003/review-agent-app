@@ -166,7 +166,6 @@ onMounted(() => {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background-color: #f5f5f7;
   overflow: hidden;
   gap: 16px;
   padding: 0 4px;

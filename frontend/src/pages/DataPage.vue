@@ -228,7 +228,7 @@ function closeTour() {
       <div class="spacer"></div>
 
       <div class="filter-group" ref="filter-group">
-        <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="width: 200px" />
+        <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="width: 180px; margin-right: 12px;" />
         <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 120px" @change="() => { page = 1; load() } ">
         <el-option :value="null" label="全部" />
         <el-option :value="0" label="未分析" />

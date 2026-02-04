@@ -112,7 +112,7 @@ onMounted(() => {
       <el-skeleton animated style="height: 100%; display: flex; flex-direction: column;">
         <template #template>
           <!-- 顶部导航骨架 -->
-          <div class="page-header" :class="{ 'is-embedded': embedded }">
+          <div class="page-header">
             <el-skeleton-item v-if="!embedded" variant="text" style="width: 100px; margin-bottom: 12px;" />
             <el-skeleton-item variant="h1" style="width: 300px; height: 32px;" />
           </div>
@@ -149,7 +149,7 @@ onMounted(() => {
     <!-- 习题详情内容 -->
     <div v-else-if="quizDetail.quizId" class="quiz-content-container">
       <!-- 顶部导航 -->
-      <div class="page-header" :class="{ 'is-embedded': embedded }">
+      <div class="page-header">
         <div class="header-left">
           <div class="header-title">
             <el-icon class="title-icon"><Collection /></el-icon>
@@ -217,9 +217,6 @@ onMounted(() => {
   </div>
 </template>
 
-
-
-
 <style scoped>
 .quiz-detail-page {
   max-width: 900px;
@@ -255,8 +252,9 @@ onMounted(() => {
 /* Removed .quiz-detail-page.is-embedded .page-header override */
 
 .quiz-detail-page.is-embedded .statistics-bar {
-  margin: 0 24px 24px 24px;
-}
+    /* Deprecated */
+    display: none;
+  }
 
 .quiz-detail-page.is-embedded .questions-list {
   padding: 4px 24px 24px 24px;
@@ -276,25 +274,18 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  margin-bottom: 24px;
+  padding: 14px 20px;
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s ease;
-}
-
-.page-header.is-embedded {
-  border-radius: 0;
-  border: none;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: transparent;
-  box-shadow: none;
-  padding: 20px 24px;
-  margin: 0 0 24px 0;
+  flex-shrink: 0;
+  transition: background 0.3s ease;
+
+  html.dark & {
+    background: rgba(30, 41, 59, 0.85);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
 }
 
 .header-left {
@@ -334,31 +325,61 @@ onMounted(() => {
   line-height: 1.2;
 }
 
-.statistics-bar {
+.header-right {
   display: flex;
+  align-items: center;
   gap: 24px;
-  padding: 20px;
-  background: var(--el-fill-color);
-  border-radius: 12px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+}
+
+.statistics-inline {
+  display: flex;
+  align-items: center;
 }
 
 .stat-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .stat-value {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--el-text-color-primary);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* 响应式调整 */
+@media (max-width: 900px) {
+  .header-right {
+    gap: 16px;
+  }
+  
+  .time-item {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 .questions-list-wrapper {
@@ -403,10 +424,8 @@ html.dark .quiz-detail-page {
   }
 
   .statistics-bar {
-    background: rgba(28, 28, 30, 0.75);
-    backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    /* Deprecated - kept for reference if needed but hidden */
+    display: none;
   }
 
   .stat-label {
