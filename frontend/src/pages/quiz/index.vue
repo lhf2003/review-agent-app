@@ -72,11 +72,11 @@ onMounted(() => {
        <div class="nav-left">
          <el-radio-group v-model="activeView" class="nav-radio-group">
            <el-radio-button value="history">习题历史</el-radio-button>
-           <el-radio-button value="trends">趋势分析</el-radio-button>
            <el-radio-button value="mistake">
              错题本
              <span v-if="mistakeCount > 0" class="mistake-badge-text">({{ mistakeCount }})</span>
            </el-radio-button>
+          <el-radio-button value="trends">趋势分析</el-radio-button>
          </el-radio-group>
        </div>
     </div>
@@ -114,7 +114,7 @@ onMounted(() => {
         
         <!-- 趋势分析 -->
         <div v-else-if="activeView === 'trends'" key="trends" class="view-container">
-           <div class="trends-wrapper glass-panel">
+           <div class="trends-wrapper">
              <div class="page-header">
                <h1 class="page-title">学习趋势分析</h1>
                <p class="page-subtitle">追踪您的学习进度与知识掌握情况</p>

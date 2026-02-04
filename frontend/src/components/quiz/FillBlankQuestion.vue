@@ -1,5 +1,6 @@
 <script setup>
-import {ref, computed, watch} from 'vue'
+import { ref, computed, watch } from 'vue'
+import { SuccessFilled, CircleCloseFilled, InfoFilled } from '@element-plus/icons-vue'
 
 /**
  * 填空题组件
@@ -50,6 +51,21 @@ const props = defineProps({
   knowledgePoint: {
     type: String,
     default: null
+  },
+  // 解析内容
+  explanation: {
+    type: String,
+    default: ''
+  },
+  // 是否显示解析
+  showExplanation: {
+    type: Boolean,
+    default: false
+  },
+  // 是否有解析内容
+  hasExplanation: {
+    type: Boolean,
+    default: true
   }
 })
 

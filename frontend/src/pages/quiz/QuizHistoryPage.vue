@@ -155,10 +155,29 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 加载状态 -->
-    <div v-if="loading && quizHistory.length === 0" class="loading-container">
-      <el-icon class="is-loading loading-icon" :size="32"><Loading /></el-icon>
-      <p class="loading-text">加载中...</p>
+    <!-- 加载状态 (骨架屏) -->
+    <div v-if="loading && quizHistory.length === 0" class="quiz-list-wrapper">
+      <CustomScroll>
+        <div class="quiz-list">
+          <div v-for="i in 6" :key="i" class="quiz-card glass-card">
+            <el-skeleton animated>
+              <template #template>
+                <div class="card-header" style="margin-bottom: 12px;">
+                  <el-skeleton-item variant="h3" style="width: 50%" />
+                  <el-skeleton-item variant="text" style="width: 40px" />
+                </div>
+                <div class="card-stats">
+                  <div class="stat-group">
+                    <el-skeleton-item variant="text" style="width: 60px" />
+                    <el-skeleton-item variant="text" style="width: 60px" />
+                  </div>
+                  <el-skeleton-item variant="text" style="width: 100px" />
+                </div>
+              </template>
+            </el-skeleton>
+          </div>
+        </div>
+      </CustomScroll>
     </div>
 
     <!-- 习题列表 -->
@@ -228,13 +247,6 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<script>
-import { Loading } from '@element-plus/icons-vue'
-export default {
-  components: { Loading }
-}
-</script>
 
 <style scoped>
 .quiz-history-page {

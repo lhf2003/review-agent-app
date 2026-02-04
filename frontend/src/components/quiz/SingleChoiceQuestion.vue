@@ -62,6 +62,16 @@ const props = defineProps({
   type: {
     type: String,
     default: 'single_choice'
+  },
+  // 解析内容
+  explanation: {
+    type: String,
+    default: ''
+  },
+  // 是否显示解析
+  showExplanation: {
+    type: Boolean,
+    default: false
   }
 })
 

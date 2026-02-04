@@ -178,6 +178,16 @@ defineExpose({
       'has-options': options && options.length > 0
     }"
   >
+    <!-- 知识点标签 -->
+    <div v-if="knowledgePoint && !compact" class="knowledge-badge">
+      {{ knowledgePoint }}
+    </div>
+
+    <!-- 题号 -->
+    <div v-if="!compact" class="question-number">
+      Question {{ index }}
+    </div>
+
     <!-- 题目文本 -->
     <div class="question-text">
       {{ question }}
@@ -429,6 +439,33 @@ defineExpose({
       color: white;
       line-height: 1;
     }
+  }
+  
+    // Knowledge Badge
+  .knowledge-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(var(--el-color-primary-rgb), 0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(4px);
+  }
+
+  // Question Number
+  .question-number {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--el-text-color-secondary);
+    margin-bottom: 12px;
+    font-family: var(--el-font-family);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.8;
   }
   
   .option-content {

@@ -107,10 +107,43 @@ onMounted(() => {
 
 <template>
   <div class="quiz-detail-page" :class="{ 'is-embedded': embedded }">
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-container">
-      <el-icon class="is-loading" :size="32"><Loading /></el-icon>
-      <p>加载中...</p>
+    <!-- 加载状态 (骨架屏) -->
+    <div v-if="loading" class="quiz-content-container">
+      <el-skeleton animated style="height: 100%; display: flex; flex-direction: column;">
+        <template #template>
+          <!-- 顶部导航骨架 -->
+          <div class="page-header" :class="{ 'is-embedded': embedded }">
+            <el-skeleton-item v-if="!embedded" variant="text" style="width: 100px; margin-bottom: 12px;" />
+            <el-skeleton-item variant="h1" style="width: 300px; height: 32px;" />
+          </div>
+
+          <!-- 统计信息骨架 -->
+          <div class="statistics-bar">
+            <div v-for="i in 5" :key="i" class="stat-item" style="margin-right: 24px;">
+              <el-skeleton-item variant="text" style="width: 40px; margin-right: 8px;" />
+              <el-skeleton-item variant="text" style="width: 60px;" />
+            </div>
+          </div>
+
+          <!-- 题目列表骨架 -->
+          <div class="questions-list-wrapper">
+            <CustomScroll>
+              <div class="questions-list">
+                <div v-for="j in 2" :key="j" class="question-review">
+                  <el-skeleton-item variant="text" style="width: 60px; margin-bottom: 16px;" />
+                  <el-skeleton-item variant="p" style="width: 100%; margin-bottom: 8px;" />
+                  <el-skeleton-item variant="p" style="width: 80%; margin-bottom: 24px;" />
+                  
+                  <div v-for="k in 4" :key="k" style="margin-bottom: 12px; display: flex; align-items: center;">
+                    <el-skeleton-item variant="circle" style="width: 20px; height: 20px; margin-right: 12px;" />
+                    <el-skeleton-item variant="text" style="width: 60%;" />
+                  </div>
+                </div>
+              </div>
+            </CustomScroll>
+          </div>
+        </template>
+      </el-skeleton>
     </div>
 
     <!-- 习题详情内容 -->
@@ -190,12 +223,8 @@ onMounted(() => {
   </div>
 </template>
 
-<script>
-import { Loading } from '@element-plus/icons-vue'
-export default {
-  components: { Loading }
-}
-</script>
+
+
 
 <style scoped>
 .quiz-detail-page {
