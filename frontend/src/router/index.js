@@ -18,16 +18,16 @@ const FileDetailPage = () => import('../pages/FileDetailPage.vue')
 const WordCloudPage = () => import('../pages/WordCloudPage.vue')
 const ReportPage = () => import('../pages/ReportPage.vue')
 const SessionTracePage = () => import('../pages/SessionTracePage.vue')
-const AboutUsPage = () => import('../pages/AboutUs.vue')
+const AboutUsPage = () => import('../pages/config/AboutUs.vue')
 
 const isFileProtocol = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:'
 const history = isFileProtocol ? createWebHashHistory(import.meta.env.BASE_URL) : createWebHistory(import.meta.env.BASE_URL)
-const CollectionListPage = () => import('../pages/CollectionListPage.vue')
-const CollectionDetailPage = () => import('../pages/CollectionDetailPage.vue')
-const QuizPage = () => import('../pages/QuizPage.vue')
+const CollectionListPage = () => import('../pages/collection/CollectionListPage.vue')
+const CollectionDetailPage = () => import('../pages/collection/CollectionDetailPage.vue') 
+const QuizPage = () => import('../pages/collection/QuizPage.vue')
 const LearningPage = () => import('../pages/quiz/index.vue')
 const QuizDetailPage = () => import('../pages/quiz/QuizDetailPage.vue')
-const MistakeBookPage = () => import('../pages/MistakeBookPage.vue')
+const MistakeBookPage = () => import('../pages/quiz/MistakeBookPage.vue')
 
 const router = createRouter({
   history,

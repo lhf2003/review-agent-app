@@ -38,13 +38,6 @@
 - Markdown：markdown-it，highlight.js
 - 桌面端：JavaFX（WebView 容器 + 本地文件系统访问能力）
 
-### 2.2 运行要求（开发）
-
-- JDK 17+
-- Node.js v22+
-- MySQL 8.0+
-- Redis
-
 ## 3. 总体架构
 
 ### 3.1 组件关系图
