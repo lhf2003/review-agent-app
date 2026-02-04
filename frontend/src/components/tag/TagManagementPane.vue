@@ -14,7 +14,6 @@ const props = defineProps({
 })
 
 const auth = useAuthStore()
-const loading = ref(false)
 
 // 数据源
 const mainTags = ref([])
@@ -67,7 +66,6 @@ async function loadRelation() {
 }
 async function loadAll() {
   try {
-    loading.value = true
     await loadMain()
 
     // 如果主标签为空，则不继续加载子标签和关系
@@ -78,8 +76,6 @@ async function loadAll() {
     await Promise.all([loadSub(), loadRelation()])
   } catch (e) {
     ElMessage.error(`加载失败: ${e.message}`)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -238,7 +234,7 @@ onMounted(loadAll)
             </div>
           </template>
 
-          <div class="main-list-wrapper" v-loading="loading">
+          <div class="main-list-wrapper">
             <CustomScroll>
               <div v-if="mainTags.length" class="main-list">
                 <div v-for="(mt, index) in mainTags"
@@ -272,7 +268,7 @@ onMounted(loadAll)
               <div style="display:flex;flex-direction:column;min-height:100%">
                 <div class="region-body">
                   <div style=" margin-bottom: 12px;">已关联 ({{ associatedSubTags.length }})</div>
-                  <div v-loading="loading" :class="['sub-list-associated','droppable', { 'droppable--over': isOverAssociated, 'drag-target': draggingFromAvailable, 'empty-container': !associatedSubTags.length }]" @dragover="onDragOverAssociated" @dragenter="onDragEnterAssociated" @dragleave="onDragLeaveAssociated" @drop="onDropToAssociated">
+                  <div :class="['sub-list-associated','droppable', { 'droppable--over': isOverAssociated, 'drag-target': draggingFromAvailable, 'empty-container': !associatedSubTags.length }]" @dragover="onDragOverAssociated" @dragenter="onDragEnterAssociated" @dragleave="onDragLeaveAssociated" @drop="onDropToAssociated">
                     <div v-for="st in associatedSubTags" :key="st.id" class="sub-item compact-card" :draggable="true" @dragstart="onDragStartFromAssociated(st, $event)" @dragend="onDragEndFromAssociated">
                       <div class="sub-name">{{ st.name }}</div>
                     </div>
@@ -314,7 +310,7 @@ onMounted(loadAll)
           </template>
           <div class="region-content-scroll">
             <CustomScroll>
-              <div v-loading="loading" class="sub-list library-list-wrapper">
+              <div class="sub-list library-list-wrapper">
                 <div class="two-per-row">
                   <el-card
                     v-for="st in subTags"

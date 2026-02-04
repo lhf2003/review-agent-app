@@ -7,6 +7,7 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { useRouter } from 'vue-router'
 import { Document, Select, UploadFilled, Close } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
+import AnalysisLoadingModal from '../components/AnalysisLoadingModal.vue'
 import GeminiIcon from '../../public/icons/gemini-color.svg'
 import OpenAIIcon from '../../public/icons/openai.svg'
 
@@ -36,8 +37,12 @@ const result = ref({ title: '', problemStatement: '', solution: '' })
 const drawerVisible = ref(false)
 const drawerTitle = ref('')
 const drawerContent = ref('')
-const logs = ref([])
+
+// 分析状态
 const showLogs = ref(false)
+const currentAnalysisFile = ref(null)
+const analysisStage = ref(1)      // 当前阶段：1, 2, 3
+const analysisError = ref(false)  // 是否失败
 let logStream = null
 
 // 新手引导 Tour
@@ -77,13 +82,13 @@ function openContent(row) {
 async function load() {
   try {
     loading.value = true
-    const resp = await api.dataPage({ 
-      userId: auth.userId, 
-      page: page.value - 1, 
-      size: pageSize.value, 
-      fileName: searchName.value || null, 
+    const resp = await api.dataPage({
+      userId: auth.userId,
+      page: page.value - 1,
+      size: pageSize.value,
+      fileName: searchName.value || null,
       processedStatus: statusFilter.value,
-      source: sourceFilter.value 
+      source: sourceFilter.value
     })
     const pageData = resp?.data || resp
     const content = pageData?.content || []
@@ -96,8 +101,8 @@ async function load() {
   }
 }
 
-function openImport() { 
-    importDialog.value = true 
+function openImport() {
+    importDialog.value = true
     importSource.value = 0
     importFile.value = null
 }
@@ -105,7 +110,7 @@ async function doImport() {
   try {
     if (!importFile.value) { ElMessage.warning('请选择文件'); return }
     await api.dataImport(auth.userId, importFile.value, importSource.value)
-    
+
     ElMessage.success('操作成功')
     importDialog.value = false
     // Switch to the tab we just imported to
@@ -116,50 +121,58 @@ async function doImport() {
 
 function onAction(row) {
   if (row.processedStatus !== 2) {
-    // Open logs dialog
+    // 记录当前分析的文件
+    currentAnalysisFile.value = row
     showLogs.value = true
 
-    // If it's a new analysis (status != 1), clear logs
-    if (row.processedStatus !== 1) {
-      logs.value = []
-    }
-    
+    // 重置状态
+    analysisStage.value = 1
+    analysisError.value = false
+
     if (logStream && typeof logStream.cancel === 'function') {
       logStream.cancel()
     }
+
+    // SSE 接收整型阶段和错误事件
     logStream = api.analysisLogStream({
-      onEvent: (data) => {
-        logs.value.push(data)
-        setTimeout(() => {
-          const logContainer = document.getElementById('log-container')
-          if (logContainer) logContainer.scrollTop = logContainer.scrollHeight
-        }, 0)
+      onStage: (data) => {
+        // data 是整型字符串：'1', '2', '3'
+        const stage = parseInt(data)
+        if ([1, 2, 3].includes(stage)) {
+          analysisStage.value = stage
+          console.log('[DataPage] 阶段更新:', stage)
+        }
       },
-      onError: () => {
-        if (logStream && typeof logStream.cancel === 'function') logStream.cancel()
+      onErrorEvent: (errorMessage) => {
+        // 后端发送的错误事件
+        console.error('[DataPage] 分析失败:', errorMessage)
+        analysisError.value = true
+      },
+      onError: (err) => {
+        // 网络错误或连接错误
+        console.error('[DataPage] SSE 连接错误:', err)
+        analysisError.value = true
       },
       onDone: () => {
-        if (logStream && typeof logStream.cancel === 'function') logStream.cancel()
+        console.log('[DataPage] SSE 流结束')
       }
     })
 
     // Only trigger startAnalysis if it is NOT already analyzing (status != 1)
     if (row.processedStatus !== 1) {
-        api.startAnalysis(row.id )
-          .then(() => { 
+        api.startAnalysis(row.id)
+          .then(() => {
             ElMessage.success('已触发分析')
-            logs.value.push('分析任务已提交...')
-            // 立即将状态置为“正在分析”，UI 即时反馈
             row.processedStatus = 1
-            load() 
+            load()
           })
           .catch(e => {
             ElMessage.error(`触发失败: ${e.message}`)
-            logs.value.push(`错误: ${e.message}`)
-            if (logStream && typeof logStream.cancel === 'function') logStream.cancel()
+            analysisError.value = true
+            if (logStream && typeof logStream.cancel === 'function') {
+              logStream.cancel()
+            }
           })
-    } else {
-        logs.value.push('已重新连接到日志流...')
     }
   } else {
     router.push({ path: '/analysis', query: { dataId: row.id } })
@@ -207,6 +220,36 @@ function closeTour() {
   console.log('Tour closed manually')
   localStorage.setItem('tour-shown', 'true')
   showTour.value = false
+}
+
+// 处理分析弹窗关闭
+function handleCloseModal() {
+  if (logStream && typeof logStream.cancel === 'function') {
+    logStream.cancel()
+  }
+  showLogs.value = false
+  currentAnalysisFile.value = null
+
+  // 立即刷新表格
+  console.log('[DataPage] 弹窗关闭，刷新表格')
+  load()
+}
+
+// 处理分析弹窗重试
+function handleRetry(fileId) {
+  api.startAnalysis(fileId)
+    .then(() => {
+      ElMessage.success('已重新触发分析')
+      // 重置状态
+      analysisStage.value = 1
+      analysisError.value = false
+      // 刷新表格
+      load()
+    })
+    .catch(e => {
+      ElMessage.error(`触发失败: ${e.message}`)
+      analysisError.value = true
+    })
 }
 </script>
 
@@ -295,25 +338,20 @@ function closeTour() {
       </el-config-provider>
     </div>
 
-    <!-- 导入文件 -->
-    <el-dialog v-model="showLogs" title="分析日志" width="600px" align-center @close="() => { if (logStream && typeof logStream.cancel === 'function') logStream.cancel() }">
-      <div id="log-container" style="background:var(--el-fill-color-light);color:var(--el-text-color-primary);padding:12px;border-radius:4px;height:300px;overflow-y:auto;font-family:monospace;border:1px solid var(--el-border-color);">
-        <div v-for="(log, idx) in logs" :key="idx" style="margin-bottom:4px;border-bottom:1px dashed var(--el-border-color-lighter);padding-bottom:2px;">
-          <span style="color:var(--el-text-color-secondary);margin-right:8px;">[{{ new Date().toLocaleTimeString() }}]</span>
-          <span>{{ log }}</span>
-        </div>
-        <div v-if="logs.length === 0" style="color:var(--el-text-color-secondary);text-align:center;margin-top:20px;">暂无日志...</div>
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showLogs = false">关闭</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    <!-- 分析加载弹窗 -->
+    <AnalysisLoadingModal
+      v-model="showLogs"
+      :fileName="currentAnalysisFile?.fileName || ''"
+      :currentStage="analysisStage"
+      :hasError="analysisError"
+      :fileId="currentAnalysisFile?.id"
+      @close="handleCloseModal"
+      @retry="handleRetry"
+    />
 
     <el-dialog v-model="importDialog" title="导入/新建数据" width="640px" align-center class="import-dialog">
       <div class="import-container">
-        
+
         <!-- 数据来源 -->
         <div class="section-block">
             <div class="section-label">数据来源</div>
@@ -371,7 +409,7 @@ function closeTour() {
                 </div>
               </template>
             </el-upload>
-             
+
              <transition name="el-fade-in">
                  <div v-if="importFile" class="file-preview">
                     <el-icon class="file-icon"><Document /></el-icon>
@@ -449,21 +487,21 @@ function closeTour() {
   .toolbar {
     gap: 8px;
   }
-  
+
   .toolbar .el-input {
     width: 100% !important; /* Full width search on mobile */
     order: 3; /* Move search to next line */
   }
-  
+
   .toolbar .el-select {
     width: 120px !important;
     order: 2;
   }
-  
+
   .toolbar .el-radio-group {
     order: 1;
   }
-  
+
   .spacer {
     display: none; /* Hide spacer on mobile to let flex-wrap work better */
   }
@@ -478,14 +516,14 @@ function closeTour() {
   min-height: 0; /* Crucial for scrolling */
   border-radius: 16px; /* Apple-style rounded corners */
   overflow: hidden;
-  
+
   /* Glass Effect */
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-  
+
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 

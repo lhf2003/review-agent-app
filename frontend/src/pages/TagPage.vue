@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { FullScreen } from '@element-plus/icons-vue'
 import TagManagementPane from '../components/tag/TagManagementPane.vue'
 import WordCloudChart from '../components/tag/WordCloudChart.vue'
 import TagTrendChart from '../components/tag/TagTrendChart.vue'
@@ -13,8 +14,19 @@ const start = new Date()
 start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
 const dateRange = ref([start, end])
 
+const wordCloudRef = ref(null)
+const trendChartRef = ref(null)
+
 function handleDateChange() {
   // 子组件通过 watch 自动响应 dateRange 变化
+}
+
+function toggleWordCloudFullscreen() {
+  wordCloudRef.value?.toggleFullscreen()
+}
+
+function toggleTrendFullscreen() {
+  trendChartRef.value?.toggleFullscreen()
 }
 </script>
 
@@ -45,9 +57,19 @@ function handleDateChange() {
                 <h2>标签词云分析</h2>
                 <p class="subtitle">查看标签使用频率分布</p>
               </div>
-              <DateRangeFilter v-model="dateRange" @change="handleDateChange" />
+              <div class="header-actions">
+                <DateRangeFilter v-model="dateRange" @change="handleDateChange" />
+                <el-button class="fullscreen-btn" text circle @click="toggleWordCloudFullscreen">
+                  <el-icon><FullScreen /></el-icon>
+                </el-button>
+              </div>
             </div>
-            <WordCloudChart :date-range="dateRange" :embedded="true" />
+            <WordCloudChart 
+              ref="wordCloudRef" 
+              :date-range="dateRange" 
+              :embedded="true" 
+              :show-header="false" 
+            />
           </div>
         </div>
 
@@ -59,9 +81,19 @@ function handleDateChange() {
                 <h2>标签趋势统计</h2>
                 <p class="subtitle">追踪标签使用变化趋势</p>
               </div>
-              <DateRangeFilter v-model="dateRange" @change="handleDateChange" />
+              <div class="header-actions">
+                <DateRangeFilter v-model="dateRange" @change="handleDateChange" />
+                <el-button class="fullscreen-btn" text circle @click="toggleTrendFullscreen">
+                  <el-icon><FullScreen /></el-icon>
+                </el-button>
+              </div>
             </div>
-            <TagTrendChart :date-range="dateRange" :embedded="true" />
+            <TagTrendChart 
+              ref="trendChartRef" 
+              :date-range="dateRange" 
+              :embedded="true" 
+              :show-header="false" 
+            />
           </div>
         </div>
       </Transition>
@@ -171,6 +203,23 @@ function handleDateChange() {
   font-size: 14px;
   color: var(--el-text-color-secondary);
   margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fullscreen-btn {
+  color: var(--el-text-color-secondary);
+  transition: all 0.3s ease;
+}
+
+.fullscreen-btn:hover {
+  color: var(--el-color-primary);
+  background: var(--el-fill-color-light);
+  transform: scale(1.1);
 }
 
 .chart-wrapper {

@@ -72,28 +72,31 @@ public class AnalysisService {
         dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_PROCESSING);
         fileInfoService.update(dataInfo);
 
-        // 使用线程池执行异步分析任务，避免使用 new Thread()
+        // 使用线程池执行异步分析任务
         analysisTaskExecutor.execute(() -> {
             try {
-                sseService.sendLog(userId, "🚀 开始分析文件: " + dataInfo.getFileName());
+                // 推送阶段1：开始解析文件
+                sseService.sendStage(userId, 1);
 
                 Map<String, Object> metaMap = new HashMap<>();
                 metaMap.put("fileId", fileId);
                 metaMap.put("userId", userId);
                 metaMap.put("originalContent", dataInfo.getFileContent());
 
-                sseService.sendLog(userId, "🤖 正在执行AI分析流...");
-                // 调用图计算引擎
+                // 调用图计算引擎（内部会推送阶段2）
                 RunnableConfig config = RunnableConfig.builder()
                         .threadId("analysis-graph-" + userId)
                         .build();
                 Optional<OverAllState> callResult = analysisCompiledGraph.invoke(metaMap, config);
                 callResult.ifPresent(overAllState -> processAnalysisResult(overAllState, dataInfo));
 
-                sseService.sendLog(userId, "✅ 分析完成: " + dataInfo.getFileName());
+                // 推送阶段3：分析完成
+                sseService.sendStage(userId, 3);
             } catch (Exception e) {
                 log.error("分析任务执行失败，userId={}, fileId={}", userId, fileId, e);
-                sseService.sendLog(userId, "❌ 分析失败: " + e.getMessage());
+
+                // 通知前端分析失败
+                sseService.sendError(userId, e.getMessage());
 
                 // 更新文件状态为失败
                 dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_ERROR);

@@ -55,8 +55,8 @@ public class DataAnalysisNode implements NodeAction {
         List<NodeExecuteDto> nodeDtoList = (List<NodeExecuteDto>) state.value("nodeResult")
                 .orElseThrow(() -> new IllegalArgumentException("nodeDtoList is null"));
 
-        sseService.sendLog(userId, "🔍 开始分析文件中的每个会话内容...");
-
+        // 推送阶段2：AI分析中
+        sseService.sendStage(userId, 2);
 
         for (NodeExecuteDto result : nodeDtoList) {
             // 获取系统提示词

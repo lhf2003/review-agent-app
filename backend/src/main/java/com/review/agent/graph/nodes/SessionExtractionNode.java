@@ -53,7 +53,6 @@ public class SessionExtractionNode implements NodeAction {
         } else if (optional instanceof List<?> strings) {
             userId = Long.parseLong(strings.get(1).toString());
         }
-        sseService.sendLog(userId, "🤔 拆分文件中...正在计算文件会话数量");
 
         // 获取系统提示词
         String systemPrompt = promptService.getSessionExtractionPrompt("");

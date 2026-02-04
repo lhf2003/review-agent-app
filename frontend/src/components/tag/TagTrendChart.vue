@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, ref, nextTick, watch } from 'vue'
-import { FullScreen } from '@element-plus/icons-vue'
+import { FullScreen, Close } from '@element-plus/icons-vue'
 import { useThemeStore } from '../../stores/theme'
 import { api } from '../../api/http'
 import * as echarts from 'echarts'
@@ -14,6 +14,10 @@ const props = defineProps({
   embedded: {
     type: Boolean,
     default: false
+  },
+  showHeader: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -29,6 +33,11 @@ let trendChartInstance = null
 
 // Fullscreen State
 const isFullscreen = ref(false)
+
+defineExpose({
+  toggleFullscreen,
+  resize: handleResize
+})
 
 function formatDate(date) {
   if (!date) return null
@@ -179,12 +188,20 @@ onUnmounted(() => {
 
 <template>
   <div class="trend-chart" :class="{ 'is-fullscreen': isFullscreen }">
-    <div class="chart-header">
+    <div class="chart-header" v-if="showHeader">
       <h3>标签趋势</h3>
       <el-button link @click="toggleFullscreen" v-if="embedded">
         <el-icon><FullScreen /></el-icon>
       </el-button>
     </div>
+    
+    <!-- Fullscreen Exit Button -->
+    <div v-if="isFullscreen" class="fullscreen-exit-btn">
+      <el-button circle @click="toggleFullscreen">
+        <el-icon><Close /></el-icon>
+      </el-button>
+    </div>
+
     <div v-loading="trendLoading" class="chart-container">
       <div ref="trendChartRef" class="chart"></div>
     </div>
@@ -244,5 +261,26 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+.fullscreen-exit-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 2100;
+}
+
+.fullscreen-exit-btn .el-button {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--el-text-color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+html.dark .fullscreen-exit-btn .el-button {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 </style>

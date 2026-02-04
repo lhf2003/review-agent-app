@@ -455,6 +455,16 @@ export const api = {
             buffer = parts.pop() || ''
             for (const part of parts) {
               const lines = part.split('\n')
+
+              // 解析事件类型
+              let eventType = null
+              const eventLines = lines.filter((l) => l.startsWith('event:'))
+              if (eventLines.length) {
+                const eventContent = eventLines[0].slice(6).trim()
+                eventType = eventContent || null
+              }
+
+              // 解析数据
               const dataLines = lines.filter((l) => l.startsWith('data:'))
               if (dataLines.length) {
                 const data = dataLines.map((l) => {
@@ -464,7 +474,16 @@ export const api = {
                   }
                   return content
                 }).join('\n')
-                if (handlers.onEvent) handlers.onEvent(data)
+
+                // 根据事件类型调用不同的处理函数
+                if (eventType === 'error' && handlers.onErrorEvent) {
+                  handlers.onErrorEvent(data)
+                } else if (eventType === 'stage' && handlers.onStage) {
+                  handlers.onStage(data)
+                } else if (handlers.onEvent) {
+                  // 向后兼容：没有事件类型时使用 onEvent
+                  handlers.onEvent(data)
+                }
               }
             }
             return pump()

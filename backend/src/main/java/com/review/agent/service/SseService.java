@@ -57,6 +57,32 @@ public class SseService {
     }
 
     /**
+     * 发送阶段消息给指定用户（整型阶段）
+     *
+     * @param userId 用户 ID
+     * @param stage 阶段编号（1, 2, 3）
+     */
+    public void sendStage(Long userId, Integer stage) {
+        boolean success = connectionManager.sendEvent(userId, "stage", stage);
+        if (!success) {
+            log.warn("发送阶段失败，userId={}，stage={}", userId, stage);
+        }
+    }
+
+    /**
+     * 发送错误消息给指定用户
+     *
+     * @param userId 用户 ID
+     * @param errorMessage 错误消息
+     */
+    public void sendError(Long userId, String errorMessage) {
+        boolean success = connectionManager.sendEvent(userId, "error", errorMessage);
+        if (!success) {
+            log.warn("发送错误失败，userId={}，errorMessage={}", userId, errorMessage);
+        }
+    }
+
+    /**
      * 获取当前连接数
      *
      * @return 连接数
