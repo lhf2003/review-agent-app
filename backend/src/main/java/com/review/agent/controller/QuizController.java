@@ -93,8 +93,8 @@ public class QuizController {
     public BaseResponse<QuizResultSummary> submitBatchAnswers(@RequestBody BatchSubmitRequest request) {
         Long userId = securityUtils.getCurrentUserId();
         QuizResultSummary summary = quizService.submitBatchAnswers(
-            request.getQuizId(),
-            request.getAnswers()
+                request.getQuizId(),
+                request.getAnswers()
         );
         return ResultUtil.success(summary);
     }
@@ -106,7 +106,7 @@ public class QuizController {
         return ResultUtil.success();
     }
 
-    /**y
+    /**
      * 查询用户习题历史列表
      *
      * @param status 状态筛选（null=全部，0=进行中，1=已完成）
@@ -117,14 +117,14 @@ public class QuizController {
      */
     @GetMapping("/quiz/history")
     public BaseResponse<Page<QuizHistoryVO>> getQuizHistory(
-        @RequestParam(required = false) Integer status,
-        @RequestParam(required = false) Long collectionId,
-        @RequestParam(defaultValue = "0") Integer page,
-        @RequestParam(defaultValue = "20") Integer size
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Long collectionId,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size
     ) {
         Long userId = securityUtils.getCurrentUserId();
         Page<QuizHistoryVO> history = quizService.getQuizHistory(
-            userId, status, collectionId, page, size
+                userId, status, collectionId, page, size
         );
         return ResultUtil.success(history);
     }
@@ -149,9 +149,7 @@ public class QuizController {
      * @return 版本检测结果
      */
     @GetMapping("/{collectionId}/quiz/version-check")
-    public BaseResponse<QuizVersionCheckResult> checkQuizVersion(
-        @PathVariable Long collectionId
-    ) {
+    public BaseResponse<QuizVersionCheckResult> checkQuizVersion(@PathVariable Long collectionId) {
         Long userId = securityUtils.getCurrentUserId();
         QuizVersionCheckResult result = quizService.checkQuizVersion(userId, collectionId);
         return ResultUtil.success(result);
@@ -165,7 +163,7 @@ public class QuizController {
      */
     @PostMapping("/{collectionId}/quiz/regenerate")
     public BaseResponse<QuizRecord> regenerateQuiz(
-        @PathVariable Long collectionId
+            @PathVariable Long collectionId
     ) {
         Long userId = securityUtils.getCurrentUserId();
         QuizRecord newQuiz = quizService.regenerateQuizWithNewContent(userId, collectionId);

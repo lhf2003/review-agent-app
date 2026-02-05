@@ -47,7 +47,8 @@ async function startLearning() {
     }
 
     // 3. 版本一致，直接使用
-    if (checkResult.isVersionMatch) {
+    console.log("version:",checkResult.versionMatch)
+    if (checkResult.versionMatch) {
       router.push(`/collections/${info.value.id}/quiz?quizId=${checkResult.quizId}`)
       return
     }
@@ -198,7 +199,7 @@ function viewOriginal(item) {
           <span class="header-title">合集详情</span>
         </template>
         <template #extra>
-          <el-button type="primary" :icon="Reading" @click="startLearning" class="action-btn">
+          <el-button type="primary" :icon="Reading" @click="startLearning" class="action-btn" round>
             AI 学习辅导
           </el-button>
         </template>
@@ -299,24 +300,47 @@ function viewOriginal(item) {
 }
 
 .nav-header {
-  padding: 16px var(--page-padding);
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-light);
+  padding: 12px var(--page-padding);
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
   z-index: 10;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px) saturate(180%);
+  transition: all 0.3s ease;
   
   .header-title {
     font-weight: 600;
-    font-size: 16px;
+    font-size: 18px;
     color: var(--el-text-color-primary);
+    letter-spacing: -0.5px;
+  }
+
+  /* Customize el-page-header to remove default divider if needed */
+  :deep(.el-page-header__left) {
+    margin-right: 16px;
+  }
+
+  .action-btn {
+    font-weight: 500;
+    padding: 8px 20px;
+    height: 36px;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
   }
 }
 
-.dark .nav-header {
-  background: var(--el-bg-color);
-  opacity: 0.95;
+html.dark .nav-header {
+  background: rgba(28, 28, 30, 0.75);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .content-wrapper {
