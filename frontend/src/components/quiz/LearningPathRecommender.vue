@@ -32,29 +32,21 @@ const loading = ref(false)
 const collections = ref([])
 const recommendations = ref([])
 
-// 加载推荐合集
+// 加载推荐合集（直接调用后端推荐接口）
 async function loadRecommendations() {
   loading.value = true
   try {
-    // 获取所有合集
-    const allCollections = await api.getCollections()
+    // 直接调用后端推荐接口
+    const data = await api.getCollectionRecommendations(props.limit)
 
-    // 获取用户薄弱知识点
-    const weakPoints = await getWeakKnowledgePoints()
-
-    // 为每个合集计算匹配度
-    recommendations.value = allCollections
-      .map(collection => {
-        const matchInfo = calculateMatch(collection, weakPoints)
-        return {
-          ...collection,
-          matchRate: matchInfo.rate,
-          reason: matchInfo.reason
-        }
-      })
-      .filter(rec => rec.matchRate > 0) // 只显示匹配度大于0的
-      .sort((a, b) => b.matchRate - a.matchRate) // 按匹配度排序
-      .slice(0, props.limit)
+    // 映射数据结构以匹配前端组件期望
+    recommendations.value = data.map(rec => ({
+      ...rec,
+      // 字段映射：count -> questionCount
+      questionCount: rec.count,
+      // 补充缺失字段：difficulty 根据题目数量或匹配度计算
+      difficulty: calculateDifficulty(rec)
+    }))
 
     emit('recommendations-loaded', recommendations.value)
   } catch (e) {
@@ -65,62 +57,16 @@ async function loadRecommendations() {
   }
 }
 
-// 获取薄弱知识点（模拟数据，实际应从后端获取）
-async function getWeakKnowledgePoints() {
-  try {
-    // 尝试从统计API获取知识点掌握度
-    const stats = await api.getUserStats()
-    return stats.knowledgeMastery || []
-  } catch (e) {
-    // 如果API不可用，返回空数组
-    return []
-  }
-}
+// 根据合集数据计算难度级别
+function calculateDifficulty(rec) {
+  const matchRate = rec.matchRate || 0
+  const count = rec.count || 0
 
-// 计算合集与薄弱知识点的匹配度
-function calculateMatch(collection, weakPoints) {
-  if (!weakPoints || weakPoints.length === 0) {
-    return { rate: 0, reason: '' }
-  }
-
-  let matchRate = 0
-  let matchedPoints = []
-
-  // 假设合集有 tags 字段包含知识点
-  const collectionTags = collection.tags || []
-
-  weakPoints.forEach(point => {
-    const knowledgePoint = point.knowledgePoint
-    const masteryRate = point.masteryRate || 0
-
-    // 如果合集包含该知识点标签
-    if (collectionTags.some(tag =>
-      tag.toLowerCase().includes(knowledgePoint.toLowerCase()) ||
-      knowledgePoint.toLowerCase().includes(tag.toLowerCase())
-    )) {
-      // 掌握度越低，匹配度越高
-      const contribution = (100 - masteryRate) * 0.6
-      matchRate += contribution
-      matchedPoints.push(knowledgePoint)
-    }
-  })
-
-  // 限制匹配度在 0-100 之间
-  matchRate = Math.min(Math.round(matchRate), 100)
-
-  // 生成推荐原因
-  let reason = ''
-  if (matchedPoints.length > 0) {
-    if (matchRate >= 80) {
-      reason = `涵盖你的薄弱点：${matchedPoints.slice(0, 2).join('、')}`
-    } else if (matchRate >= 50) {
-      reason = `相关知识点：${matchedPoints[0]}`
-    } else {
-      reason = '建议巩固基础'
-    }
-  }
-
-  return { rate: matchRate, reason }
+  // 根据匹配度和题目数量综合判断难度
+  if (matchRate >= 80 || count >= 20) return 'expert'
+  if (matchRate >= 60 || count >= 15) return 'hard'
+  if (matchRate >= 40 || count >= 10) return 'medium'
+  return 'easy'
 }
 
 // 开始学习
@@ -155,8 +101,8 @@ defineExpose({
     <!-- 头部 -->
     <div class="recommender-header">
       <div class="header-left">
-        <div class="header-icon">
-          <el-icon :size="24"><School /></el-icon>
+        <div class="header-icon-wrapper">
+          <el-icon :size="20" class="header-icon"><School /></el-icon>
         </div>
         <div class="header-text">
           <h3 class="header-title">智能学习路径</h3>
@@ -169,35 +115,34 @@ defineExpose({
           :loading="loading"
           @click="refresh"
           circle
+          class="refresh-btn"
+          plain
         />
       </div>
     </div>
 
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container">
-      <el-skeleton
-        v-for="i in 3"
-        :key="i"
-        animated
-        class="skeleton-item"
-      >
-        <template #template>
-          <div style="display: flex; gap: 16px; align-items: center;">
-            <el-skeleton-item variant="circle" style="width: 56px; height: 56px" />
-            <div style="flex: 1">
-              <el-skeleton-item variant="text" style="width: 60%" />
-              <el-skeleton-item variant="text" style="width: 40%; margin-top: 8px" />
+      <div v-for="i in 3" :key="i" class="skeleton-card">
+        <el-skeleton animated>
+          <template #template>
+            <div style="display: flex; gap: 16px; align-items: center;">
+              <el-skeleton-item variant="rect" style="width: 48px; height: 48px; border-radius: 12px" />
+              <div style="flex: 1">
+                <el-skeleton-item variant="text" style="width: 60%" />
+                <el-skeleton-item variant="text" style="width: 40%; margin-top: 8px" />
+              </div>
             </div>
-          </div>
-        </template>
-      </el-skeleton>
+          </template>
+        </el-skeleton>
+      </div>
     </div>
 
     <!-- 空状态 -->
     <div v-else-if="recommendations.length === 0" class="empty-state">
-      <el-icon class="empty-icon" :size="64">
-        <TrendCharts />
-      </el-icon>
+      <div class="empty-icon-wrapper">
+        <el-icon :size="32"><TrendCharts /></el-icon>
+      </div>
       <div class="empty-text">
         <h4>暂无推荐</h4>
         <p>继续学习后，系统将为你智能推荐学习路径</p>
@@ -225,6 +170,7 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 100%;
 }
 
 // 头部
@@ -232,67 +178,80 @@ defineExpose({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, var(--el-color-primary-light-9) 0%, var(--el-bg-color) 100%);
-  border-radius: 16px;
-  border: 1px solid var(--el-color-primary-light-5);
+  padding: 4px 0 16px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
-.header-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: var(--el-color-primary);
-  color: white;
+.header-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+  color: white;
+  box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
 }
 
 .header-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .header-title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--el-text-color-primary);
+  letter-spacing: -0.01em;
 }
 
 .header-subtitle {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
 }
 
 .header-actions {
   display: flex;
   gap: 8px;
+  
+  .refresh-btn {
+    border: none;
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--el-text-color-secondary);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--el-color-primary);
+      transform: rotate(180deg);
+    }
+  }
 }
 
 // 加载状态
 .loading-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px 0;
+  gap: 12px;
+  padding: 0;
 }
 
-.skeleton-item {
-  padding: 20px;
-  background: var(--el-bg-color);
+.skeleton-card {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.5);
   border-radius: 16px;
-  border: 1px solid var(--el-border-color-light);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 // 空状态
@@ -303,14 +262,22 @@ defineExpose({
   justify-content: center;
   padding: 60px 20px;
   gap: 16px;
-  background: var(--el-bg-color);
-  border-radius: 16px;
-  border: 1px dashed var(--el-border-color);
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  border: 1px dashed rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
 }
 
-.empty-icon {
+.empty-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--el-fill-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--el-text-color-placeholder);
-  opacity: 0.6;
+  margin-bottom: 8px;
 }
 
 .empty-text {
@@ -325,8 +292,10 @@ defineExpose({
 
   p {
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--el-text-color-secondary);
+    max-width: 200px;
+    line-height: 1.5;
   }
 }
 
@@ -335,34 +304,41 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-bottom: 20px;
 }
 
 // 深色模式适配
-:global(.dark) .recommender-header {
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.15) 0%, rgba(40, 40, 40, 0.8) 100%);
-  border-color: rgba(64, 158, 255, 0.3);
-}
-
-:global(.dark) .header-icon {
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4);
-}
-
-// 响应式设计
-@media (max-width: 768px) {
+html.dark {
   .recommender-header {
-    padding: 16px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 
-  .header-actions {
-    width: 100%;
-    justify-content: flex-end;
+  .header-icon-wrapper {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .refresh-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+  }
+
+  .skeleton-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.05);
   }
 
   .empty-state {
-    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .empty-icon-wrapper {
+    background: rgba(255, 255, 255, 0.05);
   }
 }
 </style>

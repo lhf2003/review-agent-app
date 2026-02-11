@@ -3,6 +3,7 @@ package com.review.agent.service;
 import com.review.agent.entity.pojo.Mistake;
 import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.vo.MistakeVo;
+import com.review.agent.entity.vo.ReviewRecommendationVO;
 import com.review.agent.repository.MistakeRepository;
 import com.review.agent.repository.QuizQuestionRepository;
 import com.review.agent.common.utils.SecurityUtils;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -162,6 +164,124 @@ public class MistakeBookService {
 
         log.info("用户 {} 推荐复习 {} 道错题", userId, toReview.size());
         return toReview;
+    }
+
+    /**
+     * 获取复习推荐列表（基于艾宾浩斯遗忘曲线）
+     * 返回增强的VO，包含下次复习时间、优先级等信息
+     *
+     * @param userId 用户ID
+     * @return 推荐列表
+     */
+    public List<ReviewRecommendationVO> getReviewRecommendations(Long userId) {
+        // 1. 获取用户未掌握的错题
+        List<Mistake> unmasteredMistakes = mistakeRepository.findUnmasteredByUserId(userId);
+
+        if (unmasteredMistakes.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 2. 获取关联的题目信息
+        List<Long> questionIds = unmasteredMistakes.stream()
+                .map(Mistake::getQuestionId)
+                .distinct()
+                .toList();
+
+        List<QuizQuestion> questions = quizQuestionRepository.findAllById(questionIds);
+        Map<Long, QuizQuestion> questionMap = questions.stream()
+                .collect(Collectors.toMap(QuizQuestion::getId, q -> q));
+
+        // 3. 计算推荐优先级（基于遗忘曲线）
+        List<ReviewRecommendationVO> recommendations = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Mistake mistake : unmasteredMistakes) {
+            QuizQuestion question = questionMap.get(mistake.getQuestionId());
+            if (question == null) continue;
+
+            ReviewRecommendationVO vo = ReviewRecommendationVO.builder()
+                            .mistakeId(mistake.getId())
+                            .questionId(mistake.getQuestionId())
+                            .questionText(question.getQuestionText())
+                            .questionType(question.getQuestionType() != null ? question.getQuestionType().name() : null)
+                            .knowledgePoint(question.getKnowledgePoint())
+                            .build();
+
+            // 计算下次复习时间（艾宾浩斯遗忘曲线）
+            // 间隔：20分钟、1小时、8小时、1天、2天、6天、15天、30天
+            int mistakeCount = mistake.getMistakeCount() != null ? mistake.getMistakeCount() : 1;
+            LocalDateTime lastReviewTime = mistake.getLastMistakeTime() != null ?
+                    mistake.getLastMistakeTime() : mistake.getCreatedTime();
+
+            Duration interval = calculateReviewInterval(mistakeCount);
+            LocalDateTime nextReviewTime = lastReviewTime.plus(interval);
+
+            vo.setLastReviewTime(lastReviewTime);
+            vo.setNextReviewDate(nextReviewTime);
+            vo.setMistakeCount(mistake.getMistakeCount());
+
+            // 计算紧急程度和优先级
+            long daysUntilReview = java.time.temporal.ChronoUnit.DAYS.between(now, nextReviewTime);
+            int priority = calculatePriority(daysUntilReview, mistakeCount);
+            vo.setPriority(priority);
+
+            recommendations.add(vo);
+        }
+
+        // 4. 按优先级排序
+        recommendations.sort((a, b) -> b.getPriority().compareTo(a.getPriority()));
+
+        // 5. 限制返回数量（最多20条）
+        List<com.review.agent.entity.vo.ReviewRecommendationVO> result =
+                recommendations.stream().limit(20).collect(Collectors.toList());
+
+        log.info("用户 {} 复习推荐数量：{}", userId, result.size());
+        return result;
+    }
+
+    /**
+     * 计算复习间隔（艾宾浩斯遗忘曲线）
+     */
+    private java.time.Duration calculateReviewInterval(int mistakeCount) {
+        // 间隔序列：20分钟、1小时、8小时、1天、2天、6天、15天、30天
+        Duration[] intervals = {
+                Duration.ofMinutes(20),
+                Duration.ofHours(1),
+                Duration.ofHours(8),
+                Duration.ofDays(1),
+                Duration.ofDays(2),
+                Duration.ofDays(6),
+                Duration.ofDays(15),
+                Duration.ofDays(30)
+        };
+
+        int index = Math.min(mistakeCount - 1, intervals.length - 1);
+        return intervals[Math.max(0, index)];
+    }
+
+    /**
+     * 计算优先级
+     * 优先级 = 紧急程度分 + 错误次数权重
+     */
+    private int calculatePriority(long daysUntilReview, int mistakeCount) {
+        // 紧急程度：已逾期(100) -> 今天到期(80) -> 1天内(60) -> 3天内(40) -> 正常(20)
+        int urgencyScore;
+        if (daysUntilReview < 0) {
+            urgencyScore = 100;
+        } else if (daysUntilReview == 0) {
+            urgencyScore = 80;
+        } else if (daysUntilReview <= 1) {
+            urgencyScore = 60;
+        } else if (daysUntilReview <= 3) {
+            urgencyScore = 40;
+        } else {
+            urgencyScore = 20;
+        }
+
+        // 错误次数权重：每错一次加5分，最多20分
+        int mistakeCountWeight = Math.min(mistakeCount * 5, 20);
+
+        return urgencyScore + mistakeCountWeight;
     }
 
     /**

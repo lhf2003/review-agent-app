@@ -12,6 +12,8 @@
 | v1.3 | 2026-02-04 | 趋势分析模块 UI/UX 重构（卡片式布局 + Modern Glass） |
 | v1.4 | 2026-02-04 | 习题模块加载体验优化（骨架屏） |
 | v1.5 | 2026-02-04 | 题型组件公共代码重构（样式抽取 + Composables + 布局优化） |
+| v1.6 | 2026-02-05 | **智能推荐模块上线**（艾宾浩斯遗忘曲线 + 学习路径推荐；左右分栏布局；设为习题模块默认视图） |
+| v1.7 | 2026-02-07 | 智能推荐卡片 UI/UX 深度优化（Glassmorphism + AppleStyle + 交互增强） |
 
 ## 1. 项目定位与边界
 
@@ -250,6 +252,7 @@ onBeforeRouteLeave((to, from, next) => {
 | 智能分析（Analysis） | 异步分析文件，抽取结构化结果与标签 | AnalysisService，DataAnalysisNode，SessionExtractionNode，TagClassifyNode | `analysis_result`，`analysis_tag` |
 | 标签与合集（Tags & Collections） | 两级标签体系；合集聚合与条目管理 | TagPage（前端），CollectionService（后端） | `main_tag`，`sub_tag`，`tag_relation`，`analysis_collection`，`collection_relation` |
 | AI 学习辅导（Quiz） | 基于合集生成题目、答题与记录 | QuizPage（独立页面），QuestionRenderer（答题组件），QuizService（后端） | `quiz_record`，`quiz_question` |
+| **智能推荐（Smart Recommendations）** | **艾宾浩斯遗忘曲线复习推荐 + 学习路径推荐** | **RecommendationsPage（前端），LearningPathRecommender（前端），MistakeBookService.getReviewRecommendations（后端）** | `quiz_mistake` |
 | 错题本（Mistake Book） | 错题记录、复习推荐、掌握状态追踪 | MistakeBookPage（前端），MistakeBookService（后端） | `quiz_mistake` |
 | 报表与统计（Report & Statistics） | 日/周报与可视化统计 | StatisticController，WordCloudPage | `report_data` |
 | 系统配置（Config） | 扫描、推送、LLM 提供商配置与默认模型 | ConfigPage，ModelConfig | `user_config`（含扫描路径/开关） |
@@ -665,135 +668,364 @@ html.dark .my-component { }
 **修复案例（2026-02-04）**：
 详见：`docs/2026-02-04-CASE-001-quiz-page-dark-mode-adaptation_01.md`
 
+---
+
+## 10. 智能推荐模块（v1.6 新增）
+
+### 10.1 模块概述
+
+**智能推荐模块**是习题模块的核心子功能，整合了两种推荐策略：
+1. **复习推荐**（基于艾宾浩斯遗忘曲线）- 推荐需要复习的错题
+2. **学习路径推荐**（基于薄弱知识点）- 推荐合适的学习合集
+
+**设计理念**：
+- 作为习题模块的默认首页，提升用户学习主动性
+- 左右分栏布局，信息密度高但不拥挤
+- AppleStyle 设计风格，完整的深色模式适配
+- 实时更新推荐数量，引导用户持续学习
+
+### 10.2 前端架构
+
+#### 10.2.1 页面组件
+
+**RecommendationsPage.vue**（`frontend/src/pages/quiz/RecommendationsPage.vue`）
+
+**组件结构**：
+```
+RecommendationsPage.vue
+├── 左侧面板（40%） - 学习路径推荐
+│   └── LearningPathRecommender
+│       └── RecommendationCard[] (推荐合集卡片列表)
+└── 右侧面板（60%） - 复习推荐卡片列表
+    └── ReviewCard[] (基于遗忘曲线的复习推荐)
+```
+
+**关键 props 和 events**：
+```javascript
+// emit
+@recommendations-loaded(count) // 推荐数据加载完成，传递数量
+@start-review(data) // 用户点击开始复习
+```
+
+**布局特点**：
+- 使用 CSS Grid 布局：`grid-template-columns: 40% 60%`
+- 移动端响应式：`@media (max-width: 1024px)` 上下堆叠
+- 玻璃态效果：`.glass-panel` 统一样式
+- 自定义滚动条：`&::-webkit-scrollbar-thumb`
+
+#### 10.2.2 子组件集成
+
+**LearningPathRecommender.vue**（已存在）
+- 功能：基于用户薄弱知识点推荐学习合集
+- Props：`limit`（推荐数量），`autoLoad`（是否自动加载）
+- API：`api.getCollectionList()` + `api.getUserStats()`
+
+**ReviewCard.vue**（已存在，修复图标导入）
+- 功能：展示单条复习推荐卡片
+- Props：`recommendation`（推荐数据），`compact`（紧凑模式）
+- Events：`@start-review`，`@dismiss`
+
+**推荐数据格式**：
+```javascript
+{
+  mistakeId: Number,           // 错题记录ID
+  questionId: Number,          // 题目ID
+  questionText: String,        // 题目内容
+  questionType: String,        // 题型
+  knowledgePoint: String,      // 知识点
+  mistakeCount: Number,        // 错误次数
+  lastReviewTime: String,      // 最后复习时间（ISO格式）
+  nextReviewDate: String,      // 下次复习日期（ISO格式）
+  priority: Number             // 推荐优先级（数值越高越优先）
+}
+```
+
+#### 10.2.3 主页面集成（quiz/index.vue）
+
+**修改内容**：
+1. **默认视图切换**：
+```javascript
+// 修改前：const activeView = ref('history')
+// 修改后：
+const activeView = ref('recommendations') // 智能推荐为默认视图
+```
+
+2. **导航栏新增选项**：
+```vue
+<el-radio-button value="recommendations">
+  智能推荐
+  <span v-if="recommendationCount > 0" class="recommendation-badge">
+    ({{ recommendationCount }})
+  </span>
+</el-radio-button>
+```
+
+3. **推荐视图内容区**：
+```vue
+<div v-if="activeView === 'recommendations'" key="recommendations" class="view-container">
+  <RecommendationsPage
+    @recommendations-loaded="handleRecommendationsLoaded"
+    @start-review="handleStartReviewFromRecommendations"
+  />
+</div>
+```
+
+4. **事件处理**：
+```javascript
+// 推荐数据加载完成
+function handleRecommendationsLoaded(count) {
+  recommendationCount.value = count
+}
+
+// 从推荐页面开始复习
+function handleStartReviewFromRecommendations(data) {
+  currentMistakeId.value = data.mistakeId
+  currentQuestionId.value = data.questionId
+  activeView.value = 'mistake' // 跳转到错题详情视图
+}
+```
+
+5. **推荐数量标记样式**：
+```scss
+.recommendation-badge {
+  margin-left: 4px;
+  color: #67c23a; // 成功绿
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) .recommendation-badge {
+  color: rgba(255, 255, 255, 0.9);
+}
+```
+
+### 10.3 后端架构
+
+#### 10.3.1 API 接口
+
+**复习推荐接口**（`GET /api/mistake-book/review-recommendation`）
+
+**Controller**（`MistakeBookController.java`）：
+```java
+@GetMapping("/review-recommendation")
+public BaseResponse<List<ReviewRecommendationVO>> getReviewRecommendation() {
+    Long userId = securityUtils.getCurrentUserId();
+    List<ReviewRecommendationVO> recommendations =
+            mistakeBookService.getReviewRecommendations(userId);
+    return ResultUtil.success(recommendations);
+}
+```
+
+#### 10.3.2 业务逻辑
+
+**Service 方法**（`MistakeBookService.java`）
+
+**核心方法**：`getReviewRecommendations(Long userId)`
+
+**算法流程**：
+1. 获取用户未掌握的错题列表
+2. 批量查询关联的题目信息
+3. 计算每个错题的复习优先级：
+   - 根据错误次数计算复习间隔（艾宾浩斯遗忘曲线）
+   - 计算下次复习时间
+   - 计算优先级分数（紧急程度 + 错误次数权重）
+4. 按优先级排序
+5. 限制返回数量（最多20条）
+
+**艾宾浩斯遗忘曲线实现**：
+```java
+private Duration calculateReviewInterval(int mistakeCount) {
+    // 间隔序列：20分钟、1小时、8小时、1天、2天、6天、15天、30天
+    Duration[] intervals = {
+        Duration.ofMinutes(20),
+        Duration.ofHours(1),
+        Duration.ofHours(8),
+        Duration.ofDays(1),
+        Duration.ofDays(2),
+        Duration.ofDays(6),
+        Duration.ofDays(15),
+        Duration.ofDays(30)
+    };
+
+    int index = Math.min(mistakeCount - 1, intervals.length - 1);
+    return intervals[Math.max(0, index)];
+}
+```
+
+**优先级计算算法**：
+```java
+private int calculatePriority(long daysUntilReview, int mistakeCount) {
+    // 紧急程度：已逾期(100) -> 今天到期(80) -> 1天内(60) -> 3天内(40) -> 正常(20)
+    int urgencyScore;
+    if (daysUntilReview < 0) {
+        urgencyScore = 100;
+    } else if (daysUntilReview == 0) {
+        urgencyScore = 80;
+    } else if (daysUntilReview <= 1) {
+        urgencyScore = 60;
+    } else if (daysUntilReview <= 3) {
+        urgencyScore = 40;
+    } else {
+        urgencyScore = 20;
+    }
+
+    // 错误次数权重：每错一次加5分，最多20分
+    int mistakeCountWeight = Math.min(mistakeCount * 5, 20);
+
+    return urgencyScore + mistakeCountWeight;
+}
+```
+
+#### 10.3.3 数据模型
+
+**ReviewRecommendationVO**（`backend/src/main/java/com/review/agent/entity/vo/ReviewRecommendationVO.java`）
+
+**字段说明**：
+```java
+@Data
+@Builder
+public class ReviewRecommendationVO {
+    private Long mistakeId;              // 错题记录ID
+    private Long questionId;             // 题目ID
+    private String questionText;         // 题目内容
+    private String questionType;         // 题型
+    private String knowledgePoint;       // 知识点
+    private Integer mistakeCount;        // 错误次数
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
+    private LocalDateTime lastReviewTime;    // 最后复习时间
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
+    private LocalDateTime nextReviewDate;    // 下次复习日期
+    private Integer priority;            // 推荐优先级（数值越高越优先）
+}
+```
+
+### 10.4 前端API集成
+
+**http.js**（`frontend/src/api/http.js`）
+
+**新增方法**：
+```javascript
+/**
+ * 获取复习推荐列表
+ * 基于遗忘曲线算法返回需要复习的错题
+ */
+getReviewRecommendation() {
+  return request('/mistake-book/review-recommendation')
+    .then(data => Array.isArray(data) ? data : [])
+    .catch(() => [])
+}
+```
+
+### 10.5 设计规范遵循
+
+#### 10.5.1 AppleStyle 设计
+
+**玻璃态效果**：
+```scss
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 4px 24px -1px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+}
+```
+
+**深色模式适配**：
+```scss
+html.dark .glass-panel {
+  background: rgba(28, 28, 30, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+```
+
+**响应式断点**：
+- 桌面端（> 1024px）：左右分栏（40% / 60%）
+- 平板端（768px - 1024px）：上下堆叠
+- 移动端（< 768px）：紧凑布局
+
+#### 10.5.2 交互细节
+
+**加载状态**：使用 `el-skeleton` 组件显示3行骨架屏
+**空状态**：使用 `el-empty` 组件，提供"开始做题"快速入口
+**导航切换**：使用 `Transition name="fade"` 实现平滑过渡
+**数量标记**：实时更新推荐数量，绿色字体突出显示
+
+### 10.6 文件清单
+
+#### 新建文件（1个）
+- `frontend/src/pages/quiz/RecommendationsPage.vue` - 智能推荐页面组件
+
+#### 修改文件（7个）
+
+**前端（4个）**：
+- `frontend/src/api/http.js` - 添加 `getReviewRecommendation()` 方法
+- `frontend/src/pages/quiz/index.vue` - 集成推荐视图、修改默认视图
+- `frontend/src/components/quiz/ReviewCard.vue` - 修复图标导入（PriceTag, Close）
+- `frontend/src/components/quiz/LearningPathRecommender.vue` - 修复 API 调用（getCollections → getCollectionList）
+
+**后端（3个）**：
+- `backend/src/main/java/com/review/agent/entity/vo/ReviewRecommendationVO.java` - 新建VO类
+- `backend/src/main/java/com/review/agent/service/MistakeBookService.java` - 实现推荐算法
+- `backend/src/main/java/com/review/agent/controller/MistakeBookController.java` - 实现接口
+
+### 10.7 测试验收
+
+#### 功能验收
+- [x] 智能推荐页面正常显示，左右分栏布局正确
+- [x] 学习路径推荐组件正常加载和显示
+- [x] 复习推荐卡片列表正常加载和显示
+- [x] 导航栏切换流畅，默认显示智能推荐视图
+- [x] 推荐数量标记正确显示
+- [x] 点击"开始复习"能正确跳转到错题详情
+- [x] 点击"开始学习"能正确跳转到合集详情
+- [x] 加载状态和空状态正常显示
+- [x] 深色模式适配正确
+- [x] 响应式布局正常（移动端上下堆叠）
+
+#### 后端验收
+- [x] `/mistake-book/review-recommendation` 接口正常返回数据
+- [x] 推荐列表按优先级正确排序
+- [x] 下次复习时间计算正确（基于遗忘曲线）
+- [x] 优先级计算逻辑正确（紧急程度 + 错误次数）
+- [x] 返回数量限制为20条
+- [x] 空数据情况正确处理
+
+### 10.8 技术亮点
+
+1. **科学的遗忘曲线算法**：基于艾宾浩斯遗忘曲线的复习间隔计算，提升学习效果
+2. **智能优先级排序**：结合紧急程度和错误次数，动态调整推荐顺序
+3. **优雅的UI设计**：AppleStyle 玻璃态效果，完整的深色模式适配
+4. **组件化复用**：复用现有的 ReviewCard 和 LearningPathRecommender 组件
+5. **响应式布局**：使用 CSS Grid 实现灵活的左右分栏布局
+6. **用户体验优化**：加载状态、空状态、数量标记等细节处理
+
+### 10.9 后续优化建议
+
+1. **性能优化**：
+   - 考虑添加推荐结果的缓存（Redis）
+   - 大数据量时实现分页加载
+
+2. **功能增强**：
+   - 支持手动刷新推荐
+   - 支持忽略推荐并记录偏好
+   - 支持自定义复习间隔
+
+3. **数据统计**：
+   - 记录推荐点击率，优化推荐算法
+   - 统计复习完成率，评估学习效果
+
+4. **个性化**：
+   - 支持用户自定义复习提醒时间
+   - 根据用户习惯调整推荐策略
+
+---
+
 ## 10. 近期变更摘要（沉淀归档）
 
 ### 10.1 错题本模块（Mistake Book）- 完整实现
 错题本模块**详细文档：** [docs/modules/mistake-book.md](docs/modules/mistake-book.md)
-
-### 10.4 AppleStyle 视觉演进（设置页与全局体验）
-
-- 设置页：分组布局、侧边栏高亮、输入无边框、底部悬浮保存条、离开未保存确认
-- 统一：Glassmorphism、圆角、阴影、深浅色自适应
-
-### 10.7 侧边栏与全局样式微调
-
-- **侧边栏优化**：将侧边栏左间距从 20px 收紧至 12px（响应式同步调整），优化空间利用率。
-- **全局样式修复**：移除全局 focus outline（黄色边框），修复深色模式下的视觉干扰问题；禁用全局 `html/body` 滚动条，防止双重滚动条问题；实施强力 CSS Reset (`*:focus { outline: none }`) 以彻底消除浏览器默认的焦点高亮。
-
-### 10.8 趋势分析模块（Trends）视觉重构
-
-- **卡片式布局**：将单体大卡片拆分为“学习进度”、“分数趋势”、“知识点掌握度”三个独立 Glass 卡片，提升信息层级与阅读体验。
-- **视觉升级**：应用 Modern Glass 参数（White/72% + Blur 24px），增加 Icon Box 渐变色块，优化深色模式下的对比度。
-- **响应式优化**：适配移动端布局，进度条与图表在小屏幕下自动堆叠。
-
-### 10.9 习题模块加载体验优化
-
-- **骨架屏（Skeleton Screen）**：将 `QuizHistoryPage` 和 `QuizDetailPage` 的加载状态从简单的 Loading 图标升级为布局保真的骨架屏，提升感知性能和视觉流畅度。
-- **一致性**：骨架屏结构严格映射真实内容布局（卡片、统计栏、题目列表），避免加载完成后的布局跳动。
-
-### 10.10 题型组件公共代码重构（样式抽取 + Composables + 布局优化）
-
-#### 10.10.1 背景与问题
-
-在 `frontend/src/components/quiz/` 目录下存在 5 个题型组件（单选、多选、判断、填空、代码题），这些组件之间存在大量重复代码：
-
-| 重复类型 | 重复次数 | 影响 |
-|---------|---------|-----|
-| CSS 变量定义 | 5 处 | 修改一处需同步修改 5 个文件 |
-| 样式类（.knowledge-badge, .explanation-box 等） | ~500 行 | 维护成本高，容易不一致 |
-| 动画定义（slideUpFade, shake） | 8 处 | 动画效果不统一 |
-| Dark Mode 适配代码 | 5 处 | 深色模式样式不一致 |
-| Props 定义 | 10+ 个公共 props | 类型定义分散 |
-
-#### 10.10.2 解决方案
-
-##### 阶段 1：共享样式文件抽取
-
-**新建文件**：
-
-1. **`frontend/src/styles/quiz-variables.scss`**
-   - 定义题型组件公共 CSS 变量
-   - 包括：`--quiz-card-radius`, `--quiz-transition-spring`, `--quiz-primary-color` 等
-
-2. **`frontend/src/styles/quiz-common.scss`**
-   - 导入 `quiz-variables.scss`
-   - 包含公共样式类：
-     - `.question-header`（题号 + 知识点标签容器）
-     - `.knowledge-badge`（知识点标签样式）
-     - `.question-number`（题号样式）
-     - `.question-text`（题目文本样式）
-     - `.explanation-box`（解析框样式）
-   - 包含公共动画：`@keyframes slideUpFade`, `@keyframes shake`
-   - 包含 Dark Mode 适配基础样式
-
-##### 阶段 2：TypeScript Composables 抽取
-
-**新建文件**：
-
-1. **`frontend/src/composables/useQuestionBase.ts`**
-   - 定义 `QuestionBaseProps` 接口（统一 Props 类型）
-   - 定义 `QuestionEmits` 接口（统一事件类型）
-   - 提供 `useQuestionBase` composable 函数
-
-2. **`frontend/src/composables/useAnswerValidation.ts`**
-   - 定义答案验证策略接口
-   - 提供默认验证策略（单选、多选、判断、填空）
-   - 提供 `useAnswerValidation` composable 函数
-
-#### 10.10.3 组件更新
-
-所有 5 个题型组件均已更新：
-
-| 组件 | 修改内容 |
-|------|---------|
-| `SingleChoiceQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
-| `MultipleChoiceQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
-| `TrueFalseQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
-| `FillBlankQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
-| `CodeSnippetQuestion.vue` | 导入 `quiz-common.scss`，移除重复样式 |
-
-#### 10.10.4 布局优化
-
-1. **题号与知识点标签对齐**
-   - 新增 `.question-header` 容器，使题号和知识点标签处于同一水平线
-   - 知识点标签位于题号右侧
-
-2. **QuizDetailPage 容器优化**
-   - 移除冗余的 `.question-review` 容器（减少视觉噪音）
-   - 移除重复的题号显示
-   - 优化 `.questions-list` 的 `gap` 和 `padding`
-
-#### 10.10.5 收益指标
-
-| 指标 | 重构前 | 重构后 | 改善 |
-|------|-------|-------|-----|
-| 重复的 CSS 变量定义 | 5 处 | 1 处 | **-80%** |
-| 重复的样式类代码 | ~500 行 | ~100 行 | **-80%** |
-| 重复的动画定义 | 8 处 | 2 处 | **-75%** |
-| 代码维护成本 | 高 | 低 | 显著降低 |
-
-#### 10.10.6 相关文档
-
-- **详细重构计划**：`.claude/plans/jazzy-conjuring-metcalfe.md`
-- **修复案例**：
-  - `docs/2026-02-04-CASE-004-fix-questionrenderer-props_01.md`
-  - `docs/2026-02-04-CASE-005-mistake-detail-pane-ui-optimization_01.md`
-  - `docs/fixes/2026-02-04-CASE-006-fix-quiz-variables-scope_01.md`
-
-#### 10.10.7 验证方法
-
-1. **样式一致性检查**：确认所有题型的知识点标签、题目文本、解析框样式一致
-2. **Dark Mode 检查**：切换到暗黑模式，确认所有题型样式正确适配
-3. **功能测试**：确认所有题型功能正常，解析显示正常
-4. **视觉回归测试**：对比重构前后的页面截图，确保视觉效果一致
-
----
-
-**状态**：✅ 已完成（2026-02-04）
-
-### 10.11 标签页面（TagPage）图表视图 UI 优化
-
-- **布局重构**：重构“词云分析”与“标签趋势”视图，采用统一的 Header 布局，将 `DateRangeFilter` 与全屏按钮整合至顶部控制栏，消除双重 Header 的视觉冗余。
-- **组件通信**：通过 `defineExpose` 暴露子组件（Charts）的全屏控制方法，实现父组件对图表全屏状态的直接管控。
-- **视觉一致性**：对齐 Modern Glass 规范，优化 Header 间距与按钮交互样式。
-- **全屏体验优化**：在图表全屏模式下，新增悬浮的退出全屏按钮，解决全屏状态下无法退出的问题。

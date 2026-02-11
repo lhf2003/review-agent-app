@@ -8,13 +8,8 @@ import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.pojo.QuizRecord;
 import com.review.agent.entity.request.BatchSubmitRequest;
-import com.review.agent.entity.request.CollectionRequest;
-import com.review.agent.entity.vo.QuizDetailVO;
-import com.review.agent.entity.vo.QuizHistoryVO;
-import com.review.agent.entity.vo.QuizResultSummary;
-import com.review.agent.entity.vo.QuizStatsVO;
-import com.review.agent.entity.vo.QuizVersionCheckResult;
-import com.review.agent.entity.vo.QuizVo;
+import com.review.agent.entity.vo.*;
+import com.review.agent.service.KnowledgeMasteryService;
 import com.review.agent.service.QuizService;
 import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
@@ -30,6 +25,9 @@ public class QuizController {
 
     @Resource
     private QuizService quizService;
+
+    @Resource
+    private KnowledgeMasteryService knowledgeMasteryService;
 
     @Resource
     private ObjectMapper objectMapper;
@@ -180,5 +178,20 @@ public class QuizController {
         Long userId = securityUtils.getCurrentUserId();
         QuizStatsVO stats = quizService.getQuizStats(userId);
         return ResultUtil.success(stats);
+    }
+
+    /**
+     * 获取用户的知识点掌握度列表
+     *
+     * @param limit 限制数量
+     * @return 掌握度列表
+     */
+    @GetMapping("/quiz/knowledge-mastery")
+    public BaseResponse<List<KnowledgeMasteryVO>> getKnowledgeMastery(
+        @RequestParam(defaultValue = "20") int limit
+    ) {
+        Long userId = securityUtils.getCurrentUserId();
+        List<KnowledgeMasteryVO> mastery = knowledgeMasteryService.getUserKnowledgeMastery(userId, limit);
+        return ResultUtil.success(mastery);
     }
 }

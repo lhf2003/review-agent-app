@@ -3,6 +3,7 @@ package com.review.agent.service;
 import com.review.agent.entity.pojo.KnowledgeMastery;
 import com.review.agent.repository.KnowledgeMasteryRepository;
 import com.review.agent.common.utils.SecurityUtils;
+import com.review.agent.entity.vo.KnowledgeMasteryVO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -247,5 +249,55 @@ public class KnowledgeMasteryService {
         return practiced.stream()
                 .limit(limit)
                 .collect(Collectors.toList());
+    }
+
+    // ========== 新增方法：返回VO格式 ==========
+
+    /**
+     * 获取用户的知识点掌握度列表（VO格式）
+     *
+     * @param userId 用户ID
+     * @param limit  限制数量
+     * @return 掌握度列表
+     */
+    public List<KnowledgeMasteryVO> getUserKnowledgeMastery(Long userId, int limit) {
+        List<KnowledgeMastery> masteries = knowledgeMasteryRepository.findByUserId(userId);
+
+        // 转换为VO
+        List<KnowledgeMasteryVO> masteryList = masteries.stream()
+            .map(km -> KnowledgeMasteryVO.builder()
+                .knowledgePoint(km.getKnowledgePoint())
+                .masteryRate(km.getMasteryScore().doubleValue())
+                .correctCount(km.getCorrectCount())
+                .totalCount(km.getTotalAnswered())
+                .build())
+            .sorted(Comparator.comparing(KnowledgeMasteryVO::getMasteryRate))
+            .limit(limit)
+            .collect(Collectors.toList());
+
+        return masteryList;
+    }
+
+    /**
+     * 获取用户的薄弱知识点（VO格式）
+     *
+     * @param userId 用户ID
+     * @param limit  限制数量
+     * @return 薄弱知识点列表
+     */
+    public List<KnowledgeMasteryVO> getWeakKnowledgePoints(Long userId, int limit) {
+        List<KnowledgeMastery> weakPoints = knowledgeMasteryRepository.findWeakestByUserIdLimit(userId, 100);
+
+        // 过滤掉答题次数过少的（少于3次的不准确）
+        return weakPoints.stream()
+            .filter(km -> km.getTotalAnswered() >= 3)
+            .map(km -> KnowledgeMasteryVO.builder()
+                .knowledgePoint(km.getKnowledgePoint())
+                .masteryRate(km.getMasteryScore().doubleValue())
+                .correctCount(km.getCorrectCount())
+                .totalCount(km.getTotalAnswered())
+                .build())
+            .limit(limit)
+            .toList();
     }
 }

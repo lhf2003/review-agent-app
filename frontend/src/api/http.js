@@ -603,6 +603,26 @@ export const api = {
   getMistakeStats() {
     return request('/mistake-book/stats')
   },
+  /**
+   * 获取复习推荐列表
+   * 基于遗忘曲线算法返回需要复习的错题
+   */
+  getReviewRecommendation() {
+    return request('/mistake-book/review-recommendation')
+      .then(data => {
+        // 调试日志：查看返回的数据
+        console.log('[getReviewRecommendation] 原始响应:', data)
+        console.log('[getReviewRecommendation] 是否为数组:', Array.isArray(data))
+        console.log('[getReviewRecommendation] 数据类型:', typeof data)
+        const result = Array.isArray(data) ? data : []
+        console.log('[getReviewRecommendation] 最终结果:', result)
+        return result
+      })
+      .catch(error => {
+        console.error('[getReviewRecommendation] 请求失败:', error)
+        return []
+      })
+  },
   markMistakesMastered(questionIds) {
     return request('/mistake-book/mark-mastered', { method: 'POST', body: { questionIds } })
   },
@@ -644,6 +664,24 @@ export const api = {
    */
   getQuizStats() {
     return request('/collection/quiz/stats')
+  },
+
+  /**
+   * 获取合集推荐列表（基于薄弱知识点）
+   */
+  getCollectionRecommendations(limit = 8) {
+    return request('/collection/recommendations', { params: { limit } })
+      .then(data => Array.isArray(data) ? data : [])
+      .catch(() => [])
+  },
+
+  /**
+   * 获取知识点掌握度列表
+   */
+  getKnowledgeMastery(limit = 20) {
+    return request('/collection/quiz/knowledge-mastery', { params: { limit } })
+      .then(data => Array.isArray(data) ? data : [])
+      .catch(() => [])
   }
 }
 

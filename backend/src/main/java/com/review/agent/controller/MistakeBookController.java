@@ -4,6 +4,7 @@ import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.vo.MistakeVo;
+import com.review.agent.entity.vo.ReviewRecommendationVO;
 import com.review.agent.service.MistakeBookService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -111,10 +112,11 @@ public class MistakeBookController {
      * @return 推荐复习的错题列表
      */
     @GetMapping("/review-recommendation")
-    public BaseResponse<List<MistakeVo>> getReviewRecommendation() {
+    public BaseResponse<List<com.review.agent.entity.vo.ReviewRecommendationVO>> getReviewRecommendation() {
         try {
-            // TODO: 实现返回VO的推荐方法
-            return ResultUtil.success(List.of());
+            Long userId = securityUtils.getCurrentUserId();
+            List<ReviewRecommendationVO> recommendations = mistakeBookService.getReviewRecommendations(userId);
+            return ResultUtil.success(recommendations);
         } catch (Exception e) {
             log.error("获取复习推荐失败", e);
             return ResultUtil.error("获取复习推荐失败: " + e.getMessage());

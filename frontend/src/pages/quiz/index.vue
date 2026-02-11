@@ -7,13 +7,15 @@ import QuizDetailPage from './QuizDetailPage.vue'
 import MistakeListPane from '../../components/quiz/MistakeListPane.vue'
 import MistakeDetailPane from '../../components/quiz/MistakeDetailPane.vue'
 import TrendsSection from '../../components/quiz/TrendsSection.vue'
+import RecommendationsPage from './RecommendationsPage.vue'
 import { useAchievements } from '../profile/composables/useAchievements'
 import { api } from '../../api/http'
 
 const router = useRouter()
-const activeView = ref('history') // history, trends, mistake
+const activeView = ref('recommendations') // recommendations, history, trends, mistake - 智能推荐为默认视图
 const currentQuizId = ref('')
 const mistakeCount = ref(0)
+const recommendationCount = ref(0)
 
 // 错题本 split-layout 状态
 const currentMistakeId = ref(null)
@@ -59,9 +61,34 @@ async function loadMistakeCount() {
   }
 }
 
+// 加载推荐数量
+async function loadRecommendationCount() {
+  try {
+    const stats = await api.getMistakeStats()
+    // 使用未掌握的错题数量作为推荐数量
+    recommendationCount.value = stats.unmastered || 0
+  } catch (error) {
+    console.error('加载推荐数量失败:', error)
+  }
+}
+
+// 推荐数据加载完成
+function handleRecommendationsLoaded(count) {
+  recommendationCount.value = count
+}
+
+// 从推荐页面开始复习
+function handleStartReviewFromRecommendations(data) {
+  // 跳转到错题详情视图
+  currentMistakeId.value = data.mistakeId
+  currentQuestionId.value = data.questionId
+  activeView.value = 'mistake'
+}
+
 onMounted(() => {
   loadAchievementsData()
   loadMistakeCount()
+  loadRecommendationCount()
 })
 </script>
 
@@ -71,11 +98,21 @@ onMounted(() => {
     <div class="top-nav-container">
        <div class="nav-left">
          <el-radio-group v-model="activeView" class="nav-radio-group">
+           <!-- 智能推荐（默认） -->
+           <el-radio-button value="recommendations">
+             智能推荐
+             <span v-if="recommendationCount > 0" class="recommendation-badge">
+               ({{ recommendationCount }})
+             </span>
+           </el-radio-button>
+
            <el-radio-button value="history">习题历史</el-radio-button>
+
            <el-radio-button value="mistake">
              错题本
              <span v-if="mistakeCount > 0" class="mistake-badge-text">({{ mistakeCount }})</span>
            </el-radio-button>
+
           <el-radio-button value="trends">趋势分析</el-radio-button>
          </el-radio-group>
        </div>
@@ -84,8 +121,16 @@ onMounted(() => {
     <!-- 主内容区 -->
     <main class="content-area">
       <Transition name="fade" mode="out-in">
+        <!-- 智能推荐视图 -->
+        <div v-if="activeView === 'recommendations'" key="recommendations" class="view-container">
+          <RecommendationsPage
+            @recommendations-loaded="handleRecommendationsLoaded"
+            @start-review="handleStartReviewFromRecommendations"
+          />
+        </div>
+
         <!-- 习题历史 (Split View) -->
-        <div v-if="activeView === 'history'" key="history" class="view-container split-layout">
+        <div v-else-if="activeView === 'history'" key="history" class="view-container split-layout">
            <!-- 左侧列表 -->
            <div class="list-pane glass-panel">
              <QuizHistoryPage :embedded="true" @select-quiz="handleSelectQuiz" />
@@ -220,6 +265,18 @@ onMounted(() => {
 }
 
 .nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) .mistake-badge-text {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 推荐数量标记 */
+.recommendation-badge {
+  margin-left: 4px;
+  color: #67c23a;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) .recommendation-badge {
   color: rgba(255, 255, 255, 0.9);
 }
 

@@ -7,7 +7,9 @@ import com.review.agent.entity.request.CollectionItemRequest;
 import com.review.agent.entity.request.CollectionRequest;
 import com.review.agent.entity.vo.CollectionCreateResultVo;
 import com.review.agent.entity.vo.CollectionDetailVo;
+import com.review.agent.entity.vo.CollectionRecommendationVO;
 import com.review.agent.entity.vo.CollectionVo;
+import com.review.agent.service.CollectionRecommendationService;
 import com.review.agent.service.CollectionService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,8 @@ import java.util.List;
 public class CollectionController {
     @Resource
     private CollectionService collectionService;
+    @Resource
+    private CollectionRecommendationService collectionRecommendationService;
     @Resource
     private SecurityUtils securityUtils;
 
@@ -120,6 +124,21 @@ public class CollectionController {
     public BaseResponse<List<CollectionVo>> checkContain(@RequestParam("analysisId") Long analysisId) {
         Long userId = securityUtils.getCurrentUserId();
         return ResultUtil.success(collectionService.checkContain(userId, analysisId));
+    }
+
+    /**
+     * 获取合集推荐列表（基于薄弱知识点）
+     *
+     * @param limit 限制数量
+     * @return 推荐列表
+     */
+    @GetMapping("/recommendations")
+    public BaseResponse<List<CollectionRecommendationVO>> getCollectionRecommendations(
+        @RequestParam(defaultValue = "8") int limit
+    ) {
+        Long userId = securityUtils.getCurrentUserId();
+        List<CollectionRecommendationVO> recommendations = collectionRecommendationService.getRecommendations(userId, limit);
+        return ResultUtil.success(recommendations);
     }
 
 }

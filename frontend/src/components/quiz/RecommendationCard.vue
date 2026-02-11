@@ -64,7 +64,7 @@ function handleStartLearning() {
     <!-- 左侧：合集信息 -->
     <div class="card-left">
       <div class="collection-icon">
-        <el-icon :size="28">
+        <el-icon :size="24">
           <FolderOpened />
         </el-icon>
       </div>
@@ -77,29 +77,15 @@ function handleStartLearning() {
 
         <!-- 标签区域 -->
         <div class="tags-section">
-          <el-tag
-            :color="difficultyColor"
-            effect="dark"
-            size="small"
-          >
+          <span class="pill-tag difficulty" :class="collection.difficulty || 'medium'">
             {{ difficultyLabel }}
-          </el-tag>
-          <el-tag
-            v-if="collection.questionCount"
-            type="info"
-            size="small"
-            effect="plain"
-          >
+          </span>
+          <span class="pill-tag count" v-if="collection.questionCount">
             {{ collection.questionCount }} 题
-          </el-tag>
-          <el-tag
-            v-if="matchRate > 0"
-            type="success"
-            size="small"
-            effect="plain"
-          >
+          </span>
+          <span class="pill-tag match" v-if="matchRate > 0">
             匹配度 {{ matchRate }}%
-          </el-tag>
+          </span>
         </div>
       </div>
     </div>
@@ -113,14 +99,15 @@ function handleStartLearning() {
       </div>
 
       <!-- 开始学习按钮 -->
-      <el-button
-        type="primary"
-        :icon="ArrowRight"
-        @click.stop="handleStartLearning"
-        class="start-button"
-      >
-        开始学习
-      </el-button>
+      <div class="action-wrapper">
+        <el-button
+          type="primary"
+          circle
+          :icon="ArrowRight"
+          @click.stop="handleStartLearning"
+          class="start-button"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -132,26 +119,32 @@ function handleStartLearning() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 20px;
-  background: var(--el-bg-color);
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.6);
   border-radius: 16px;
-  border: 2px solid var(--el-border-color-light);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  position: relative;
+  overflow: hidden;
 
   &:hover {
-    transform: translateY(-3px) translateX(4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    border-color: var(--el-color-primary-light-5);
-
-    .start-button {
-      transform: translateX(4px);
-    }
+    background: rgba(255, 255, 255, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: rgba(255, 255, 255, 0.8);
 
     .collection-icon {
+      transform: scale(1.05);
+      background: var(--el-color-primary);
+      color: white;
+    }
+    
+    .start-button {
       transform: scale(1.1);
-      background: var(--el-color-primary-light-9);
+      background: var(--el-color-primary);
+      color: white;
     }
   }
 }
@@ -161,20 +154,20 @@ function handleStartLearning() {
   flex: 1;
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
   min-width: 0;
 }
 
 .collection-icon {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
-  background: var(--el-fill-color-light);
+  background: rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--el-color-primary);
+  color: var(--el-text-color-secondary);
   transition: all 0.3s ease;
 }
 
@@ -183,14 +176,15 @@ function handleStartLearning() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .collection-name {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--el-text-color-primary);
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -198,11 +192,11 @@ function handleStartLearning() {
 
 .collection-desc {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
-  line-height: 1.5;
+  line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -210,7 +204,37 @@ function handleStartLearning() {
 .tags-section {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+// Pill Tags
+.pill-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  
+  &.difficulty {
+    &.easy { background: rgba(103, 194, 58, 0.1); color: #67c23a; }
+    &.medium { background: rgba(64, 158, 255, 0.1); color: #409eff; }
+    &.hard { background: rgba(230, 162, 60, 0.1); color: #e6a23c; }
+    &.expert { background: rgba(245, 108, 108, 0.1); color: #f56c6c; }
+  }
+  
+  &.count {
+    background: rgba(144, 147, 153, 0.1);
+    color: var(--el-text-color-secondary);
+  }
+  
+  &.match {
+    background: rgba(64, 158, 255, 0.1);
+    color: var(--el-color-primary);
+    font-weight: 600;
+  }
 }
 
 // 右侧区域
@@ -219,77 +243,104 @@ function handleStartLearning() {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 8px;
+  height: 100%;
 }
 
 .recommendation-reason {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--el-color-warning-light-9);
-  border-radius: 8px;
-  border-left: 3px solid var(--el-color-warning);
-  max-width: 200px;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(230, 162, 60, 0.1);
+  border-radius: 6px;
+  max-width: 120px;
 }
 
 .reason-icon {
-  font-size: 18px;
-  color: var(--el-color-warning);
+  font-size: 12px;
+  color: #e6a23c;
   flex-shrink: 0;
 }
 
 .reason-text {
-  font-size: 13px;
-  color: var(--el-text-color-regular);
-  font-weight: 500;
+  font-size: 11px;
+  color: #e6a23c;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .start-button {
-  transition: transform 0.3s ease;
-  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.04);
+  border: none;
+  color: var(--el-text-color-secondary);
+  width: 32px;
+  height: 32px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  &:hover {
+    background: var(--el-color-primary);
+    color: white;
+  }
 }
 
 // 深色模式适配
-:global(.dark) .recommendation-card {
-  &:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  }
+:global(.dark) {
+  .recommendation-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.05);
 
-  .recommendation-reason {
-    background: rgba(230, 162, 60, 0.15);
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+  }
+  
+  .collection-icon {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .start-button {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+    
+    &:hover {
+      background: var(--el-color-primary);
+      color: white;
+    }
+  }
+  
+  .pill-tag {
+    &.count {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.6);
+    }
   }
 }
 
 // 响应式设计
 @media (max-width: 768px) {
   .recommendation-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
+    padding: 12px;
+    gap: 12px;
   }
-
-  .card-left {
-    width: 100%;
+  
+  .collection-icon {
+    width: 40px;
+    height: 40px;
   }
-
+  
   .card-right {
-    width: 100%;
-    align-items: stretch;
-    flex-direction: row;
-    justify-content: space-between;
+    justify-content: center;
   }
-
+  
   .recommendation-reason {
-    flex: 1;
-    max-width: none;
-  }
-
-  .start-button {
-    width: auto;
+    display: none; // 移动端简化显示
   }
 }
 </style>

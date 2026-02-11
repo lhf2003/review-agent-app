@@ -1,12 +1,12 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Clock, WarningFilled, TrendCharts, Right } from '@element-plus/icons-vue'
-import { ElTag } from 'element-plus'
+import { Clock, WarningFilled, TrendCharts, Right, PriceTag, Close } from '@element-plus/icons-vue'
 
 /**
  * 复习推荐卡片组件
  * 基于遗忘曲线的智能复习推荐
+ * UI Style: Apple Glassmorphism
  */
 const props = defineProps({
   // 推荐数据
@@ -57,26 +57,26 @@ const urgencyConfig = computed(() => {
   const configs = {
     critical: {
       label: '已逾期',
-      color: '#f56c6c',
-      bgColor: 'rgba(245, 108, 108, 0.1)',
+      color: '#ff3b30', // Apple Red
+      bgColor: 'rgba(255, 59, 48, 0.1)',
       icon: WarningFilled
     },
     urgent: {
       label: '紧急',
-      color: '#e6a23c',
-      bgColor: 'rgba(230, 162, 60, 0.1)',
+      color: '#ff9500', // Apple Orange
+      bgColor: 'rgba(255, 149, 0, 0.1)',
       icon: Clock
     },
     high: {
       label: '建议复习',
-      color: '#409eff',
-      bgColor: 'rgba(64, 158, 255, 0.1)',
+      color: '#007aff', // Apple Blue
+      bgColor: 'rgba(0, 122, 255, 0.1)',
       icon: TrendCharts
     },
     normal: {
       label: '计划中',
-      color: '#67c23a',
-      bgColor: 'rgba(103, 194, 58, 0.1)',
+      color: '#34c759', // Apple Green
+      bgColor: 'rgba(52, 199, 89, 0.1)',
       icon: Clock
     }
   }
@@ -97,13 +97,13 @@ const recommendationReason = computed(() => {
   const mistakeCount = props.recommendation.mistakeCount || 1
 
   if (days < 0) {
-    return `已逾期 ${Math.abs(days)} 天，错误 ${mistakeCount} 次`
+    return `逾期 ${Math.abs(days)} 天 · 错误 ${mistakeCount} 次`
   } else if (days === 0) {
-    return '今天到期，建议立即复习'
+    return '今天到期 · 建议立即复习'
   } else if (days === 1) {
-    return '明天到期，请安排复习'
+    return '明天到期 · 请安排复习'
   } else {
-    return `${days} 天后遗忘，错误 ${mistakeCount} 次`
+    return `${days} 天后遗忘 · 错误 ${mistakeCount} 次`
   }
 })
 
@@ -133,241 +133,174 @@ function formatDate(dateStr) {
 
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
+
+// 格式化题型
+function formatQuestionType(type) {
+  const typeMap = {
+    'single_choice': '单选题',
+    'multiple_choice': '多选题',
+    'true_false': '判断题',
+    'fill_blank': '填空题',
+    'code_snippet': '代码题'
+  }
+  return typeMap[type] || type
+}
 </script>
 
 <template>
   <div
-    class="review-card"
+    class="review-card glass-panel"
     :class="cardClasses"
     @click="handleStartReview"
   >
-    <!-- 左侧：优先级指示器 -->
-    <div class="priority-indicator" :style="{ backgroundColor: urgencyConfig.color }">
-      <el-icon class="indicator-icon">
-        <component :is="urgencyConfig.icon" />
-      </el-icon>
+    <!-- 顶部状态栏 -->
+    <div class="card-header">
+      <div class="header-left">
+        <div class="status-badge" :style="{ backgroundColor: urgencyConfig.bgColor, color: urgencyConfig.color }">
+          <el-icon :size="12"><component :is="urgencyConfig.icon" /></el-icon>
+          <span class="status-label">{{ urgencyConfig.label }}</span>
+        </div>
+        <span class="priority-text">优先级 {{ recommendation.priority }}</span>
+      </div>
+      <div class="header-right">
+        <span class="review-date">{{ formatDate(recommendation.nextReviewDate) }}</span>
+      </div>
     </div>
 
-    <!-- 中间：内容区域 -->
-    <div class="card-content">
-      <!-- 顶部标签栏 -->
-      <div class="content-header">
-        <div class="header-left">
-          <el-tag
-            :color="urgencyConfig.color"
-            effect="dark"
-            size="small"
-            class="urgency-tag"
-          >
-            {{ urgencyConfig.label }}
-          </el-tag>
-          <span class="priority-badge">
-            优先级 {{ recommendation.priority }}
-          </span>
-        </div>
-        <div class="header-right">
-          <span class="review-date">{{ formatDate(recommendation.nextReviewDate) }}</span>
-        </div>
+    <!-- 主要内容 -->
+    <div class="card-body">
+      <h3 class="question-text">
+        {{ recommendation.questionText || `题目 #${recommendation.questionId}` }}
+      </h3>
+
+      <!-- 题型标签 -->
+      <div class="question-type-badge" v-if="recommendation.questionType">
+        <el-tag size="small" effect="plain" type="info">
+          {{ formatQuestionType(recommendation.questionType) }}
+        </el-tag>
       </div>
 
-      <!-- 题目预览 -->
-      <div class="question-preview">
-        <div class="question-text">
-          {{ recommendation.questionText || '题目内容加载中...' }}
-        </div>
-      </div>
-
-      <!-- 推荐原因 -->
-      <div class="recommendation-reason">
-        <el-icon class="reason-icon">
-          <component :is="urgencyConfig.icon" />
-        </el-icon>
-        <span class="reason-text">{{ recommendationReason }}</span>
-      </div>
-
-      <!-- 知识点标签 -->
-      <div v-if="recommendation.knowledgePoint" class="knowledge-tags">
-        <div class="knowledge-tag">
+      <div class="meta-info">
+        <div class="meta-item" v-if="recommendation.knowledgePoint">
           <el-icon><PriceTag /></el-icon>
           <span>{{ recommendation.knowledgePoint }}</span>
         </div>
+        <div class="meta-item" v-else>
+          <el-icon><PriceTag /></el-icon>
+          <span>未分类知识点</span>
+        </div>
+        <div class="meta-item reason-item" :style="{ color: urgencyConfig.color }">
+          <el-icon><component :is="urgencyConfig.icon" /></el-icon>
+          <span>{{ recommendationReason }}</span>
+        </div>
+      </div>
+
+      <!-- 数据完整性提示 -->
+      <div class="data-warning" v-if="!recommendation.questionText || !recommendation.knowledgePoint">
+        <el-icon><WarningFilled /></el-icon>
+        <span>题目数据不完整，建议重新生成题库</span>
       </div>
     </div>
 
-    <!-- 右侧：操作按钮 -->
+    <!-- 底部操作栏 -->
     <div class="card-actions">
-      <el-button
-        type="primary"
-        :icon="Right"
-        @click.stop="handleStartReview"
-        class="start-button"
-      >
-        开始复习
-      </el-button>
-      <el-button
+      <button class="action-btn start-btn" @click.stop="handleStartReview">
+        <span>开始复习</span>
+        <el-icon><Right /></el-icon>
+      </button>
+      <button
         v-if="!compact"
-        circle
-        text
-        size="small"
-        @click="handleDismiss"
-        class="dismiss-button"
+        class="action-btn dismiss-btn"
+        @click.stop="handleDismiss"
+        title="稍后复习"
       >
         <el-icon><Close /></el-icon>
-      </el-button>
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-@import '../../styles/variables';
-
 .review-card {
-  display: flex;
-  align-items: stretch;
-  gap: 16px;
-  padding: 20px;
-  background: var(--el-bg-color);
-  border-radius: 16px;
-  border: 2px solid var(--el-border-color-light);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--el-fill-color-light);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    border-color: var(--el-color-primary-light-5);
-
-    .start-button {
-      transform: translateX(4px);
-    }
-
-    &::before {
-      opacity: 0.5;
-    }
-  }
-
-  // 紧急程度样式
-  &.urgency-critical {
-    border-color: var(--urgency-critical, #f56c6c);
-    background: linear-gradient(135deg, rgba(245, 108, 108, 0.05) 0%, var(--el-bg-color) 100%);
-  }
-
-  &.urgency-urgent {
-    border-color: var(--urgency-urgent, #e6a23c);
-    background: linear-gradient(135deg, rgba(230, 162, 60, 0.05) 0%, var(--el-bg-color) 100%);
-  }
-
-  &.urgency-high {
-    border-color: var(--urgency-high, #409eff);
-  }
-
-  &.compact-mode {
-    padding: 14px 16px;
-    gap: 12px;
-  }
-}
-
-// 优先级指示器
-.priority-indicator {
-  flex-shrink: 0;
-  width: 6px;
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-
-  .indicator-icon {
-    color: white;
-    font-size: 20px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .review-card:hover & {
-    width: 48px;
-
-    .indicator-icon {
-      opacity: 1;
-    }
-  }
-}
-
-// 内容区域
-.card-content {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  position: relative;
-  z-index: 1;
+  padding: 16px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+
+  // Glassmorphism Base
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+
+  &:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.6);
+    z-index: 1;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
-.content-header {
+// Header
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.urgency-tag {
-  font-weight: 600;
-  border: none;
-}
-
-.priority-badge {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--el-text-color-secondary);
-  padding: 4px 10px;
-  background: var(--el-fill-color-light);
-  border-radius: 6px;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
   gap: 8px;
 }
 
-.review-date {
-  font-size: 13px;
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.priority-text {
+  font-size: 12px;
   color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+
+.review-date {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
-// 题目预览
-.question-preview {
-  min-height: 0;
+// Body
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .question-text {
+  margin: 0;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--el-text-color-primary);
-  line-height: 1.6;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -375,145 +308,155 @@ function formatDate(dateStr) {
   text-overflow: ellipsis;
 }
 
-.compact-mode .question-text {
-  -webkit-line-clamp: 1;
-  font-size: 14px;
+.question-type-badge {
+  margin-top: 4px;
 }
 
-// 推荐原因
-.recommendation-reason {
+.meta-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: var(--el-fill-color-lighter);
-  border-radius: 8px;
-  border-left: 3px solid var(--urgency-color, var(--el-color-primary));
-
-  .reason-icon {
-    font-size: 18px;
-    color: var(--urgency-color, var(--el-color-primary));
-  }
-
-  .reason-text {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--el-text-color-regular);
-  }
-}
-
-.review-card.urgency-critical .recommendation-reason {
-  background: rgba(245, 108, 108, 0.1);
-  border-left-color: #f56c6c;
-}
-
-.review-card.urgency-urgent .recommendation-reason {
-  background: rgba(230, 162, 60, 0.1);
-  border-left-color: #e6a23c;
-}
-
-// 知识点标签
-.knowledge-tags {
-  display: flex;
+  gap: 12px;
   flex-wrap: wrap;
-  gap: 8px;
 }
 
-.knowledge-tag {
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.reason-item {
+  font-weight: 500;
+}
+
+.data-warning {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background: var(--el-color-primary-light-9);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--el-color-primary-dark-2);
-  font-weight: 500;
-
-  .el-icon {
-    font-size: 16px;
-  }
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 149, 0, 0.08);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #ff9500;
+  border: 1px solid rgba(255, 149, 0, 0.2);
 }
 
-// 操作按钮
+// Actions
 .card-actions {
-  flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
   gap: 8px;
-  position: relative;
-  z-index: 1;
-}
+  margin-top: 4px;
 
-.start-button {
-  transition: transform 0.3s ease;
-}
-
-.dismiss-button {
-  align-self: center;
-
-  &:hover {
-    color: var(--el-color-danger);
-    background: var(--el-color-danger-light-9);
+  // Mobile: always visible
+  @media (max-width: 768px) {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 
-.compact-mode .card-actions {
-  flex-direction: row;
+.action-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-family: inherit;
 
-  .dismiss-button {
-    align-self: center;
-  }
-}
+  &.start-btn {
+    flex: 1;
+    background: var(--el-color-primary);
+    color: white;
+    height: 36px;
+    border-radius: 18px;
+    padding: 8px 16px;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
 
-// 深色模式适配
-:global(.dark) .review-card {
-  &.urgency-critical {
-    background: linear-gradient(135deg, rgba(245, 108, 108, 0.15) 0%, rgba(40, 40, 40, 0.8) 100%);
-  }
+    &:hover {
+      background: var(--el-color-primary-light-3);
+    }
 
-  &.urgency-urgent {
-    background: linear-gradient(135deg, rgba(230, 162, 60, 0.15) 0%, rgba(40, 40, 40, 0.8) 100%);
-  }
-
-  .recommendation-reason {
-    background: rgba(255, 255, 255, 0.05);
-  }
-}
-
-// 响应式设计
-@media (max-width: 768px) {
-  .review-card {
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-
-    &.compact-mode {
-      flex-direction: row;
-      padding: 12px;
+    &:active {
+      background: var(--el-color-primary-dark-2);
     }
   }
 
-  .priority-indicator {
-    width: 4px;
+  &.dismiss-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-regular);
 
-    .indicator-icon {
-      display: none;
+    &:hover {
+      background: var(--el-fill-color);
+      color: var(--el-color-danger);
     }
+  }
+}
+
+// Compact Mode
+.compact-mode {
+  padding: 12px;
+  gap: 8px;
+
+  .question-text {
+    font-size: 14px;
+    -webkit-line-clamp: 1;
   }
 
   .card-actions {
-    width: 100%;
-    flex-direction: row;
+    margin-top: 0;
+  }
+}
 
-    .start-button {
-      flex: 1;
+// Dark Mode Adaptation
+html.dark .review-card {
+  background: rgba(30, 30, 35, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  // 确保文字在深色背景下可见
+  .question-text {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .meta-item {
+    color: rgba(255, 255, 255, 0.75) !important;
+  }
+
+  .priority-text,
+  .review-date {
+    color: rgba(255, 255, 255, 0.65) !important;
+  }
+
+  &:hover {
+    background: rgba(35, 35, 40, 0.9);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .action-btn.dismiss-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.95);
     }
   }
 
-  .compact-mode .card-actions {
-    width: auto;
+  .data-warning {
+    background: rgba(255, 149, 0, 0.12);
+    border-color: rgba(255, 149, 0, 0.3);
+    color: rgba(255, 255, 255, 0.9);
   }
 }
 </style>
