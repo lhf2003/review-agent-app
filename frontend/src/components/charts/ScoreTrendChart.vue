@@ -37,17 +37,13 @@ const emit = defineEmits(['chart-ready', 'chart-dispose'])
 const themeStore = useThemeStore()
 const chartRef = ref(null)
 let chartInstance = null
+let resizeObserver = null
 
 const hasData = computed(() => props.data && props.data.length > 0)
 
 // 初始化图表
 function initChart() {
   if (!chartRef.value) return
-
-  // 如果容器不可见（宽高为0），则不初始化
-  if (chartRef.value.clientWidth === 0 || chartRef.value.clientHeight === 0) {
-    return
-  }
 
   // 销毁旧实例
   if (chartInstance) {
@@ -60,13 +56,36 @@ function initChart() {
     renderer: 'canvas'
   })
 
+  // 停止之前的 ResizeObserver
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
+
+  // 监听容器尺寸变化
+  resizeObserver = new ResizeObserver((entries) => {
+    for (let entry of entries) {
+      const { width, height } = entry.contentRect
+      if (width > 0 && height > 0 && chartInstance) {
+        chartInstance.resize()
+      }
+    }
+  })
+
+  resizeObserver.observe(chartRef.value)
+
   updateChart()
   emit('chart-ready', chartInstance)
 }
 
 // 更新图表
 function updateChart() {
-  if (!chartInstance || !hasData.value) return
+  // 如果图表未初始化，尝试初始化
+  if (!chartInstance) {
+    initChart()
+    return
+  }
+
+  if (!hasData.value) return
 
   const dates = props.data.map(item => item.date)
   const scores = props.data.map(item => item.score)
@@ -209,6 +228,13 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // 停止 ResizeObserver
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+
+  // 销毁图表实例
   if (chartInstance) {
     chartInstance.dispose()
     chartInstance = null

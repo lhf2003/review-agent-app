@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 import { Document, Select, UploadFilled, Close } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 import AnalysisLoadingModal from '../components/AnalysisLoadingModal.vue'
+import RecommendationPanel from '../components/collection/RecommendationPanel.vue'
 import GeminiIcon from '../../public/icons/gemini-color.svg'
 import OpenAIIcon from '../../public/icons/openai.svg'
 
@@ -45,24 +46,32 @@ const analysisStage = ref(1)      // 当前阶段：1, 2, 3
 const analysisError = ref(false)  // 是否失败
 let logStream = null
 
+// 智能推荐面板
+const recommendationPanelRef = ref(null)
+const showRecommendation = ref(true)
+
+// 处理推荐创建成功
+function handleRecommendationCreated() {
+  load() // 刷新列表
+}
+
 // 新手引导 Tour
 const showTour = ref(false)
-const tourRef = ref(null)
 const tourSteps = ref([
   {
-    target: 'import-btn',
+    target: '#import-btn',
     title: '第一步：导入数据',
     description: '点击"导入数据"按钮，支持上传本地文件、Gemini 导出或 ChatGPT 导出格式的 AI 对话记录。',
     placement: 'bottom'
   },
   {
-    target: 'data-table',
+    target: '#data-table',
     title: '第二步：查看分析结果',
     description: '导入的数据会自动进行分析，分析完成后可以在这里查看结构化的问题描述和解决方案。',
     placement: 'top'
   },
   {
-    target: 'filter-group',
+    target: '#filter-group',
     title: '第三步：筛选和搜索',
     description: '使用搜索框和状态筛选器快速找到你需要的分析结果。完成后，可以点击侧边栏的"标签"来整理数据。',
     placement: 'bottom'
@@ -140,7 +149,6 @@ function onAction(row) {
         const stage = parseInt(data)
         if ([1, 2, 3].includes(stage)) {
           analysisStage.value = stage
-          console.log('[DataPage] 阶段更新:', stage)
         }
       },
       onErrorEvent: (errorMessage) => {
@@ -154,7 +162,7 @@ function onAction(row) {
         analysisError.value = true
       },
       onDone: () => {
-        console.log('[DataPage] SSE 流结束')
+        // SSE 流结束
       }
     })
 
@@ -190,36 +198,52 @@ async function doDelete(row) {
   }
 }
 
+// Tour 超时保护
+let tourTimeout = null
+
 onMounted(() => {
   load()
   // 延迟显示新手引导，确保页面完全加载
   const tourShown = localStorage.getItem('tour-shown')
   if (!tourShown) {
-    // 延迟 1 秒后显示，确保所有元素已渲染
     setTimeout(() => {
-      showTour.value = true
-    }, 1000)
+      // 检查所有目标元素是否存在
+      const targets = ['#import-btn', '#data-table', '#filter-group']
+      const allTargetsExist = targets.every(selector => document.querySelector(selector) !== null)
+
+      if (allTargetsExist) {
+        showTour.value = true
+        // 30秒超时保护
+        tourTimeout = setTimeout(() => {
+          if (showTour.value) closeTour()
+        }, 30000)
+      } else {
+        // 元素未准备好，跳过本次引导
+        console.warn('[Tour] 部分目标元素未渲染，跳过引导')
+      }
+    }, 1500)
   }
 })
 
 // Tour 完成/跳过处理
 function onTourFinish() {
-  console.log('Tour finished')
   localStorage.setItem('tour-shown', 'true')
   showTour.value = false
 }
 
 function onTourSkip() {
-  console.log('Tour skipped')
   localStorage.setItem('tour-shown', 'true')
   showTour.value = false
 }
 
 // 手动关闭 Tour（用于紧急关闭）
 function closeTour() {
-  console.log('Tour closed manually')
   localStorage.setItem('tour-shown', 'true')
   showTour.value = false
+  if (tourTimeout) {
+    clearTimeout(tourTimeout)
+    tourTimeout = null
+  }
 }
 
 // 处理分析弹窗关闭
@@ -231,7 +255,6 @@ function handleCloseModal() {
   currentAnalysisFile.value = null
 
   // 立即刷新表格
-  console.log('[DataPage] 弹窗关闭，刷新表格')
   load()
 }
 
@@ -270,7 +293,7 @@ function handleRetry(fileId) {
 
       <div class="spacer"></div>
 
-      <div class="filter-group" ref="filter-group">
+      <div class="filter-group" id="filter-group">
         <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="width: 180px; margin-right: 12px;" />
         <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 120px" @change="() => { page = 1; load() } ">
         <el-option :value="null" label="全部" />
@@ -281,7 +304,7 @@ function handleRetry(fileId) {
       </el-select>
       </div>
 
-      <el-button type="plain" ref="import-btn" @click="openImport" icon="Upload">
+      <el-button type="plain" id="import-btn" @click="openImport" icon="Upload">
         导入
       </el-button>
       <el-button type="plain" link size="large" @click="load">
@@ -289,9 +312,17 @@ function handleRetry(fileId) {
       </el-button>
     </div>
 
+    <!-- 智能推荐面板 -->
+    <div class="recommendation-section" v-if="showRecommendation">
+      <RecommendationPanel
+        ref="recommendationPanelRef"
+        @created="handleRecommendationCreated"
+      />
+    </div>
+
     <!-- 表格区域 -->
     <div class="table-wrapper">
-      <el-table ref="data-table" :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" size="small" class="glass-table">
+      <el-table id="data-table" :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" size="small" class="glass-table">
         <template #empty>
             <el-empty description="暂无数据" :image-size="100" />
         </template>
@@ -448,7 +479,6 @@ function handleRetry(fileId) {
 
     <!-- 新手引导 Tour -->
     <el-tour
-      ref="tourRef"
       v-model="showTour"
       :steps="tourSteps"
       :close-on-press-escape="true"
@@ -481,6 +511,11 @@ function handleRetry(fileId) {
   background: transparent; /* Transparent to show page bg */
   padding: 4px 0;
   flex-wrap: wrap; /* Allow wrapping on small screens */
+}
+
+.recommendation-section {
+  flex-shrink: 0;
+  margin-bottom: 8px;
 }
 
 @media (max-width: 768px) {

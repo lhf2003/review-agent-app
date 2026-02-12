@@ -15,7 +15,12 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "knowledge_mastery", schema = "review_agent")
+@Table(name = "knowledge_mastery", schema = "review_agent",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uk_user_knowledge_point",
+        columnNames = {"user_id", "knowledge_point"}
+    )
+)
 public class KnowledgeMastery {
 
     @Id

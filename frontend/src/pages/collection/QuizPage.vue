@@ -9,6 +9,7 @@ import QuizProgressIndicator from '../../components/quiz/QuizProgressIndicator.v
 import QuizFooter from '../../components/quiz/QuizFooter.vue'
 import QuizResultModal from '../../components/quiz/QuizResultModal.vue'
 import QuizLoadingModal from '../../components/quiz/QuizLoadingModal.vue'
+import CustomScroll from '../../components/CustomScroll.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -263,7 +264,7 @@ const progressPercentage = computed(() => {
 
       <div v-if="quizQuestions.length > 0" class="quiz-container">
         <!-- 题目渲染区域 -->
-        <div class="question-wrapper">
+        <CustomScroll class="question-wrapper" :hide-scrollbar="true">
           <transition name="fade-slide" mode="out-in">
             <div :key="currentQuestionIndex" class="question-card-container">
               <QuestionRenderer
@@ -284,7 +285,7 @@ const progressPercentage = computed(() => {
               />
             </div>
           </transition>
-        </div>
+        </CustomScroll>
 
         <!-- 底部控制栏 -->
         <QuizFooter
@@ -352,17 +353,10 @@ const progressPercentage = computed(() => {
 
 .question-wrapper {
   flex: 1;
-  overflow-y: auto; // Internal scroll only
   padding-right: 16px;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
-
-  // Hide scrollbar visually but keep functionality
-  scrollbar-width: none; // Firefox
-  &::-webkit-scrollbar {
-    display: none; // Chrome/Safari
-  }
 
   .question-card-container {
     width: 100%;

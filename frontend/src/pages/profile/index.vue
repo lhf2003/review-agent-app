@@ -13,6 +13,8 @@ import PasswordDialog from './components/PasswordDialog.vue'
 // import ProfileNav from './components/ProfileNav.vue'
 import AchievementsSection from './components/AchievementsSection.vue'
 import LearningPathRecommender from '../../components/quiz/LearningPathRecommender.vue'
+import PendingReviewReminder from './components/PendingReviewReminder.vue'
+import LearningDashboard from './components/LearningDashboard.vue'
 import { useUserInfo } from './composables/useUserInfo'
 import { useStats } from './composables/useStats'
 import { useAnimations } from './composables/useAnimations'
@@ -119,6 +121,7 @@ async function changePassword() {
       <!-- Profile Navigation - 分栏导航 -->
       <el-radio-group v-model="activeSection" class="nav-radio-group">
         <el-radio-button value="overview">数据概览</el-radio-button>
+        <el-radio-button value="learning-data">学习数据</el-radio-button>
         <el-radio-button value="achievements">学习成就</el-radio-button>
         <el-radio-button value="learning-path">学习路径</el-radio-button>
       </el-radio-group>
@@ -135,14 +138,22 @@ async function changePassword() {
           />
         </div>
 
-        <!-- 右侧：最近活动 -->
+        <!-- 右侧：最近活动 + 待复习提醒 -->
         <div class="overview-right">
+          <!-- 待复习提醒 -->
+          <PendingReviewReminder :cards-visible="showContent" />
+
           <div class="section-title">最近活动</div>
           <RecentActivity
             :recent-activities="stats.recentActivities"
             :cards-visible="cardsVisible"
           />
         </div>
+      </div>
+
+      <!-- Learning Data Section - 学习数据仪表盘 -->
+      <div v-show="activeSection === 'learning-data'" class="section-transition">
+        <LearningDashboard />
       </div>
 
       <!-- Achievements Section - 学习成就 -->

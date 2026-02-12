@@ -25,7 +25,7 @@
         <mybatis-spring-boot-starter.version>3.0.3</mybatis-spring-boot-starter.version>
         <mysql-connector-java.version>8.0.33</mysql-connector-java.version>
         <poi-ooxml.version>5.2.4</poi-ooxml.version>
-        <commons-lang3.version>3.8.1</commons-lang3.version>
+        <commons-lang3.version>3.17.0</commons-lang3.version>
     </properties>
 
     <dependencyManagement>
@@ -206,16 +206,11 @@
             <version>${commons-lang3.version}</version>
         </dependency>
 
-        <!--javaMail-->
+        <!--Jakarta Mail-->
         <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>javax.mail-api</artifactId>
-            <version>1.5.6</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>javax.mail</artifactId>
-            <version>1.5.3</version>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>jakarta.mail</artifactId>
+            <version>2.0.3</version>
         </dependency>
         
         <dependency>

@@ -18,6 +18,7 @@ const FileDetailPage = () => import('../pages/FileDetailPage.vue')
 const ReportPage = () => import('../pages/ReportPage.vue')
 const SessionTracePage = () => import('../pages/SessionTracePage.vue')
 const AboutUsPage = () => import('../pages/config/AboutUs.vue')
+const NotificationSettingsPage = () => import('../pages/config/NotificationSettings.vue')
 
 const isFileProtocol = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:'
 const history = isFileProtocol ? createWebHashHistory(import.meta.env.BASE_URL) : createWebHistory(import.meta.env.BASE_URL)
@@ -42,6 +43,7 @@ const router = createRouter({
         { path: 'basic', component: BasicInfoPage },
         { path: 'scan', component: ScanConfigPage },
         { path: 'push', component: PushConfigPage },
+        { path: 'notification', component: NotificationSettingsPage },
         { path: 'model-provider', component: ModelProviderConfig },
         { path: 'default-model', component: DefaultModelConfig },
         { path: 'about', component: AboutUsPage }

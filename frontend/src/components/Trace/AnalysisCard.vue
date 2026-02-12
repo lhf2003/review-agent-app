@@ -2,7 +2,7 @@
 import { ref, inject } from 'vue'
 import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { UserFilled, Service, Connection, Star, ArrowLeft } from '@element-plus/icons-vue'
+import { UserFilled, Service, Connection, Star, ArrowLeft, Download } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../MarkdownRenderer.vue'
 import AddToCollectionDialog from '../Collection/AddToCollectionDialog.vue'
 import { api } from '../../api/http'
@@ -25,6 +25,7 @@ const props = defineProps({
 const emit = defineEmits(['show-similarity'])
 const collectionDialogRef = ref(null)
 const router = inject('router')
+const exporting = ref(false)
 
 async function addToCollection() {
   if (props.session && collectionDialogRef.value) {
@@ -58,6 +59,25 @@ async function goToAnalysisResult() {
     })
   } catch (e) {
     ElMessage.error(`跳转失败: ${e.message}`)
+  }
+}
+
+async function exportToMarkdown() {
+  if (!props.session?.analysisResultId) {
+    ElMessage.warning('无法导出：缺少分析结果ID')
+    return
+  }
+
+  try {
+    exporting.value = true
+    const blob = await api.exportAnalysis(props.session.analysisResultId)
+    const filename = `analysis_${props.session.analysisResultId}.md`
+    api.downloadBlob(blob, filename)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    ElMessage.error(`导出失败: ${e.message}`)
+  } finally {
+    exporting.value = false
   }
 }
 </script>
@@ -119,6 +139,10 @@ async function goToAnalysisResult() {
         <el-button class="action-btn" @click="goToAnalysisResult">
           <el-icon><ArrowLeft /></el-icon>
           <span>返回结果</span>
+        </el-button>
+        <el-button class="action-btn" :loading="exporting" @click="exportToMarkdown">
+          <el-icon><Download /></el-icon>
+          <span>导出</span>
         </el-button>
         <el-button class="action-btn primary" @click="addToCollection">
           <el-icon><Star /></el-icon>

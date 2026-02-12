@@ -1,17 +1,19 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Folder, Delete, Edit } from '@element-plus/icons-vue'
+import { Plus, Folder, Delete, Edit, MagicStick } from '@element-plus/icons-vue'
 import { api } from '../../api/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CustomScroll from '../../components/CustomScroll.vue'
 import AchievementNotification from '../../components/AchievementNotification.vue'
+import QuickCreateDialog from '../../components/collection/QuickCreateDialog.vue'
 
 const router = useRouter()
 const collections = ref([])
 const loading = ref(false)
 const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
+const quickCreateDialogVisible = ref(false)
 const createForm = ref({ name: '', description: '' })
 const editForm = ref({ id: null, name: '', description: '' })
 
@@ -92,12 +94,24 @@ function confirmDelete(e, id) {
     {
       confirmButtonText: '确认',
       cancelButtonText: '取消',
-      type: 'warning' 
+      type: 'warning'
     }).then(async () => {
       await api.deleteCollection(id)
       ElMessage.success('已删除')
       fetchList() // 刷新
     })
+}
+
+// 处理智能创建成功
+function handleQuickCreateSuccess(result) {
+  fetchList() // 刷新列表
+  // 检查是否有新解锁的成就
+  if (result && result.newlyUnlockedAchievements && result.newlyUnlockedAchievements.length > 0) {
+    newlyUnlockedAchievements.value = result.newlyUnlockedAchievements
+    setTimeout(() => {
+      achievementDialogVisible.value = true
+    }, 500)
+  }
 }
 </script>
 
@@ -108,9 +122,14 @@ function confirmDelete(e, id) {
         <h1>问题合集</h1>
         <p class="subtitle">归纳整理相似问题，构建你的知识库</p>
       </div>
-      <el-button type="primary" :icon="Plus" @click="createDialogVisible = true">
-        新建合集
-      </el-button>
+      <div class="header-actions">
+        <el-button type="primary" plain :icon="MagicStick" @click="quickCreateDialogVisible = true">
+          智能创建
+        </el-button>
+        <el-button type="primary" :icon="Plus" @click="createDialogVisible = true">
+          新建合集
+        </el-button>
+      </div>
     </div>
 
     <div v-loading="loading" class="grid-container">
@@ -186,6 +205,12 @@ function confirmDelete(e, id) {
       :achievements="newlyUnlockedAchievements"
       @close="handleAchievementClose"
     />
+
+    <!-- 智能创建弹窗 -->
+    <QuickCreateDialog
+      v-model:visible="quickCreateDialogVisible"
+      @created="handleQuickCreateSuccess"
+    />
   </div>
 </template>
 
@@ -229,6 +254,22 @@ function confirmDelete(e, id) {
     color: var(--el-text-color-secondary);
     margin: 0;
     font-size: 14px;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .header-actions .el-button {
+    width: 100%;
   }
 }
 

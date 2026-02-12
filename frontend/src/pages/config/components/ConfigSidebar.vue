@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { User, Monitor, Bell, Connection, Cpu, InfoFilled } from '@element-plus/icons-vue'
+import { User, Monitor, Bell, Connection, Cpu, InfoFilled, BellFilled } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,7 +12,8 @@ const navItems = [
     items: [
       { path: '/config/basic', label: '基本信息', icon: User },
       { path: '/config/scan', label: '扫描配置', icon: Monitor },
-      { path: '/config/push', label: '推送配置', icon: Bell }
+      { path: '/config/push', label: '推送配置', icon: Bell },
+      { path: '/config/notification', label: '通知设置', icon: BellFilled }
     ]
   },
   {

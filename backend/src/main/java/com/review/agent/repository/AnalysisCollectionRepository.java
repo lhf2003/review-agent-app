@@ -44,4 +44,12 @@ public interface AnalysisCollectionRepository extends JpaRepository<AnalysisColl
     @Modifying
     @Query("delete from AnalysisCollection c where c.id = :id")
     void hardDelete(@Param("id") Long id);
+
+    /**
+     * 通过ID列表批量查询合集
+     * @param ids 合集ID列表
+     * @return 合集列表
+     */
+    @Query("select c from AnalysisCollection c where c.id in :ids and c.deleted = 0")
+    List<AnalysisCollection> findByIdIn(@Param("ids") List<Long> ids);
 }

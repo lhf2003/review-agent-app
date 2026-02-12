@@ -8,19 +8,21 @@ import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.pojo.QuizRecord;
 import com.review.agent.entity.request.BatchSubmitRequest;
+import com.review.agent.entity.request.ResetQuizRequest;
+import com.review.agent.entity.request.SubmitAnswerRequest;
 import com.review.agent.entity.vo.*;
 import com.review.agent.service.KnowledgeMasteryService;
 import com.review.agent.service.QuizService;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @RestController
-@RequestMapping("/collection")
+@RequestMapping("/quiz")
 public class QuizController {
 
     @Resource
@@ -35,13 +37,16 @@ public class QuizController {
     @Resource
     private SecurityUtils securityUtils;
 
-    @PostMapping("/generate-quiz")
-    public BaseResponse<QuizVo> generateQuiz(@RequestBody Map<String, Long> body) {
-        Long collectionId = body.get("collectionId");
-        if (collectionId == null) {
-            return ResultUtil.error("collectionId is required");
-        }
-
+    /**
+     * 为指定合集生成测验
+     *
+     * @param body 包含 collectionId
+     * @return 生成的测验
+     */
+    @PostMapping("/collection/{collectionId}/generate")
+    public BaseResponse<QuizVo> generateQuiz(
+            @PathVariable Long collectionId
+    ) {
         Long userId = securityUtils.getCurrentUserId();
         QuizRecord record = quizService.generateQuiz(userId, collectionId);
         List<QuizQuestion> questions = quizService.getQuizQuestions(record.getId());
@@ -49,18 +54,18 @@ public class QuizController {
         QuizVo vo = new QuizVo();
         vo.setId(record.getId());
         vo.setCollectionId(collectionId);
-        
+
         List<QuizVo.QuestionVo> qVos = new ArrayList<>();
         for (QuizQuestion q : questions) {
             QuizVo.QuestionVo qVo = new QuizVo.QuestionVo();
             qVo.setId(q.getId());
             qVo.setQuestion(q.getQuestionText());
-            qVo.setType(q.getQuestionType() != null ? q.getQuestionType().getCode() : "single_choice"); // 添加题目类型
+            qVo.setType(q.getQuestionType() != null ? q.getQuestionType().getCode() : "single_choice");
             qVo.setAnswer(q.getCorrectAnswer());
             qVo.setExplanation(q.getExplanation());
             qVo.setUserAnswer(q.getUserAnswer());
-            qVo.setBlankCount(q.getBlankCount()); // 添加填空题的空位数量
-            qVo.setKnowledgePoint(q.getKnowledgePoint()); // 添加知识点
+            qVo.setBlankCount(q.getBlankCount());
+            qVo.setKnowledgePoint(q.getKnowledgePoint());
             try {
                 qVo.setOptions(objectMapper.readValue(q.getOptionsJson(), List.class));
             } catch (JsonProcessingException e) {
@@ -73,23 +78,26 @@ public class QuizController {
         return ResultUtil.success(vo);
     }
 
+    /**
+     * 提交单个答案
+     *
+     * @param request 包含 questionId 和 userAnswer
+     * @return 操作结果
+     */
     @PostMapping("/submit-answer")
-    public BaseResponse<Void> submitAnswer(@RequestBody Map<String, Object> body) {
-        Long questionId = Long.valueOf(body.get("questionId").toString());
-        String userAnswer = (String) body.get("userAnswer");
-
-        quizService.submitAnswer(questionId, userAnswer);
+    public BaseResponse<Void> submitAnswer(@Valid @RequestBody SubmitAnswerRequest request) {
+        quizService.submitAnswer(request.getQuestionId(), request.getUserAnswer());
         return ResultUtil.success();
     }
 
     /**
      * 批量提交答案
+     *
      * @param request 批量提交请求
      * @return 答题结果统计
      */
     @PostMapping("/submit-batch-answers")
     public BaseResponse<QuizResultSummary> submitBatchAnswers(@RequestBody BatchSubmitRequest request) {
-        Long userId = securityUtils.getCurrentUserId();
         QuizResultSummary summary = quizService.submitBatchAnswers(
                 request.getQuizId(),
                 request.getAnswers()
@@ -97,23 +105,28 @@ public class QuizController {
         return ResultUtil.success(summary);
     }
 
+    /**
+     * 重置测验
+     *
+     * @param request 包含 quizId
+     * @return 操作结果
+     */
     @PostMapping("/reset")
-    public BaseResponse<Void> resetQuiz(@RequestBody Map<String, Object> body) {
-        Long quizId = Long.valueOf(body.get("quizId").toString());
-        quizService.resetQuiz(quizId);
+    public BaseResponse<Void> resetQuiz(@Valid @RequestBody ResetQuizRequest request) {
+        quizService.resetQuiz(request.getQuizId());
         return ResultUtil.success();
     }
 
     /**
      * 查询用户习题历史列表
      *
-     * @param status 状态筛选（null=全部，0=进行中，1=已完成）
+     * @param status       状态筛选（null=全部，0=进行中，1=已完成）
      * @param collectionId 合集筛选（null=全部合集）
-     * @param page 页码（从0开始）
-     * @param size 每页大小
+     * @param page         页码（从0开始）
+     * @param size         每页大小
      * @return 分页的习题历史
      */
-    @GetMapping("/quiz/history")
+    @GetMapping("/history")
     public BaseResponse<Page<QuizHistoryVO>> getQuizHistory(
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) Long collectionId,
@@ -133,7 +146,7 @@ public class QuizController {
      * @param quizId 习题ID
      * @return 习题详情
      */
-    @GetMapping("/quiz/{quizId}/detail")
+    @GetMapping("/{quizId}/detail")
     public BaseResponse<QuizDetailVO> getQuizDetail(@PathVariable Long quizId) {
         Long userId = securityUtils.getCurrentUserId();
         QuizDetailVO detail = quizService.getQuizDetail(userId, quizId);
@@ -146,7 +159,7 @@ public class QuizController {
      * @param collectionId 合集ID
      * @return 版本检测结果
      */
-    @GetMapping("/{collectionId}/quiz/version-check")
+    @GetMapping("/collection/{collectionId}/version-check")
     public BaseResponse<QuizVersionCheckResult> checkQuizVersion(@PathVariable Long collectionId) {
         Long userId = securityUtils.getCurrentUserId();
         QuizVersionCheckResult result = quizService.checkQuizVersion(userId, collectionId);
@@ -159,7 +172,7 @@ public class QuizController {
      * @param collectionId 合集ID
      * @return 新生成的QuizRecord
      */
-    @PostMapping("/{collectionId}/quiz/regenerate")
+    @PostMapping("/collection/{collectionId}/regenerate")
     public BaseResponse<QuizRecord> regenerateQuiz(
             @PathVariable Long collectionId
     ) {
@@ -173,7 +186,7 @@ public class QuizController {
      *
      * @return 习题统计数据（分数趋势和知识点掌握度）
      */
-    @GetMapping("/quiz/stats")
+    @GetMapping("/stats")
     public BaseResponse<QuizStatsVO> getQuizStats() {
         Long userId = securityUtils.getCurrentUserId();
         QuizStatsVO stats = quizService.getQuizStats(userId);
@@ -186,12 +199,58 @@ public class QuizController {
      * @param limit 限制数量
      * @return 掌握度列表
      */
-    @GetMapping("/quiz/knowledge-mastery")
+    @GetMapping("/knowledge-mastery")
     public BaseResponse<List<KnowledgeMasteryVO>> getKnowledgeMastery(
-        @RequestParam(defaultValue = "20") int limit
+            @RequestParam(defaultValue = "20") int limit
     ) {
         Long userId = securityUtils.getCurrentUserId();
         List<KnowledgeMasteryVO> mastery = knowledgeMasteryService.getUserKnowledgeMastery(userId, limit);
         return ResultUtil.success(mastery);
+    }
+
+    // ==================== 学习仪表盘 API ====================
+
+    /**
+     * 获取学习仪表盘数据
+     *
+     * @return 学习仪表盘数据（分数趋势、知识点雷达图、热力图、时间分布、周统计）
+     */
+    @GetMapping("/dashboard")
+    public BaseResponse<LearningDashboardVO> getLearningDashboard() {
+        Long userId = securityUtils.getCurrentUserId();
+        LearningDashboardVO dashboard = quizService.getLearningDashboard(userId);
+        return ResultUtil.success(dashboard);
+    }
+
+    /**
+     * 按时间范围获取测验分数趋势
+     *
+     * @param range 时间范围（7/30/90/all 天）
+     * @return 分数趋势列表
+     */
+    @GetMapping("/dashboard/trend")
+    public BaseResponse<List<LearningDashboardVO.ScoreTrendItem>> getScoreTrend(
+            @RequestParam(defaultValue = "30") String range
+    ) {
+        Long userId = securityUtils.getCurrentUserId();
+        int days = parseRangeToDays(range);
+        List<LearningDashboardVO.ScoreTrendItem> trend = quizService.getScoreTrend(userId, days);
+        return ResultUtil.success(trend);
+    }
+
+    /**
+     * 解析时间范围参数为天数
+     *
+     * @param range 时间范围字符串
+     * @return 天数
+     */
+    private int parseRangeToDays(String range) {
+        return switch (range.toLowerCase()) {
+            case "7" -> 7;
+            case "30" -> 30;
+            case "90" -> 90;
+            case "all" -> 365 * 2; // 最近2年
+            default -> 30;
+        };
     }
 }

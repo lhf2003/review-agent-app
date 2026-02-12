@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Reading, Delete, FolderOpened } from '@element-plus/icons-vue'
+import { ArrowLeft, Reading, Delete, FolderOpened, Download } from '@element-plus/icons-vue'
 import { api } from '../../api/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AnimatedList from '../../components/AnimatedList.vue'
@@ -15,6 +15,7 @@ const showQuizLoading = ref(false)
 const estimatedSeconds = ref(40)
 const quizCompletedId = ref(null) // 存储已完成生成的 quizId
 const apiCompleted = ref(false) // API 是否已完成
+const exporting = ref(false)
 
 onMounted(() => {
   fetchDetail()
@@ -47,7 +48,6 @@ async function startLearning() {
     }
 
     // 3. 版本一致，直接使用
-    console.log("version:",checkResult.versionMatch)
     if (checkResult.versionMatch) {
       router.push(`/collections/${info.value.id}/quiz?quizId=${checkResult.quizId}`)
       return
@@ -188,6 +188,29 @@ function viewOriginal(item) {
      ElMessage.warning('无法跳转：文件ID缺失')
   }
 }
+
+async function exportCollection() {
+  if (!info.value.id) {
+    ElMessage.warning('无法导出：合集ID缺失')
+    return
+  }
+
+  try {
+    exporting.value = true
+    const blob = await api.exportCollection(info.value.id)
+    console.log('导出的 Blob:', blob)
+    // 从 Content-Disposition 提取文件名，或使用默认名称
+    const safeName = (info.value.name || 'collection').replace(/[\\/:*?"<>|]/g, '_')
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const filename = `collection_${safeName}_${dateStr}.md`
+    api.downloadBlob(blob, filename)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    ElMessage.error(`导出失败: ${e.message}`)
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -199,6 +222,9 @@ function viewOriginal(item) {
           <span class="header-title">合集详情</span>
         </template>
         <template #extra>
+          <el-button :icon="Download" :loading="exporting" @click="exportCollection" class="action-btn" round>
+            导出 Markdown
+          </el-button>
           <el-button type="primary" :icon="Reading" @click="startLearning" class="action-btn" round>
             AI 学习辅导
           </el-button>

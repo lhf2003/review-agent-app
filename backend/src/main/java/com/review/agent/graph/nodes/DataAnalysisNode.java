@@ -3,6 +3,7 @@ package com.review.agent.graph.nodes;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.review.agent.entity.dto.NodeExecuteDto;
+import com.review.agent.graph.utils.NodeRetryHelper;
 import com.review.agent.service.PromptService;
 import com.review.agent.service.SseService;
 import jakarta.annotation.Resource;
@@ -58,27 +59,39 @@ public class DataAnalysisNode implements NodeAction {
         // 推送阶段2：AI分析中
         sseService.sendStage(userId, 2);
 
+        int successCount = 0;
+        int failureCount = 0;
+
         for (NodeExecuteDto result : nodeDtoList) {
             // 获取系统提示词
             String systemPrompt = getSystemPrompt(result.getSubTagName());
 
-            // 调用AI
-            AiAnalysisResult response = chatClient.prompt()
-                    .system(systemPrompt)
-                    .user(result.getSessionContent())
-                    .call()
-                    .entity(AiAnalysisResult.class);
+            // 使用重试机制调用AI
+            AiAnalysisResult response = NodeRetryHelper.builder()
+                    .operation("DataAnalysis[" + result.getSessionStart() + "-" + result.getSessionEnd() + "]")
+                    .chatClient(chatClient)
+                    .systemPrompt(systemPrompt)
+                    .userPrompt(result.getSessionContent())
+                    .execute(AiAnalysisResult.class);
 
-            // TODO 错误处理
             if (response == null) {
-                log.info("AI 分析失败，fileId={}", fileId);
+                log.error("DataAnalysisNode AI 分析最终失败，fileId={}, sessionStart={}, sessionEnd={}",
+                        fileId, result.getSessionStart(), result.getSessionEnd());
                 result.setStatus(ANALYSIS_STATUS_ERROR);
+                result.setProblemStatement("AI 分析服务暂时不可用，请稍后重试");
+                result.setSolution("系统正在处理中，如问题持续请联系管理员");
+                failureCount++;
             } else {
                 result.setProblemStatement(response.problem());
                 result.setSolution(response.analysisReport());
                 result.setStatus(ANALYSIS_STATUS_PROCESSED);
+                successCount++;
+                log.debug("DataAnalysisNode 成功分析会话: sessionStart={}, sessionEnd={}",
+                        result.getSessionStart(), result.getSessionEnd());
             }
         }
+
+        log.info("DataAnalysisNode 完成: fileId={}, 成功={}, 失败={}", fileId, successCount, failureCount);
 
         return Map.of("nodeResult", nodeDtoList);
     }
@@ -89,7 +102,10 @@ public class DataAnalysisNode implements NodeAction {
      * @return 系统提示词
      */
     private String getSystemPrompt(String subTagName) {
-        String nameUpperCase= subTagName.toUpperCase();
+        if (subTagName == null || subTagName.isEmpty()) {
+            return promptService.getAnalysisPrompt("");
+        }
+        String nameUpperCase = subTagName.toUpperCase();
         if (nameUpperCase.contains("思维拓展")) {
             return promptService.getExtensionAnalysisPrompt("");
         } else if (nameUpperCase.contains("BUG")) {

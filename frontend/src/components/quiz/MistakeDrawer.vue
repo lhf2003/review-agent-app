@@ -50,7 +50,8 @@ async function loadQuestionDetail() {
 
     if (target) {
       questionDetail.value = target
-      mistakeHistory.value = generateMockHistory(target)
+      // TODO: 后端需要提供错题历史数据接口
+      mistakeHistory.value = []
       knowledgeMastery.value = {
         knowledgePoint: target.knowledgePoint,
         masteryLevel: target.mastered ? '已掌握' : '学习中',
@@ -63,26 +64,6 @@ async function loadQuestionDetail() {
   } finally {
     loading.value = false
   }
-}
-
-// 生成模拟错误历史（实际应从后端获取）
-function generateMockHistory(mistake) {
-  const history = []
-  const count = mistake.mistakeCount || 1
-
-  for (let i = 0; i < count; i++) {
-    const date = new Date(mistake.lastMistakeTime)
-    date.setDate(date.getDate() - (count - 1 - i) * 3)
-
-    history.push({
-      date: date.toISOString(),
-      wrongAnswer: 'B',
-      correctAnswer: mistake.correctAnswer,
-      timeSpent: 45 + Math.floor(Math.random() * 60)
-    })
-  }
-
-  return history
 }
 
 // 标记为已掌握

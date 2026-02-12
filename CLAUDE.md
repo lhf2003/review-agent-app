@@ -152,6 +152,116 @@ Service methods that perform write operations must include:
 - Animation curve: `cubic-bezier(0.25, 1, 0.5, 1)`
 - No default browser focus outlines (globally disabled)
 
+### Frontend ECharts Integration Best Practices
+
+**CRITICAL**: Chart components MUST NOT check container size before initialization.
+
+**Problem Pattern (DO NOT USE)**:
+```javascript
+// ❌ WRONG: Causes charts to never initialize
+function initChart() {
+  if (chartRef.value.clientWidth === 0 || chartRef.value.clientHeight === 0) {
+    return  // ← This blocks initialization permanently
+  }
+  chartInstance = echarts.init(chartRef.value, theme)
+}
+```
+
+**Why This Fails**:
+- Vue 3 component lifecycle: DOM element exists but layout not complete
+- Container size is 0x0 when `onMounted` executes
+- Even with `requestAnimationFrame` or `setTimeout`, timing is unpredictable
+- Once initialization is skipped, `chartInstance` remains `null` forever
+- Subsequent data updates cannot render because chart was never created
+
+**Correct Pattern (MUST USE)**:
+```javascript
+// ✅ CORRECT: Allow ECharts to initialize at any size
+let resizeObserver = null  // Global variable
+
+function initChart() {
+  if (!chartRef.value) return
+
+  if (chartInstance) {
+    chartInstance.dispose()
+  }
+
+  // Initialize immediately without size check
+  const theme = themeStore.isDark ? 'dark' : undefined
+  chartInstance = echarts.init(chartRef.value, theme, {
+    backgroundColor: 'transparent',
+    renderer: 'canvas'
+  })
+
+  // Stop previous observer
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
+
+  // Monitor container size changes
+  resizeObserver = new ResizeObserver((entries) => {
+    for (let entry of entries) {
+      const { width, height } = entry.contentRect
+      if (width > 0 && height > 0 && chartInstance) {
+        chartInstance.resize()  // Auto-resize when container becomes available
+      }
+    }
+  })
+
+  resizeObserver.observe(chartRef.value)
+
+  updateChart()
+  emit('chart-ready', chartInstance)
+}
+
+function updateChart() {
+  // Auto-initialize if not yet created
+  if (!chartInstance) {
+    initChart()
+    return
+  }
+
+  if (!hasData.value) return
+
+  // ... chart configuration
+  chartInstance.setOption(option, true)
+}
+
+onUnmounted(() => {
+  // Clean up observer
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+
+  // Dispose chart
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+    emit('chart-dispose')
+  }
+})
+```
+
+**Why This Works**:
+1. ECharts can initialize on 0x0 containers (official support)
+2. ResizeObserver detects when container becomes available
+3. Auto-resize ensures chart renders correctly
+4. Observer cleanup prevents memory leaks
+5. Multiple fallback mechanisms ensure reliability
+
+**Affected Components** (fixed 2026-02-12):
+- `KnowledgeRadarChart.vue`
+- `ScoreTrendChart.vue`
+- `TimeDistributionChart.vue`
+- `LearningHeatmapChart.vue`
+
+**Browser Compatibility**:
+- Chrome 64+
+- Edge 79+
+- Firefox 69+
+- Safari 13.1+
+
 ### Date/Time Formatting Convention
 - **Backend**: ALL date/time fields in VO classes MUST use `@JsonFormat` annotation for formatting
 - **Frontend**: DO NOT format dates in JavaScript/Vue components - display backend-formatted values directly

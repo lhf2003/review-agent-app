@@ -35,7 +35,8 @@ public class DataInfoController {
      * @return 文件数据分页列表
      */
     @PostMapping("/page")
-    public BaseResponse<Page<DataInfoVo>> page(Pageable pageable, @RequestBody DataInfoRequest dataInfoRequest, @RequestHeader(value = "userId", required = false) Long userId) {
+    public BaseResponse<Page<DataInfoVo>> page(Pageable pageable, @RequestBody DataInfoRequest dataInfoRequest) {
+        Long userId = securityUtils.getCurrentUserId();
         if (userId != null) {
             dataInfoRequest.setUserId(userId);
         }

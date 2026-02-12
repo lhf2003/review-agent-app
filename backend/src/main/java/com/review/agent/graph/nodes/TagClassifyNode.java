@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.review.agent.entity.pojo.MainTag;
 import com.review.agent.entity.pojo.SubTag;
 import com.review.agent.entity.dto.NodeExecuteDto;
+import com.review.agent.graph.utils.NodeRetryHelper;
 import com.review.agent.service.PromptService;
 import com.review.agent.service.SseService;
 import com.review.agent.service.TagService;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +50,7 @@ public class TagClassifyNode implements NodeAction {
             userId = Long.parseLong(strings.get(1).toString());
         }
 
-        sseService.sendLog(userId, "🏷️ 正在匹配主标签和子标签...");
+        sseService.sendLog(userId, "正在匹配主标签和子标签...");
 
         @SuppressWarnings("unchecked")
         List<NodeExecuteDto> nodeDtoList = (List<NodeExecuteDto>) state.value("nodeResult")
@@ -59,32 +61,62 @@ public class TagClassifyNode implements NodeAction {
         String categories = buildCategories(userId, nameToIdMap);
         String systemPrompt = promptService.getClassifyPrompt(categories);
 
+        int successCount = 0;
+        int failureCount = 0;
+
         for (NodeExecuteDto result : nodeDtoList) {
-            // 调用AI
-            AiAnalysisResult response = chatClient.prompt()
-                    .system(systemPrompt)
-                    .user(result.getSessionContent())
-                    .call()
-                    .entity(AiAnalysisResult.class);
+            // 使用重试机制调用AI
+            AiAnalysisResult response = NodeRetryHelper.builder()
+                    .operation("TagClassify[" + result.getSessionStart() + "-" + result.getSessionEnd() + "]")
+                    .chatClient(chatClient)
+                    .systemPrompt(systemPrompt)
+                    .userPrompt(result.getSessionContent())
+                    .execute(AiAnalysisResult.class, () -> createDefaultResult());
 
             if (response == null) {
-                log.info("AI 分类标签失败，sessionStart：{}，sessionEnd：{}，", result.getSessionStart(), result.getSessionEnd());
-                continue;
-            }
+                log.error("TagClassifyNode AI 分类标签最终失败，sessionStart={}，sessionEnd={}",
+                        result.getSessionStart(), result.getSessionEnd());
+                // 设置默认值
+                result.setRecommends("");
+                result.setSubTagId("");
+                result.setSubTagName("");
+                failureCount++;
+            } else {
+                // 构建结果列表
+                Long mainTagId = nameToIdMap.get(response.category());
+                if (mainTagId != null) {
+                    result.setTagId(mainTagId);
+                } else {
+                    log.warn("TagClassifyNode 主标签未匹配: category={}", response.category());
+                }
 
-            // 构建结果列表
-            result.setTagId(nameToIdMap.get(response.category()));
-            result.setRecommends(String.join(",", response.recommends()));
-            List<String> subTagIdList = response.subCategory().stream()
-                    .filter(nameToIdMap::containsKey)
-                    .map(nameToIdMap::get)
-                    .map(String::valueOf)
-                    .toList();
-            result.setSubTagId(String.join(",", subTagIdList));
-            result.setSubTagName(String.join(",", response.subCategory()));
+                result.setRecommends(response.recommends() != null ?
+                        String.join(",", response.recommends()) : "");
+
+                List<String> subTagIdList = response.subCategory().stream()
+                        .filter(nameToIdMap::containsKey)
+                        .map(nameToIdMap::get)
+                        .map(String::valueOf)
+                        .toList();
+                result.setSubTagId(String.join(",", subTagIdList));
+                result.setSubTagName(response.subCategory() != null ?
+                        String.join(",", response.subCategory()) : "");
+                successCount++;
+                log.debug("TagClassifyNode 成功分类会话: sessionStart={}, sessionEnd={}, category={}",
+                        result.getSessionStart(), result.getSessionEnd(), response.category());
+            }
         }
 
+        log.info("TagClassifyNode 完成: userId={}, 成功={}, 失败={}", userId, successCount, failureCount);
+
         return Map.of("nodeResult", nodeDtoList);
+    }
+
+    /**
+     * 创建默认的 AI 分析结果（降级策略）
+     */
+    private AiAnalysisResult createDefaultResult() {
+        return new AiAnalysisResult("未分类", Collections.emptyList(), Collections.emptyList());
     }
 
     /**

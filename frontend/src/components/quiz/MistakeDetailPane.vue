@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Document, Edit, Star, Clock, Close, Select, Delete, Loading } from '@element-plus/icons-vue'
 import QuestionRenderer from './QuestionRenderer.vue'
+import CustomScroll from '../CustomScroll.vue'
 import { api } from '../../api/http'
 
 /**
@@ -41,7 +42,8 @@ async function loadQuestionDetail() {
 
     if (target) {
       questionDetail.value = target
-      mistakeHistory.value = generateMockHistory(target)
+      // TODO: 后端需要提供错题历史数据接口
+      mistakeHistory.value = []
       knowledgeMastery.value = {
         knowledgePoint: target.knowledgePoint,
         masteryLevel: target.mastered ? '已掌握' : '学习中',
@@ -54,26 +56,6 @@ async function loadQuestionDetail() {
   } finally {
     loading.value = false
   }
-}
-
-// 生成模拟错误历史（实际应从后端获取）
-function generateMockHistory(mistake) {
-  const history = []
-  const count = mistake.mistakeCount || 1
-
-  for (let i = 0; i < count; i++) {
-    const date = new Date(mistake.lastMistakeTime)
-    date.setDate(date.getDate() - (count - 1 - i) * 3)
-
-    history.push({
-      date: date.toISOString(),
-      wrongAnswer: 'B',
-      correctAnswer: mistake.correctAnswer,
-      timeSpent: 45 + Math.floor(Math.random() * 60)
-    })
-  }
-
-  return history
 }
 
 // 标记为已掌握
@@ -219,7 +201,7 @@ watch(() => props.questionId, (newId) => {
         </div>
       </div>
       
-      <div class="pane-content">
+      <CustomScroll class="pane-content">
       <!-- 题目内容 -->
       <QuestionRenderer
         v-if="questionDetail"
@@ -302,7 +284,7 @@ watch(() => props.questionId, (newId) => {
           </div>
         </div>
       </div>
-    </div>
+    </CustomScroll>
     </template>
   </div>
 </template>
@@ -333,41 +315,7 @@ watch(() => props.questionId, (newId) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   padding: 16px;
-
-  /* 自定义滚动条 - Glassmorphism 风格 */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-    transition: background 0.2s ease;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.25);
-      background-clip: content-box;
-    }
-
-    html.dark & {
-      background: rgba(255, 255, 255, 0.2);
-      background-clip: content-box;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.3);
-        background-clip: content-box;
-      }
-    }
-  }
 }
 
 // 顶部操作栏 - Glassmorphism 增强

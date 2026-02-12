@@ -5,13 +5,18 @@ import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.request.CollectionItemRequest;
 import com.review.agent.entity.request.CollectionRequest;
+import com.review.agent.entity.request.QuickCreateRequest;
 import com.review.agent.entity.vo.CollectionCreateResultVo;
 import com.review.agent.entity.vo.CollectionDetailVo;
 import com.review.agent.entity.vo.CollectionRecommendationVO;
 import com.review.agent.entity.vo.CollectionVo;
+import com.review.agent.entity.vo.QuickCreateResultVO;
+import com.review.agent.entity.vo.SmartRecommendationVO;
 import com.review.agent.service.CollectionRecommendationService;
 import com.review.agent.service.CollectionService;
+import com.review.agent.service.SmartCollectionService;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +31,8 @@ public class CollectionController {
     private CollectionService collectionService;
     @Resource
     private CollectionRecommendationService collectionRecommendationService;
+    @Resource
+    private SmartCollectionService smartCollectionService;
     @Resource
     private SecurityUtils securityUtils;
 
@@ -139,6 +146,47 @@ public class CollectionController {
         Long userId = securityUtils.getCurrentUserId();
         List<CollectionRecommendationVO> recommendations = collectionRecommendationService.getRecommendations(userId, limit);
         return ResultUtil.success(recommendations);
+    }
+
+    // ==================== 智能推荐合集 API ====================
+
+    /**
+     * 获取智能推荐合集
+     * 基于未归档的分析结果，按标签聚合生成推荐
+     *
+     * @return 智能推荐列表
+     */
+    @GetMapping("/smart-recommendations")
+    public BaseResponse<SmartRecommendationVO> getSmartRecommendations() {
+        Long userId = securityUtils.getCurrentUserId();
+        SmartRecommendationVO recommendations = smartCollectionService.getSmartRecommendations(userId);
+        return ResultUtil.success(recommendations);
+    }
+
+    /**
+     * 快速创建合集
+     *
+     * @param request 创建请求
+     * @return 创建结果
+     */
+    @PostMapping("/quick-create")
+    public BaseResponse<QuickCreateResultVO> quickCreateCollection(@Valid @RequestBody QuickCreateRequest request) {
+        Long userId = securityUtils.getCurrentUserId();
+        QuickCreateResultVO result = smartCollectionService.quickCreateCollection(userId, request);
+        return ResultUtil.success(result);
+    }
+
+    /**
+     * 忽略推荐
+     *
+     * @param recommendationId 推荐ID
+     * @return 操作结果
+     */
+    @PostMapping("/recommendations/{recommendationId}/dismiss")
+    public BaseResponse<Void> dismissRecommendation(@PathVariable String recommendationId) {
+        Long userId = securityUtils.getCurrentUserId();
+        smartCollectionService.dismissRecommendation(userId, recommendationId);
+        return ResultUtil.success();
     }
 
 }

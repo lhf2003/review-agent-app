@@ -38,7 +38,8 @@ public class AnalysisController {
      * @return 分析结果列表
      */
     @PostMapping("/page")
-    public BaseResponse<List<AnalysisResultVo>> page(Pageable pageable, @RequestBody AnalysisResultRequest resultRequest, @RequestHeader(value = "userId", required = false) Long userId) {
+    public BaseResponse<List<AnalysisResultVo>> page(Pageable pageable, @RequestBody AnalysisResultRequest resultRequest) {
+        Long userId = securityUtils.getCurrentUserId();
         if (userId != null) {
             resultRequest.setUserId(userId);
         }

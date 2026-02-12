@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -717,22 +718,52 @@ public class QuizService {
             userId, status, collectionId, pageable
         );
 
+        // 批量预加载，解决 N+1 查询问题
+        List<QuizRecord> quizzes = quizPage.getContent();
+        if (quizzes.isEmpty()) {
+            return quizPage.map(quiz -> new QuizHistoryVO());
+        }
+
+        // 1. 批量获取所有 quizId
+        List<Long> quizIds = quizzes.stream()
+            .map(QuizRecord::getId)
+            .collect(Collectors.toList());
+
+        // 2. 批量获取所有 collectionId
+        List<Long> collectionIds = quizzes.stream()
+            .map(QuizRecord::getCollectionId)
+            .distinct()
+            .collect(Collectors.toList());
+
+        // 3. 批量查询合集信息
+        Map<Long, String> collectionNameMap = analysisCollectionRepository
+            .findByIdIn(collectionIds)
+            .stream()
+            .collect(Collectors.toMap(
+                AnalysisCollection::getId,
+                AnalysisCollection::getName
+            ));
+
+        // 4. 批量查询所有题目
+        List<QuizQuestion> allQuestions = quizQuestionRepository.findByQuizIdIn(quizIds);
+
+        // 5. 按 quizId 分组统计
+        Map<Long, List<QuizQuestion>> questionsByQuizId = allQuestions.stream()
+            .collect(Collectors.groupingBy(QuizQuestion::getQuizId));
+
+        // 6. 构建结果
         return quizPage.map(quiz -> {
             QuizHistoryVO vo = new QuizHistoryVO();
             vo.setQuizId(quiz.getId());
             vo.setCollectionId(quiz.getCollectionId());
-
-            // 获取合集名称
-            analysisCollectionRepository.findById(quiz.getCollectionId())
-                .ifPresent(ac -> vo.setCollectionName(ac.getName()));
-
+            vo.setCollectionName(collectionNameMap.get(quiz.getCollectionId()));
             vo.setTotalScore(quiz.getTotalScore());
             vo.setStatus(quiz.getStatus());
             vo.setIsOutdated(quiz.getIsOutdated());
             vo.setCreatedTime(quiz.getCreatedTime());
 
-            // 统计题目数量和正确数量
-            List<QuizQuestion> questions = quizQuestionRepository.findByQuizId(quiz.getId());
+            // 从预加载的数据中获取题目统计
+            List<QuizQuestion> questions = questionsByQuizId.getOrDefault(quiz.getId(), Collections.emptyList());
             vo.setQuestionCount(questions.size());
             vo.setCorrectCount((int) questions.stream()
                 .filter(q -> Boolean.TRUE.equals(q.getIsCorrect()))
@@ -846,26 +877,36 @@ public class QuizService {
     private List<QuizStatsVO.KnowledgeMasteryVo> getKnowledgeMastery(Long userId) {
         // 查询用户所有已完成测验的问题
         List<QuizRecord> quizRecords = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
+
+        if (quizRecords.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 批量获取所有 quizId
+        List<Long> quizIds = quizRecords.stream()
+            .map(QuizRecord::getId)
+            .collect(Collectors.toList());
+
+        // 批量查询所有题目，解决 N+1 问题
+        List<QuizQuestion> allQuestions = quizQuestionRepository.findByQuizIdIn(quizIds);
+
         Map<String, Integer> tagCorrectCount = new HashMap<>();
         Map<String, Integer> tagTotalCount = new HashMap<>();
 
-        for (QuizRecord record : quizRecords) {
-            List<QuizQuestion> questions = quizQuestionRepository.findByQuizId(record.getId());
-            for (QuizQuestion question : questions) {
-                // 获取知识点标签
-                String knowledgePoint = question.getKnowledgePoint();
-                if (knowledgePoint == null || knowledgePoint.trim().isEmpty()) {
-                    continue; // 跳过没有标签的问题
-                }
+        for (QuizQuestion question : allQuestions) {
+            // 获取知识点标签
+            String knowledgePoint = question.getKnowledgePoint();
+            if (knowledgePoint == null || knowledgePoint.trim().isEmpty()) {
+                continue; // 跳过没有标签的问题
+            }
 
-                // 统计该知识点下的题目总数
-                tagTotalCount.put(knowledgePoint, tagTotalCount.getOrDefault(knowledgePoint, 0) + 1);
+            // 统计该知识点下的题目总数
+            tagTotalCount.put(knowledgePoint, tagTotalCount.getOrDefault(knowledgePoint, 0) + 1);
 
-                // 统计正确数
-                Boolean isCorrect = question.getIsCorrect();
-                if (isCorrect != null && isCorrect) {
-                    tagCorrectCount.put(knowledgePoint, tagCorrectCount.getOrDefault(knowledgePoint, 0) + 1);
-                }
+            // 统计正确数
+            Boolean isCorrect = question.getIsCorrect();
+            if (isCorrect != null && isCorrect) {
+                tagCorrectCount.put(knowledgePoint, tagCorrectCount.getOrDefault(knowledgePoint, 0) + 1);
             }
         }
 
@@ -887,5 +928,225 @@ public class QuizService {
         masteryList.sort((a, b) -> Double.compare(b.getAccuracyRate(), a.getAccuracyRate()));
 
         return masteryList;
+    }
+
+    // ==================== 学习仪表盘相关 ====================
+
+    /**
+     * 获取学习仪表盘数据
+     *
+     * @param userId 用户ID
+     * @return 学习仪表盘数据
+     */
+    public LearningDashboardVO getLearningDashboard(Long userId) {
+        // 1. 获取测验分数趋势（最近30天）
+        List<LearningDashboardVO.ScoreTrendItem> scoreTrend = getScoreTrend(userId, 30);
+
+        // 2. 获取知识点雷达图数据
+        List<LearningDashboardVO.KnowledgeRadarItem> knowledgeRadar = getKnowledgeRadar(userId);
+
+        // 3. 获取学习热力图数据（最近12个月）
+        Map<String, Integer> heatmap = getLearningHeatmap(userId);
+
+        // 4. 获取学习时长分布
+        Map<String, Integer> timeDistribution = getTimeDistribution(userId);
+
+        // 5. 获取周统计数据
+        LearningDashboardVO.WeeklyStats weeklyStats = getWeeklyStats(userId);
+
+        return LearningDashboardVO.builder()
+            .scoreTrend(scoreTrend)
+            .knowledgeRadar(knowledgeRadar)
+            .heatmap(heatmap)
+            .timeDistribution(timeDistribution)
+            .weeklyStats(weeklyStats)
+            .build();
+    }
+
+    /**
+     * 按时间范围获取测验分数趋势
+     *
+     * @param userId 用户ID
+     * @param range 时间范围（天数）
+     * @return 分数趋势列表
+     */
+    public List<LearningDashboardVO.ScoreTrendItem> getScoreTrend(Long userId, int range) {
+        LocalDateTime startTime = LocalDateTime.now().minusDays(range);
+        LocalDateTime endTime = LocalDateTime.now();
+
+        List<QuizRecord> quizRecords = quizRecordRepository.findByUserIdAndTimeRange(userId, startTime, endTime);
+
+        if (quizRecords.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 批量获取合集名称
+        List<Long> collectionIds = quizRecords.stream()
+            .map(QuizRecord::getCollectionId)
+            .distinct()
+            .collect(Collectors.toList());
+
+        Map<Long, String> collectionNameMap = analysisCollectionRepository.findByIdIn(collectionIds)
+            .stream()
+            .collect(Collectors.toMap(
+                AnalysisCollection::getId,
+                AnalysisCollection::getName
+            ));
+
+        return quizRecords.stream()
+            .map(record -> LearningDashboardVO.ScoreTrendItem.builder()
+                .date(record.getCreatedTime())
+                .score(record.getTotalScore())
+                .quizId(record.getId())
+                .collectionName(collectionNameMap.get(record.getCollectionId()))
+                .build())
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取知识点雷达图数据（最多8个知识点）
+     *
+     * @param userId 用户ID
+     * @return 雷达图数据列表
+     */
+    private List<LearningDashboardVO.KnowledgeRadarItem> getKnowledgeRadar(Long userId) {
+        // 从 KnowledgeMastery 表获取数据（返回VO格式）
+        List<KnowledgeMasteryVO> masteries = knowledgeMasteryService.getWeakKnowledgePoints(userId, 100);
+
+        // 过滤答题数量 >= 3 的知识点，按答题数量排序取前8个
+        return masteries.stream()
+            .filter(km -> km.getTotalCount() >= 3)
+            .sorted((a, b) -> Integer.compare(b.getTotalCount(), a.getTotalCount()))
+            .limit(8)
+            .map(km -> LearningDashboardVO.KnowledgeRadarItem.builder()
+                .name(km.getKnowledgePoint())
+                .value(km.getMasteryRate())
+                .totalCount(km.getTotalCount())
+                .build())
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取学习热力图数据（最近12个月）
+     *
+     * @param userId 用户ID
+     * @return 日期 -> 测验数量映射
+     */
+    private Map<String, Integer> getLearningHeatmap(Long userId) {
+        LocalDateTime startTime = LocalDateTime.now().minusMonths(12);
+        List<QuizRecord> records = quizRecordRepository.findRecentYearRecords(userId, startTime);
+
+        Map<String, Integer> heatmap = new HashMap<>();
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        for (QuizRecord record : records) {
+            String dateKey = record.getCreatedTime().format(formatter);
+            heatmap.put(dateKey, heatmap.getOrDefault(dateKey, 0) + 1);
+        }
+
+        return heatmap;
+    }
+
+    /**
+     * 获取学习时长分布
+     *
+     * @param userId 用户ID
+     * @return 时段 -> 测验数量映射
+     */
+    private Map<String, Integer> getTimeDistribution(Long userId) {
+        LocalDateTime startTime = LocalDateTime.now().minusMonths(3); // 最近3个月
+        List<QuizRecord> records = quizRecordRepository.findRecentYearRecords(userId, startTime);
+
+        Map<String, Integer> distribution = new HashMap<>();
+        distribution.put("凌晨", 0);
+        distribution.put("上午", 0);
+        distribution.put("下午", 0);
+        distribution.put("晚上", 0);
+
+        for (QuizRecord record : records) {
+            int hour = record.getCreatedTime().getHour();
+            String period = getTimePeriod(hour);
+            distribution.put(period, distribution.get(period) + 1);
+        }
+
+        return distribution;
+    }
+
+    /**
+     * 根据小时数获取时段名称
+     *
+     * @param hour 小时数（0-23）
+     * @return 时段名称
+     */
+    private String getTimePeriod(int hour) {
+        if (hour >= 0 && hour < 6) {
+            return "凌晨";
+        } else if (hour >= 6 && hour < 12) {
+            return "上午";
+        } else if (hour >= 12 && hour < 18) {
+            return "下午";
+        } else {
+            return "晚上";
+        }
+    }
+
+    /**
+     * 获取周统计数据（本周 vs 上周对比）
+     *
+     * @param userId 用户ID
+     * @return 周统计数据
+     */
+    private LearningDashboardVO.WeeklyStats getWeeklyStats(Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        // 本周开始（周一）
+        LocalDateTime thisWeekStart = now.with(java.time.DayOfWeek.MONDAY).withHour(0).withMinute(0).withSecond(0);
+        // 上周开始
+        LocalDateTime lastWeekStart = thisWeekStart.minusWeeks(1);
+
+        // 获取本周测验
+        List<QuizRecord> thisWeekRecords = quizRecordRepository.findByUserIdAndTimeRange(userId, thisWeekStart, now);
+        // 获取上周测验
+        List<QuizRecord> lastWeekRecords = quizRecordRepository.findByUserIdAndTimeRange(userId, lastWeekStart, thisWeekStart);
+
+        // 计算本周统计
+        int thisWeekQuizCount = thisWeekRecords.size();
+        double thisWeekAccuracy = calculateAverageAccuracy(thisWeekRecords);
+
+        // 计算上周统计
+        int lastWeekQuizCount = lastWeekRecords.size();
+        double lastWeekAccuracy = calculateAverageAccuracy(lastWeekRecords);
+
+        // 计算变化
+        int quizCountChange = thisWeekQuizCount - lastWeekQuizCount;
+        double accuracyChange = thisWeekAccuracy - lastWeekAccuracy;
+
+        return LearningDashboardVO.WeeklyStats.builder()
+            .thisWeekQuizCount(thisWeekQuizCount)
+            .lastWeekQuizCount(lastWeekQuizCount)
+            .thisWeekAccuracy(thisWeekAccuracy)
+            .lastWeekAccuracy(lastWeekAccuracy)
+            .quizCountChange(quizCountChange)
+            .accuracyChange(Math.round(accuracyChange * 100.0) / 100.0)
+            .build();
+    }
+
+    /**
+     * 计算测验列表的平均正确率
+     *
+     * @param records 测验记录列表
+     * @return 平均正确率
+     */
+    private double calculateAverageAccuracy(List<QuizRecord> records) {
+        if (records.isEmpty()) {
+            return 0.0;
+        }
+
+        double totalScore = records.stream()
+            .filter(r -> r.getTotalScore() != null)
+            .mapToInt(QuizRecord::getTotalScore)
+            .average()
+            .orElse(0.0);
+
+        return Math.round(totalScore * 100.0) / 100.0;
     }
 }

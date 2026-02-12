@@ -70,4 +70,30 @@ public interface QuizRecordRepository extends JpaRepository<QuizRecord, Long> {
         @Param("collectionId") Long collectionId,
         Pageable pageable
     );
+
+    /**
+     * 获取用户指定时间范围内的已完成测验
+     * @param userId 用户ID
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 测验记录列表
+     */
+    @Query("select q from QuizRecord q where q.userId = :userId and q.status = 1 and q.deleted = 0 and q.createdTime >= :startTime and q.createdTime < :endTime order by q.createdTime asc")
+    List<QuizRecord> findByUserIdAndTimeRange(
+        @Param("userId") Long userId,
+        @Param("startTime") LocalDateTime startTime,
+        @Param("endTime") LocalDateTime endTime
+    );
+
+    /**
+     * 获取用户最近12个月的已完成测验（用于热力图）
+     * @param userId 用户ID
+     * @param startTime 开始时间（12个月前）
+     * @return 测验记录列表
+     */
+    @Query("select q from QuizRecord q where q.userId = :userId and q.status = 1 and q.deleted = 0 and q.createdTime >= :startTime order by q.createdTime asc")
+    List<QuizRecord> findRecentYearRecords(
+        @Param("userId") Long userId,
+        @Param("startTime") LocalDateTime startTime
+    );
 }

@@ -3,10 +3,12 @@ package com.review.agent.controller;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.common.utils.SecurityUtils;
+import com.review.agent.entity.request.MistakeIdsRequest;
 import com.review.agent.entity.vo.MistakeVo;
 import com.review.agent.entity.vo.ReviewRecommendationVO;
 import com.review.agent.service.MistakeBookService;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -65,18 +67,13 @@ public class MistakeBookController {
     /**
      * 批量标记错题为已掌握
      *
-     * @param body 请求体 {questionIds: [1, 2, 3]}
+     * @param request 请求体 {mistakeIds: [1, 2, 3]}
      * @return 成功标记的数量
      */
     @PostMapping("/mark-mastered")
-    public BaseResponse<Integer> markAsMastered(@RequestBody Map<String, List<Long>> body) {
+    public BaseResponse<Integer> markAsMastered(@Valid @RequestBody MistakeIdsRequest request) {
         try {
-            List<Long> questionIds = body.get("questionIds");
-            if (questionIds == null || questionIds.isEmpty()) {
-                return ResultUtil.error("questionIds 不能为空");
-            }
-
-            int count = mistakeBookService.batchMarkMastered(questionIds);
+            int count = mistakeBookService.batchMarkMastered(request.getMistakeIds());
             return ResultUtil.success(count);
         } catch (Exception e) {
             log.error("标记已掌握失败", e);
@@ -87,18 +84,13 @@ public class MistakeBookController {
     /**
      * 批量删除错题
      *
-     * @param body 请求体 {questionIds: [1, 2, 3]}
+     * @param request 请求体 {mistakeIds: [1, 2, 3]}
      * @return 成功删除的数量
      */
     @DeleteMapping("/delete")
-    public BaseResponse<Integer> deleteMistakes(@RequestBody Map<String, List<Long>> body) {
+    public BaseResponse<Integer> deleteMistakes(@Valid @RequestBody MistakeIdsRequest request) {
         try {
-            List<Long> questionIds = body.get("questionIds");
-            if (questionIds == null || questionIds.isEmpty()) {
-                return ResultUtil.error("questionIds 不能为空");
-            }
-
-            int count = mistakeBookService.batchDelete(questionIds);
+            int count = mistakeBookService.batchDelete(request.getMistakeIds());
             return ResultUtil.success(count);
         } catch (Exception e) {
             log.error("删除错题失败", e);

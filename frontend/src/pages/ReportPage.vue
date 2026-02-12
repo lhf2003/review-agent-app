@@ -24,9 +24,6 @@ const loadReports = async () => {
     rawReports.value = data || []
   } catch (e) {
     ElMessage.error('Failed to load reports')
-    if (rawReports.value.length === 0) {
-      // Mock handled or empty
-    }
   } finally {
     loading.value = false
   }

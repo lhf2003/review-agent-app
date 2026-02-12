@@ -231,7 +231,7 @@ defineExpose({
       :knowledge-point="knowledgePoint"
       @answer-selected="$emit('answer-selected', $event)"
       @answer-changed="$emit('answer-changed', $event)"
-      @mounted="() => { console.warn(`Unknown question type: ${type}, falling back to single_choice`) }"
+      @mounted="() => {}"
     />
   </div>
 </template>

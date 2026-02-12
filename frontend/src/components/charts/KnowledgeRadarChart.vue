@@ -42,15 +42,17 @@ const emit = defineEmits(['chart-ready', 'chart-dispose'])
 const themeStore = useThemeStore()
 const chartRef = ref(null)
 let chartInstance = null
+let resizeObserver = null
 
 const hasData = computed(() => props.data && props.data.length > 0)
 
 // 初始化图表
 function initChart() {
-  if (!chartRef.value) return
+  console.log('[KnowledgeRadarChart] initChart 被调用')
+  console.log('[KnowledgeRadarChart] chartRef.value 是否存在:', !!chartRef.value)
 
-  // 如果容器不可见（宽高为0），则不初始化
-  if (chartRef.value.clientWidth === 0 || chartRef.value.clientHeight === 0) {
+  if (!chartRef.value) {
+    console.warn('[KnowledgeRadarChart] chartRef.value 不存在，无法初始化')
     return
   }
 
@@ -65,16 +67,68 @@ function initChart() {
     renderer: 'canvas'
   })
 
+  console.log('[KnowledgeRadarChart] ECharts 实例已创建')
+
+  // 停止之前的 ResizeObserver
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
+
+  // 监听容器尺寸变化
+  resizeObserver = new ResizeObserver((entries) => {
+    for (let entry of entries) {
+      const { width, height } = entry.contentRect
+      console.log('[KnowledgeRadarChart] 容器尺寸变化:', { width, height })
+
+      if (width > 0 && height > 0 && chartInstance) {
+        console.log('[KnowledgeRadarChart] 容器可用，调整图表尺寸')
+        chartInstance.resize()
+      }
+    }
+  })
+
+  resizeObserver.observe(chartRef.value)
+  console.log('[KnowledgeRadarChart] ResizeObserver 已启动')
+
   updateChart()
   emit('chart-ready', chartInstance)
 }
 
 // 更新图表
 function updateChart() {
-  if (!chartInstance || !hasData.value) return
+  console.log('[KnowledgeRadarChart] updateChart 被调用')
+  console.log('[KnowledgeRadarChart] chartInstance 是否存在:', !!chartInstance)
+  console.log('[KnowledgeRadarChart] hasData.value:', hasData.value)
+  console.log('[KnowledgeRadarChart] props.data:', props.data)
+  console.log('[KnowledgeRadarChart] props.data.length:', props.data?.length)
+
+  // 如果图表未初始化，尝试初始化
+  if (!chartInstance) {
+    console.warn('[KnowledgeRadarChart] 图表未初始化，尝试初始化')
+    initChart()
+    // 如果初始化失败（容器尺寸为0），等待下一次调用
+    if (!chartInstance) {
+      console.warn('[KnowledgeRadarChart] 初始化失败，容器可能尺寸为0')
+      return
+    }
+  }
+
+  if (!hasData.value) {
+    console.warn('[KnowledgeRadarChart] 跳过更新：无数据')
+    return
+  }
+
+  if (!props.data || props.data.length === 0) {
+    console.warn('[KnowledgeRadarChart] 无数据可显示')
+    return
+  }
 
   const indicators = props.data.map(item => item.tagName)
   const accuracyData = props.data.map(item => (item.accuracyRate || 0).toFixed(1))
+
+  console.log('[KnowledgeRadarChart] 准备设置图表配置')
+  console.log('[KnowledgeRadarChart] indicators:', indicators)
+  console.log('[KnowledgeRadarChart] accuracyData:', accuracyData)
 
   const option = {
     tooltip: {
@@ -89,7 +143,9 @@ function updateChart() {
         color: themeStore.isDark ? '#fff' : '#333'
       },
       formatter: function (params) {
-        return params[0].name + '<br/>正确率: ' + params[0].value + '%'
+        if (!params || !params[0]) return '暂无数据'
+        const item = params[0]
+        return (item.name || '未知') + '<br/>正确率: ' + (item.value !== undefined ? item.value.toFixed(1) + '%' : 'N/A')
       }
     },
     legend: {
@@ -164,6 +220,9 @@ function updateChart() {
   }
 
   chartInstance.setOption(option, true)
+  console.log('[KnowledgeRadarChart] 图表配置已设置')
+  console.log('[KnowledgeRadarChart] chartInstance.setOption 调用成功')
+  console.log('[KnowledgeRadarChart] series 数据:', option.series)
 }
 
 // 调整图表大小
@@ -199,6 +258,13 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // 停止 ResizeObserver
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+
+  // 销毁图表实例
   if (chartInstance) {
     chartInstance.dispose()
     chartInstance = null

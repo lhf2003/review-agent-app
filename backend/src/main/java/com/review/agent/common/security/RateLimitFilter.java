@@ -2,6 +2,7 @@ package com.review.agent.common.security;
 
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.exception.ErrorCode;
+import com.review.agent.common.utils.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -34,6 +35,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private SecurityUtils securityUtils;
 
     @Value("${rate-limit.requests-per-minute:100}")
     private int requestsPerMinute;
@@ -79,8 +83,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * @return 限流键
      */
     private String getRateLimitKey(HttpServletRequest request, String uri) {
-        // 优先使用用户 ID（如果已认证）
-        String userId = request.getHeader("userId");
+        Long userId = securityUtils.getCurrentUserId();
         if (userId != null) {
             return RATE_LIMIT_PREFIX + "user:" + userId + ":" + uri;
         }
