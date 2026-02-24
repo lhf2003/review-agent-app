@@ -159,11 +159,11 @@ defineExpose({
         
         <!-- 正确/错误图标 -->
         <transition name="icon-fade">
-          <div v-if="isSubmitted" class="answer-icon">
-            <el-icon v-if="displayAnswer === 'true' && selectedValue === 'true'" color="#67c23a">
+          <div v-if="isSubmitted && selectedValue === 'true'" class="answer-icon">
+            <el-icon v-if="isCorrect" color="#67c23a">
               <SuccessFilled />
             </el-icon>
-            <el-icon v-else-if="displayAnswer === 'true' && selectedValue === 'false'" color="#f56c6c">
+            <el-icon v-else color="#f56c6c">
               <CircleCloseFilled />
             </el-icon>
           </div>
@@ -190,11 +190,11 @@ defineExpose({
         
         <!-- 正确/错误图标 -->
         <transition name="icon-fade">
-          <div v-if="isSubmitted" class="answer-icon">
-            <el-icon v-if="displayAnswer === 'false' && selectedValue === 'false'" color="#67c23a">
+          <div v-if="isSubmitted && selectedValue === 'false'" class="answer-icon">
+            <el-icon v-if="isCorrect" color="#67c23a">
               <SuccessFilled />
             </el-icon>
-            <el-icon v-else-if="displayAnswer === 'false' && selectedValue === 'false'" color="#f56c6c">
+            <el-icon v-else color="#f56c6c">
               <CircleCloseFilled />
             </el-icon>
           </div>
@@ -326,19 +326,13 @@ defineExpose({
     
     &.option-true {
       &:hover:not(.is-disabled) {
-        border-color: var(--true-color);
-        box-shadow: 0 12px 24px -8px rgba(52, 199, 89, 0.25);
-        
-        .option-value { color: var(--true-color); }
+        // 移除悬浮时的特定颜色边框
       }
     }
-    
+
     &.option-false {
       &:hover:not(.is-disabled) {
-        border-color: var(--false-color);
-        box-shadow: 0 12px 24px -8px rgba(255, 59, 48, 0.25);
-        
-        .option-value { color: var(--false-color); }
+        // 移除悬浮时的特定颜色边框
       }
     }
     
@@ -346,21 +340,32 @@ defineExpose({
       border-width: 2px;
       transform: scale(1.02);
       z-index: 2;
+
+      // 未提交时：使用统一的主色调，不暴露答案
+      &:not(.is-show-correct) {
+        border-color: var(--primary-color);
+        background: var(--el-color-primary-light-9);
+        box-shadow: 0 8px 16px -4px rgba(var(--el-color-primary-rgb), 0.25);
+
+        .option-value {
+          color: var(--primary-color);
+        }
+      }
     }
-    
-    &.option-true.is-selected {
+
+    &.option-true.is-selected.is-show-correct {
       border-color: var(--true-color);
       background: rgba(52, 199, 89, 0.1);
       box-shadow: 0 12px 24px -8px rgba(52, 199, 89, 0.3);
-      
+
       .option-value { color: var(--true-color); }
     }
-    
-    &.option-false.is-selected {
+
+    &.option-false.is-selected.is-show-correct {
       border-color: var(--false-color);
       background: rgba(255, 59, 48, 0.1);
       box-shadow: 0 12px 24px -8px rgba(255, 59, 48, 0.3);
-      
+
       .option-value { color: var(--false-color); }
     }
     
@@ -453,20 +458,28 @@ defineExpose({
     .option-label {
       color: rgba(255, 255, 255, 0.5);
     }
-    
-    .option-item.option-true:hover:not(.is-disabled),
-    .option-item.option-true.is-selected {
+
+    // 暗色模式下也保持选中状态的一致性
+    .option-item.is-selected:not(.is-show-correct) {
+      border-color: var(--primary-color);
+      background: rgba(var(--el-color-primary-rgb), 0.2);
+
+      .option-value {
+        color: var(--el-color-primary);
+      }
+    }
+
+    .option-item.option-true.is-selected.is-show-correct {
       border-color: var(--true-color);
       background: rgba(52, 199, 89, 0.2);
-      
+
       .option-value { color: #4cd964; }
     }
-    
-    .option-item.option-false:hover:not(.is-disabled),
-    .option-item.option-false.is-selected {
+
+    .option-item.option-false.is-selected.is-show-correct {
       border-color: var(--false-color);
       background: rgba(255, 69, 58, 0.2);
-      
+
       .option-value { color: #ff453a; }
     }
   }

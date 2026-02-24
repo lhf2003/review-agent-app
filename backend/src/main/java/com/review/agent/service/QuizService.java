@@ -464,8 +464,7 @@ public class QuizService {
      * @return MD5哈希字符串
      */
     private String generateCollectionVersionHash(Long collectionId) {
-        List<CollectionRelation> relations =
-            collectionRelationRepository.findByCollectionId(collectionId);
+        List<CollectionRelation> relations = collectionRelationRepository.findByCollectionId(collectionId);
 
         List<Long> analysisIds = relations.stream()
             .map(CollectionRelation::getAnalysisResultId)

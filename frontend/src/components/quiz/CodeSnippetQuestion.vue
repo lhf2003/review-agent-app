@@ -72,9 +72,57 @@ const emit = defineEmits([
 // 当前选中的代码行（多选时可能有多个）
 const selectedLines = ref(new Set())
 
+// 提取题目描述和代码内容
+const parsedContent = computed(() => {
+  const question = props.question || ''
+
+  // 检查是否包含代码块标记
+  const codeBlockMatch = question.match(/```[\w]*\n([\s\S]*?)```/)
+
+  if (codeBlockMatch) {
+    // 提取代码块内容和前后的描述文本
+    const codeContent = codeBlockMatch[1]
+    const description = question.replace(/```[\w]*\n[\s\S]*?```/, '').trim()
+
+    return {
+      description,
+      codeContent
+    }
+  }
+
+  // 如果没有代码块标记，检查是否直接是代码
+  const lines = question.split('\n').filter(line => line.trim())
+
+  // 如果第一行看起来像代码（包含常见代码特征），则全部作为代码
+  const codeIndicators = ['function', 'const', 'let', 'var', 'if', 'for', 'while', 'class', 'import', 'export', 'return', '//', '/*']
+  const firstLine = lines[0] || ''
+  const hasCodeIndicator = codeIndicators.some(indicator => firstLine.includes(indicator))
+
+  if (hasCodeIndicator || lines.length > 1) {
+    return {
+      description: '',
+      codeContent: question
+    }
+  }
+
+  // 否则作为纯文本描述
+  return {
+    description: question,
+    codeContent: ''
+  }
+})
+
+// 题目描述文本
+const questionDescription = computed(() => parsedContent.value.description)
+
 // 解析代码内容
 const codeLines = computed(() => {
-  return props.question.split('\n').map(line => line.trim()).filter(line => line !== '')
+  const codeContent = parsedContent.value.codeContent
+  if (!codeContent) return []
+
+  return codeContent.split('\n')
+    .map(line => line.trimEnd()) // 保留左侧缩进，只去除右侧空白
+    .filter(line => line !== '')
 })
 
 // 检查是否正确
@@ -198,8 +246,8 @@ defineExpose({
     </div>
 
     <!-- 题目文本 -->
-    <div class="question-text">
-      {{ question }}
+    <div v-if="questionDescription" class="question-text">
+      {{ questionDescription }}
     </div>
 
     <!-- 代码片段显示 -->

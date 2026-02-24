@@ -99,9 +99,9 @@ const isSelected = (index) => {
   return userAnswers.includes(currentLetter)
 }
 
-// 检查选项是否被选中但错误
+// 检查选项是否被选中但错误（仅在提交后显示）
 const isSelectedWrong = (index) => {
-  return isSelected(index) && !isCorrectOption(index)
+  return props.isSubmitted && isSelected(index) && !isCorrectOption(index)
 }
 
 // 检查选项是否部分正确（部分选中但未全对）
@@ -211,7 +211,7 @@ defineExpose({
           <div class="option-marker">
             <span class="marker-inner">
               <template v-if="isSelected(idx)">
-                <span v-if="isCorrectOption(idx)">✓</span>
+                <span v-if="isSubmitted && isCorrectOption(idx)">✓</span>
                 <span v-else>•</span>
               </template>
             </span>
