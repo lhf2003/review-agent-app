@@ -1,18 +1,16 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { TrendCharts, Document, WarningFilled } from '@element-plus/icons-vue'
+import { Document } from '@element-plus/icons-vue'
 import QuizHistoryPage from './QuizHistoryPage.vue'
 import QuizDetailPage from './QuizDetailPage.vue'
 import MistakeListPane from '../../components/quiz/MistakeListPane.vue'
 import MistakeDetailPane from '../../components/quiz/MistakeDetailPane.vue'
-import TrendsSection from '../../components/quiz/TrendsSection.vue'
 import RecommendationsPage from './RecommendationsPage.vue'
-import { useAchievements } from '../profile/composables/useAchievements'
 import { api } from '../../api/http'
 
 const router = useRouter()
-const activeView = ref('recommendations') // recommendations, history, trends, mistake - 智能推荐为默认视图
+const activeView = ref('recommendations') // recommendations, history, mistake - 智能推荐为默认视图
 const currentQuizId = ref('')
 const mistakeCount = ref(0)
 const recommendationCount = ref(0)
@@ -21,9 +19,6 @@ const recommendationCount = ref(0)
 const currentMistakeId = ref(null)
 const currentQuestionId = ref(null)
 const mistakeListPaneRef = ref(null)
-
-// 复用成就数据逻辑
-const { achievementsData, loading, loadAchievementsData } = useAchievements()
 
 function handleSelectQuiz(quizId) {
   currentQuizId.value = quizId
@@ -86,7 +81,6 @@ function handleStartReviewFromRecommendations(data) {
 }
 
 onMounted(() => {
-  loadAchievementsData()
   loadMistakeCount()
   loadRecommendationCount()
 })
@@ -112,8 +106,6 @@ onMounted(() => {
              错题本
              <span v-if="mistakeCount > 0" class="mistake-badge-text">({{ mistakeCount }})</span>
            </el-radio-button>
-
-          <el-radio-button value="trends">趋势分析</el-radio-button>
          </el-radio-group>
        </div>
     </div>
@@ -154,17 +146,6 @@ onMounted(() => {
                  <p>点击左侧列表中的习题记录，在此处查看详细解析</p>
                </div>
              </Transition>
-           </div>
-        </div>
-        
-        <!-- 趋势分析 -->
-        <div v-else-if="activeView === 'trends'" key="trends" class="view-container">
-           <div class="trends-wrapper">
-             <div class="page-header">
-               <h1 class="page-title">学习趋势分析</h1>
-               <p class="page-subtitle">追踪您的学习进度与知识掌握情况</p>
-             </div>
-             <TrendsSection :achievements-data="achievementsData" :loading="loading" />
            </div>
         </div>
 
@@ -366,43 +347,6 @@ onMounted(() => {
   font-size: 14px;
   margin: 0;
   max-width: 300px;
-}
-
-/* ============ Trends Wrapper ============ */
-.trends-wrapper {
-  height: 100%;
-  overflow-y: auto;
-  border-radius: 16px;
-  max-width: 1200px;
-  margin: 0 auto;
-  box-sizing: border-box;
-  padding: 16px;
-}
-
-.embedded-page-wrapper {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 16px;
-  box-sizing: border-box;
-  padding: 16px;
-}
-
-.page-header {
-  margin-bottom: 32px;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: var(--el-text-color-primary);
-}
-
-.page-subtitle {
-  font-size: 16px;
-  color: var(--el-text-color-secondary);
-  margin: 0;
 }
 
 /* ============ Glassmorphism ============ */
