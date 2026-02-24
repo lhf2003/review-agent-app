@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 import { Document, Select, UploadFilled, Close } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 import AnalysisLoadingModal from '../components/AnalysisLoadingModal.vue'
+import CustomScroll from '../components/CustomScroll.vue'
 import GeminiIcon from '../../public/icons/gemini-color.svg'
 import OpenAIIcon from '../../public/icons/openai.svg'
 
@@ -304,7 +305,9 @@ function handleRetry(fileId) {
 
     <!-- 表格区域 -->
     <div class="table-wrapper">
-      <el-table id="data-table" :data="tableData" v-loading="loading" style="width: 100%; max-width: 100%;" row-key="id" size="small" class="glass-table">
+      <div class="table-scroll-wrapper">
+        <CustomScroll>
+          <el-table id="data-table" :data="tableData" v-loading="loading" style="width: 100%; max-width: 100%;" row-key="id" size="small" class="glass-table">
         <template #empty>
             <el-empty description="暂无数据" :image-size="100" />
         </template>
@@ -333,6 +336,8 @@ function handleRetry(fileId) {
           </template>
         </el-table-column>
       </el-table>
+        </CustomScroll>
+      </div>
     </div>
 
     <!-- 分页导航 -->
@@ -538,8 +543,9 @@ function handleRetry(fileId) {
   min-height: 0;
   border-radius: 16px;
   overflow: hidden;
-  overflow-x: auto;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
 
   /* Glass Effect */
   background: rgba(255, 255, 255, 0.6);
@@ -549,6 +555,12 @@ function handleRetry(fileId) {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.table-scroll-wrapper {
+  flex-grow: 1;
+  height: 0;
+  overflow-y: hidden;
 }
 
 /* Dark Mode Table Wrapper */
