@@ -98,6 +98,15 @@ export const quizApi = {
   },
 
   /**
+   * 根据题目ID获取错题详情（精确查询）
+   * @param {number} questionId - 题目ID
+   */
+  getMistakeByQuestionId(questionId) {
+    return request(`/mistake-book/question/${questionId}`)
+      .catch(() => null)
+  },
+
+  /**
    * 获取错题统计
    */
   getMistakeStats() {
@@ -125,6 +134,35 @@ export const quizApi = {
    */
   deleteMistakes(questionIds) {
     return request('/mistake-book/delete', { method: 'DELETE', body: { questionIds } })
+  },
+
+  /**
+   * 稍后复习（延迟复习提醒）
+   * @param {number} mistakeId - 错题ID
+   * @param {number} hours - 延迟小时数（默认24小时）
+   */
+  snoozeReview(mistakeId, hours = 24) {
+    return request('/mistake-book/snooze', {
+      method: 'POST',
+      body: { mistakeId, hours }
+    })
+  },
+
+  /**
+   * 获取错题答题历史
+   * @param {number} mistakeId - 错题ID
+   */
+  getMistakeHistory(mistakeId) {
+    console.log('[quizApi] 请求错题历史，mistakeId:', mistakeId)
+    return request(`/mistake-book/history/${mistakeId}`)
+      .then(data => {
+        console.log('[quizApi] 错题历史响应:', data)
+        return Array.isArray(data) ? data : []
+      })
+      .catch(error => {
+        console.error('[quizApi] 获取错题历史失败:', error)
+        return []
+      })
   },
 
   // ========== 学习仪表盘 ==========

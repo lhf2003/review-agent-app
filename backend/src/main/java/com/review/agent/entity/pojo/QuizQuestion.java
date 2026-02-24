@@ -1,7 +1,7 @@
 package com.review.agent.entity.pojo;
 
+import com.review.agent.common.enums.QuestionType;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 

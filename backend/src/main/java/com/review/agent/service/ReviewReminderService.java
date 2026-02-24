@@ -202,17 +202,19 @@ public class ReviewReminderService {
      * @return 习题复习列表
      */
     private List<PendingReviewVO> getPendingQuizReviews(Long userId) {
-        // 获取用户所有已完成的测验
-        List<QuizRecord> completedQuizzes = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
+        // 获取用户所有已完成的测验（按做题时间排序）
+        List<QuizRecord> completedQuizzes = quizRecordRepository.findAllByUserIdAndStatusOrderBySubmitTimeAsc(userId, 1);
         List<PendingReviewVO> result = new ArrayList<>();
 
         for (QuizRecord quiz : completedQuizzes) {
             // 只建议复习分数低于80分的测验
             if (quiz.getTotalScore() != null && quiz.getTotalScore() < 80) {
+                // 使用做题时间计算复习间隔
+                LocalDateTime baseTime = quiz.getSubmitTime() != null ? quiz.getSubmitTime() : quiz.getCreatedTime();
                 // 计算复习阶段
-                int reviewStage = calculateReviewStage(quiz.getCreatedTime(), quiz.getUpdatedTime());
+                int reviewStage = calculateReviewStage(baseTime, quiz.getUpdatedTime());
                 LocalDateTime nextReviewTime = calculateNextReviewTime(
-                        quiz.getUpdatedTime() != null ? quiz.getUpdatedTime() : quiz.getCreatedTime(),
+                        quiz.getUpdatedTime() != null ? quiz.getUpdatedTime() : baseTime,
                         reviewStage
                 );
 

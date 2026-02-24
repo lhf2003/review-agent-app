@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Clock, WarningFilled, TrendCharts, Right, PriceTag, Close } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { quizApi } from '../../api/quiz.js'
 
 /**
  * 复习推荐卡片组件
@@ -16,8 +18,7 @@ const props = defineProps({
     validator: (value) => {
       return value &&
              typeof value.mistakeId !== 'undefined' &&
-             typeof value.questionId !== 'undefined' &&
-             typeof value.priority !== 'undefined'
+             typeof value.questionId !== 'undefined'
     }
   },
   // 紧凑模式
@@ -31,13 +32,23 @@ const emit = defineEmits(['start-review', 'dismiss'])
 
 const router = useRouter()
 
-// 计算遗忘天数
+// 计算遗忘天数(修复版:避免整数除法精度丢失)
 const daysUntilForget = computed(() => {
   if (!props.recommendation.nextReviewDate) return 0
   const now = new Date()
   const reviewDate = new Date(props.recommendation.nextReviewDate)
   const diff = reviewDate - now
-  return Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  // 转换为小时再判断,避免整数除法精度丢失
+  const hours = diff / (1000 * 60 * 60)
+
+  if (hours < 0) {
+    // 逾期:返回负的天数(保留一位小数)
+    return parseFloat((hours / 24).toFixed(1))
+  }
+
+  // 未逾期:向上取整天数(保守估计)
+  return Math.ceil(hours / 24)
 })
 
 // 计算紧急程度
@@ -91,13 +102,19 @@ const cardClasses = computed(() => {
   }
 })
 
-// 获取推荐原因
+// 获取推荐原因(优化版:精确显示逾期时间)
 const recommendationReason = computed(() => {
   const days = daysUntilForget.value
   const mistakeCount = props.recommendation.mistakeCount || 1
 
   if (days < 0) {
-    return `逾期 ${Math.abs(days)} 天 · 错误 ${mistakeCount} 次`
+    // 逾期情况
+    const absDays = Math.abs(days)
+    if (absDays < 1) {
+      const hours = Math.round(absDays * 24)
+      return hours === 0 ? '刚刚逾期' : `逾期 ${hours} 小时 · 错误 ${mistakeCount} 次`
+    }
+    return `逾期 ${Math.floor(absDays)} 天 · 错误 ${mistakeCount} 次`
   } else if (days === 0) {
     return '今天到期 · 建议立即复习'
   } else if (days === 1) {
@@ -112,10 +129,17 @@ function handleStartReview() {
   emit('start-review', props.recommendation)
 }
 
-// 忽略推荐
-function handleDismiss(event) {
+// 忽略推荐（稍后复习）
+async function handleDismiss(event) {
   event.stopPropagation()
-  emit('dismiss', props.recommendation)
+
+  try {
+    await quizApi.snoozeReview(props.recommendation.mistakeId, 24)
+    emit('dismiss', props.recommendation)
+  } catch (error) {
+    console.error('延迟复习失败:', error)
+    ElMessage.error('操作失败,请稍后重试')
+  }
 }
 
 // 格式化日期
@@ -160,7 +184,6 @@ function formatQuestionType(type) {
           <el-icon :size="12"><component :is="urgencyConfig.icon" /></el-icon>
           <span class="status-label">{{ urgencyConfig.label }}</span>
         </div>
-        <span class="priority-text">优先级 {{ recommendation.priority }}</span>
       </div>
       <div class="header-right">
         <span class="review-date">{{ formatDate(recommendation.nextReviewDate) }}</span>
@@ -212,7 +235,7 @@ function formatQuestionType(type) {
         v-if="!compact"
         class="action-btn dismiss-btn"
         @click.stop="handleDismiss"
-        title="稍后复习"
+        title="稍后复习（24小时后提醒）"
       >
         <el-icon><Close /></el-icon>
       </button>
@@ -272,12 +295,6 @@ function formatQuestionType(type) {
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
-}
-
-.priority-text {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  font-weight: 500;
 }
 
 .review-date {
@@ -432,7 +449,6 @@ html.dark .review-card {
     color: rgba(255, 255, 255, 0.75) !important;
   }
 
-  .priority-text,
   .review-date {
     color: rgba(255, 255, 255, 0.65) !important;
   }

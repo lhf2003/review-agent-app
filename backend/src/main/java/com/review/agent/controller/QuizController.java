@@ -40,13 +40,10 @@ public class QuizController {
     /**
      * 为指定合集生成测验
      *
-     * @param body 包含 collectionId
      * @return 生成的测验
      */
     @PostMapping("/collection/{collectionId}/generate")
-    public BaseResponse<QuizVo> generateQuiz(
-            @PathVariable Long collectionId
-    ) {
+    public BaseResponse<QuizVo> generateQuiz(@PathVariable Long collectionId) {
         Long userId = securityUtils.getCurrentUserId();
         QuizRecord record = quizService.generateQuiz(userId, collectionId);
         List<QuizQuestion> questions = quizService.getQuizQuestions(record.getId());

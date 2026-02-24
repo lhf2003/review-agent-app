@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api/http'
+import { quizApi } from '../../api/quiz.js'
 import QuestionRenderer from './QuestionRenderer.vue'
 
 /**
@@ -44,22 +45,45 @@ async function loadQuestionDetail() {
 
   loading.value = true
   try {
-    // 获取题目详情（复用错题列表接口的数据）
-    const mistakeList = await api.getMistakeList('all')
-    const target = mistakeList.find(m => m.questionId === props.questionId)
+    // 通过questionId精确查询错题详情
+    console.log('[MistakeDrawer] 精确查询错题详情，questionId:', props.questionId)
+    const target = await quizApi.getMistakeByQuestionId(props.questionId)
 
     if (target) {
       questionDetail.value = target
-      // TODO: 后端需要提供错题历史数据接口
-      mistakeHistory.value = []
+
+      // 获取错误历史
+      console.log('[MistakeDrawer] 获取错题历史，mistakeId:', target.id)
+      const history = await quizApi.getMistakeHistory(target.id)
+      console.log('[MistakeDrawer] 错题历史数据:', history)
+
+      mistakeHistory.value = history.map(h => ({
+        date: h.createdTime,
+        wrongAnswer: h.wrongAnswer || '-',
+        correctAnswer: h.correctAnswer || '-',
+        timeSpent: h.timeSpent || 0,
+        isCorrect: h.isCorrect
+      }))
+
+      // 计算知识点掌握度
+      const totalAttempts = history.length
+      const correctCount = history.filter(h => h.isCorrect).length
+      const correctRate = totalAttempts > 0
+        ? Math.round((correctCount / totalAttempts) * 100)
+        : 0
+
       knowledgeMastery.value = {
         knowledgePoint: target.knowledgePoint,
-        masteryLevel: target.mastered ? '已掌握' : '学习中',
-        correctRate: target.mastered ? 100 : 30 + Math.floor(Math.random() * 40),
+        masteryLevel: target.mastered ? '已掌握' : (correctRate >= 70 ? '良好' : '学习中'),
+        correctRate,
         lastReview: target.lastMistakeTime
       }
+    } else {
+      console.warn('[MistakeDrawer] 未找到错题记录，questionId:', props.questionId)
+      ElMessage.warning('未找到该题目的错题记录')
     }
   } catch (e) {
+    console.error('[MistakeDrawer] 加载题目详情失败:', e)
     ElMessage.error('加载题目详情失败: ' + e.message)
   } finally {
     loading.value = false
@@ -255,13 +279,21 @@ watch(() => props.visible, (newVal) => {
           <el-badge :value="mistakeHistory.length" type="danger" />
         </div>
         <div class="history-list">
+          <el-empty
+            v-if="mistakeHistory.length === 0"
+            description="暂无错误历史记录"
+            :image-size="100"
+          />
           <div
             v-for="(record, index) in mistakeHistory"
+            v-else
             :key="index"
             class="history-item"
           >
             <div class="history-icon">
-              <el-icon color="#f56c6c"><Close /></el-icon>
+              <el-icon :color="record.isCorrect ? '#67c23a' : '#f56c6c'">
+                <component :is="record.isCorrect ? 'Check' : 'Close'" />
+              </el-icon>
             </div>
             <div class="history-content">
               <div class="history-date">{{ formatDate(record.date) }}</div>

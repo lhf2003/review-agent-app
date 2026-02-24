@@ -1,6 +1,9 @@
 package com.review.agent.repository;
 
+import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.pojo.NotificationSettings;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -1,5 +1,6 @@
 package com.review.agent.entity.pojo;
 
+import com.review.agent.common.enums.QuestionType;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 

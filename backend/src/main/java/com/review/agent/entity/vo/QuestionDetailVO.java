@@ -1,6 +1,6 @@
 package com.review.agent.entity.vo;
 
-import com.review.agent.entity.pojo.QuestionType;
+import com.review.agent.common.enums.QuestionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

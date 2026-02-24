@@ -5,8 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.review.agent.entity.pojo.AnalysisCollection;
 import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.pojo.CollectionRelation;
-import com.review.agent.entity.pojo.KnowledgeMastery;
-import com.review.agent.entity.pojo.QuestionType;
+import com.review.agent.common.enums.QuestionType;
 import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.pojo.QuizRecord;
 import com.review.agent.entity.request.BatchSubmitRequest;
@@ -16,7 +15,6 @@ import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.CollectionRelationRepository;
 import com.review.agent.repository.QuizQuestionRepository;
 import com.review.agent.repository.QuizRecordRepository;
-import com.review.agent.common.utils.SecurityUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -236,10 +234,17 @@ public class QuizService {
         }
         quizQuestionRepository.save(question);
 
-        // Record in mistake book if incorrect
-        if (!isCorrect) {
-            mistakeBookService.recordAnswer(questionId, false, question.getQuizId());
-        }
+        // Record answer history (包含详细答题信息)
+        String wrongAnswer = isCorrect ? null : userAnswer;
+        String correctAnswer = question.getCorrectAnswer();
+        mistakeBookService.recordAnswerHistory(
+                questionId,
+                isCorrect,
+                wrongAnswer,
+                correctAnswer,
+                null, // timeSpent 暂时为 null，因为单个提交没有记录时间
+                question.getQuizId()
+        );
 
         // Update knowledge mastery
         if (question.getKnowledgePoint() != null) {
@@ -298,9 +303,19 @@ public class QuizService {
                     correct++;
                 } else {
                     incorrect++;
-                    // 记录到错题本
-                    mistakeBookService.recordAnswer(qa.getQuestionId(), false, quizId);
                 }
+
+                // 记录答题历史（包含详细答题信息）
+                String wrongAnswer = isCorrect ? null : qa.getUserAnswer();
+                String correctAnswer = question.getCorrectAnswer();
+                mistakeBookService.recordAnswerHistory(
+                        qa.getQuestionId(),
+                        isCorrect,
+                        wrongAnswer,
+                        correctAnswer,
+                        qa.getTimeSpent(), // 从请求中获取答题用时
+                        quizId
+                );
 
                 // 更新知识点掌握度
                 if (question.getKnowledgePoint() != null) {
@@ -318,6 +333,9 @@ public class QuizService {
 
         // 5. 更新测验记录状态为已完成
         quizRecord.setStatus(1); // Completed
+
+        // 设置做题时间（用户提交答案的时间）
+        quizRecord.setSubmitTime(LocalDateTime.now());
 
         // 计算总分（百分制）
         int totalQuestions = answers.size();
@@ -858,13 +876,17 @@ public class QuizService {
      * @return 测验分数趋势列表（按时间升序）
      */
     private List<QuizStatsVO.QuizScoreTrendVo> getQuizScoreTrend(Long userId) {
-        List<QuizRecord> quizRecords = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
+        List<QuizRecord> quizRecords = quizRecordRepository.findAllByUserIdAndStatusOrderBySubmitTimeAsc(userId, 1);
 
         return quizRecords.stream()
-            .map(record -> QuizStatsVO.QuizScoreTrendVo.builder()
-                .date(record.getCreatedTime().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                .score(record.getTotalScore())
-                .build())
+            .map(record -> {
+                // 使用做题时间（submitTime）而不是创建时间
+                LocalDateTime timeToUse = record.getSubmitTime() != null ? record.getSubmitTime() : record.getCreatedTime();
+                return QuizStatsVO.QuizScoreTrendVo.builder()
+                    .date(timeToUse.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                    .score(record.getTotalScore())
+                    .build();
+            })
             .collect(Collectors.toList());
     }
 
@@ -875,8 +897,8 @@ public class QuizService {
      * @return 知识点掌握度列表（按正确率降序）
      */
     private List<QuizStatsVO.KnowledgeMasteryVo> getKnowledgeMastery(Long userId) {
-        // 查询用户所有已完成测验的问题
-        List<QuizRecord> quizRecords = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
+        // 查询用户所有已完成测验的问题（按做题时间排序）
+        List<QuizRecord> quizRecords = quizRecordRepository.findAllByUserIdAndStatusOrderBySubmitTimeAsc(userId, 1);
 
         if (quizRecords.isEmpty()) {
             return Collections.emptyList();
@@ -974,7 +996,7 @@ public class QuizService {
         LocalDateTime startTime = LocalDateTime.now().minusDays(range);
         LocalDateTime endTime = LocalDateTime.now();
 
-        List<QuizRecord> quizRecords = quizRecordRepository.findByUserIdAndTimeRange(userId, startTime, endTime);
+        List<QuizRecord> quizRecords = quizRecordRepository.findByUserIdAndSubmitTimeRange(userId, startTime, endTime);
 
         if (quizRecords.isEmpty()) {
             return Collections.emptyList();
@@ -994,12 +1016,16 @@ public class QuizService {
             ));
 
         return quizRecords.stream()
-            .map(record -> LearningDashboardVO.ScoreTrendItem.builder()
-                .date(record.getCreatedTime())
-                .score(record.getTotalScore())
-                .quizId(record.getId())
-                .collectionName(collectionNameMap.get(record.getCollectionId()))
-                .build())
+            .map(record -> {
+                // 使用做题时间（submitTime）而不是创建时间
+                LocalDateTime timeToUse = record.getSubmitTime() != null ? record.getSubmitTime() : record.getCreatedTime();
+                return LearningDashboardVO.ScoreTrendItem.builder()
+                    .date(timeToUse)
+                    .score(record.getTotalScore())
+                    .quizId(record.getId())
+                    .collectionName(collectionNameMap.get(record.getCollectionId()))
+                    .build();
+            })
             .collect(Collectors.toList());
     }
 
@@ -1034,13 +1060,15 @@ public class QuizService {
      */
     private Map<String, Integer> getLearningHeatmap(Long userId) {
         LocalDateTime startTime = LocalDateTime.now().minusMonths(12);
-        List<QuizRecord> records = quizRecordRepository.findRecentYearRecords(userId, startTime);
+        List<QuizRecord> records = quizRecordRepository.findRecentYearBySubmitTimeRecords(userId, startTime);
 
         Map<String, Integer> heatmap = new HashMap<>();
         java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         for (QuizRecord record : records) {
-            String dateKey = record.getCreatedTime().format(formatter);
+            // 使用做题时间（submitTime）而不是创建时间
+            LocalDateTime timeToUse = record.getSubmitTime() != null ? record.getSubmitTime() : record.getCreatedTime();
+            String dateKey = timeToUse.format(formatter);
             heatmap.put(dateKey, heatmap.getOrDefault(dateKey, 0) + 1);
         }
 
@@ -1055,7 +1083,7 @@ public class QuizService {
      */
     private Map<String, Integer> getTimeDistribution(Long userId) {
         LocalDateTime startTime = LocalDateTime.now().minusMonths(3); // 最近3个月
-        List<QuizRecord> records = quizRecordRepository.findRecentYearRecords(userId, startTime);
+        List<QuizRecord> records = quizRecordRepository.findRecentYearBySubmitTimeRecords(userId, startTime);
 
         Map<String, Integer> distribution = new HashMap<>();
         distribution.put("凌晨", 0);
@@ -1064,7 +1092,9 @@ public class QuizService {
         distribution.put("晚上", 0);
 
         for (QuizRecord record : records) {
-            int hour = record.getCreatedTime().getHour();
+            // 使用做题时间（submitTime）而不是创建时间
+            LocalDateTime timeToUse = record.getSubmitTime() != null ? record.getSubmitTime() : record.getCreatedTime();
+            int hour = timeToUse.getHour();
             String period = getTimePeriod(hour);
             distribution.put(period, distribution.get(period) + 1);
         }
@@ -1103,10 +1133,10 @@ public class QuizService {
         // 上周开始
         LocalDateTime lastWeekStart = thisWeekStart.minusWeeks(1);
 
-        // 获取本周测验
-        List<QuizRecord> thisWeekRecords = quizRecordRepository.findByUserIdAndTimeRange(userId, thisWeekStart, now);
-        // 获取上周测验
-        List<QuizRecord> lastWeekRecords = quizRecordRepository.findByUserIdAndTimeRange(userId, lastWeekStart, thisWeekStart);
+        // 获取本周测验（按做题时间）
+        List<QuizRecord> thisWeekRecords = quizRecordRepository.findByUserIdAndSubmitTimeRange(userId, thisWeekStart, now);
+        // 获取上周测验（按做题时间）
+        List<QuizRecord> lastWeekRecords = quizRecordRepository.findByUserIdAndSubmitTimeRange(userId, lastWeekStart, thisWeekStart);
 
         // 计算本周统计
         int thisWeekQuizCount = thisWeekRecords.size();

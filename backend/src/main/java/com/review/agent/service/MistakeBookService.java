@@ -1,9 +1,12 @@
 package com.review.agent.service;
 
 import com.review.agent.entity.pojo.Mistake;
+import com.review.agent.entity.pojo.MistakeHistory;
 import com.review.agent.entity.pojo.QuizQuestion;
+import com.review.agent.entity.vo.MistakeHistoryVO;
 import com.review.agent.entity.vo.MistakeVo;
 import com.review.agent.entity.vo.ReviewRecommendationVO;
+import com.review.agent.repository.MistakeHistoryRepository;
 import com.review.agent.repository.MistakeRepository;
 import com.review.agent.repository.QuizQuestionRepository;
 import com.review.agent.common.utils.SecurityUtils;
@@ -32,6 +35,9 @@ public class MistakeBookService {
 
     @Resource
     private QuizQuestionRepository quizQuestionRepository;
+
+    @Resource
+    private MistakeHistoryRepository mistakeHistoryRepository;
 
     @Resource
     private SecurityUtils securityUtils;
@@ -80,6 +86,63 @@ public class MistakeBookService {
                 mistakeRepository.save(mistake);
                 log.info("用户 {} 错题 {} 次数更新为 {}", userId, questionId, mistake.getMistakeCount());
             }
+        }
+    }
+
+    /**
+     * 记录答题历史（包含详细的答题信息）
+     *
+     * @param questionId 题目ID
+     * @param isCorrect 是否正确
+     * @param wrongAnswer 错误答案（可选）
+     * @param correctAnswer 正确答案（可选）
+     * @param timeSpent 答题用时（秒，可选）
+     * @param quizId 来源测验ID（可选）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void recordAnswerHistory(Long questionId, boolean isCorrect,
+                                     String wrongAnswer, String correctAnswer,
+                                     Integer timeSpent, Long quizId) {
+        Long userId = securityUtils.getCurrentUserId();
+
+        // 先调用原有的错题记录逻辑
+        recordAnswer(questionId, isCorrect, quizId);
+
+        // 获取或创建错题记录ID
+        List<Mistake> mistakes = mistakeRepository.findByUserIdAndQuestionId(userId, questionId);
+        Long mistakeId = null;
+
+        if (mistakes.isEmpty()) {
+            // 如果没有错题记录且答错了，创建一个新的
+            if (!isCorrect) {
+                Mistake newMistake = new Mistake();
+                newMistake.setUserId(userId);
+                newMistake.setQuestionId(questionId);
+                newMistake.setQuizId(quizId);
+                newMistake.setMistakeCount(1);
+                newMistake.setLastMistakeTime(LocalDateTime.now());
+                newMistake.setMastered(false);
+                newMistake = mistakeRepository.save(newMistake);
+                mistakeId = newMistake.getId();
+            }
+        } else {
+            mistakeId = mistakes.get(0).getId();
+        }
+
+        // 只有存在错题记录时才记录历史
+        if (mistakeId != null) {
+            MistakeHistory history = new MistakeHistory();
+            history.setUserId(userId);
+            history.setMistakeId(mistakeId);
+            history.setQuestionId(questionId);
+            history.setQuizId(quizId);
+            history.setWrongAnswer(wrongAnswer);
+            history.setCorrectAnswer(correctAnswer);
+            history.setTimeSpent(timeSpent);
+            history.setIsCorrect(isCorrect);
+            mistakeHistoryRepository.save(history);
+
+            log.info("记录答题历史：用户 {} 题目 {} 结果 {}", userId, questionId, isCorrect);
         }
     }
 
@@ -181,8 +244,21 @@ public class MistakeBookService {
             return new ArrayList<>();
         }
 
-        // 2. 获取关联的题目信息
-        List<Long> questionIds = unmasteredMistakes.stream()
+        // 2. 过滤掉在延迟期内的错题
+        LocalDateTime now = LocalDateTime.now();
+        List<Mistake> activeMistakes = unmasteredMistakes.stream()
+                .filter(m -> {
+                        if (m.getSnoozedUntil() == null) return true;
+                        return m.getSnoozedUntil().isBefore(now);
+                })
+                .toList();
+
+        if (activeMistakes.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 3. 获取关联的题目信息
+        List<Long> questionIds = activeMistakes.stream()
                 .map(Mistake::getQuestionId)
                 .distinct()
                 .toList();
@@ -191,11 +267,10 @@ public class MistakeBookService {
         Map<Long, QuizQuestion> questionMap = questions.stream()
                 .collect(Collectors.toMap(QuizQuestion::getId, q -> q));
 
-        // 3. 计算推荐优先级（基于遗忘曲线）
+        // 4. 计算推荐优先级（基于遗忘曲线）
         List<ReviewRecommendationVO> recommendations = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
 
-        for (Mistake mistake : unmasteredMistakes) {
+        for (Mistake mistake : activeMistakes) {
             QuizQuestion question = questionMap.get(mistake.getQuestionId());
             if (question == null) continue;
 
@@ -203,7 +278,7 @@ public class MistakeBookService {
                             .mistakeId(mistake.getId())
                             .questionId(mistake.getQuestionId())
                             .questionText(question.getQuestionText())
-                            .questionType(question.getQuestionType() != null ? question.getQuestionType().name() : null)
+                            .questionType(question.getQuestionType() != null ? question.getQuestionType().getCode() : null)
                             .knowledgePoint(question.getKnowledgePoint())
                             .build();
 
@@ -233,7 +308,7 @@ public class MistakeBookService {
 
         // 5. 限制返回数量（最多20条）
         List<com.review.agent.entity.vo.ReviewRecommendationVO> result =
-                recommendations.stream().limit(20).collect(Collectors.toList());
+                recommendations.stream().limit(20).toList();
 
         log.info("用户 {} 复习推荐数量：{}", userId, result.size());
         return result;
@@ -301,6 +376,40 @@ public class MistakeBookService {
             mistakeRepository.save(mistake);
             log.info("用户 {} 已掌握题目 {}", userId, questionId);
         }
+    }
+
+    /**
+     * 稍后复习(延迟复习提醒)
+     * 将错题的复习提醒延迟指定小时数,最多延迟3次
+     *
+     * @param mistakeId 错题ID
+     * @param hours 延迟小时数(1-24小时)
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void snoozeReview(Long mistakeId, Integer hours) {
+        Long userId = securityUtils.getCurrentUserId();
+
+        // 验证错题所有权
+        Mistake mistake = mistakeRepository.findById(mistakeId)
+                .orElseThrow(() -> new IllegalArgumentException("错题不存在"));
+
+        if (!mistake.getUserId().equals(userId)) {
+                throw new IllegalArgumentException("无权操作此错题");
+        }
+
+        // 检查延迟次数限制(最多3次)
+        int snoozeCount = mistake.getSnoozeCount() != null ? mistake.getSnoozeCount() : 0;
+        if (snoozeCount >= 3) {
+                throw new IllegalArgumentException("延迟复习次数已达上限(3次)");
+        }
+
+        // 设置延迟时间
+        LocalDateTime snoozedUntil = LocalDateTime.now().plusHours(hours);
+        mistake.setSnoozedUntil(snoozedUntil);
+        mistake.setSnoozeCount(snoozeCount + 1);
+        mistakeRepository.save(mistake);
+
+        log.info("用户 {} 延迟复习错题 {} {} 小时", userId, mistakeId, hours);
     }
 
     /**
@@ -386,6 +495,46 @@ public class MistakeBookService {
     }
 
     /**
+     * 根据题目ID获取错题详情（精确查询）
+     *
+     * @param userId 用户ID
+     * @param questionId 题目ID
+     * @return 错题VO，如果不存在返回null
+     */
+    public MistakeVo getMistakeByQuestionId(Long userId, Long questionId) {
+        List<Mistake> mistakes = mistakeRepository.findByUserIdAndQuestionId(userId, questionId);
+
+        if (mistakes.isEmpty()) {
+            return null;
+        }
+
+        Mistake mistake = mistakes.get(0);
+
+        // 获取题目详情
+        QuizQuestion question = quizQuestionRepository.findById(questionId).orElse(null);
+        if (question == null) {
+            return null;
+        }
+
+        // 转换为VO
+        return MistakeVo.builder()
+                .id(mistake.getId())
+                .questionId(mistake.getQuestionId())
+                .questionText(question.getQuestionText())
+                .questionType(question.getQuestionType() != null ? question.getQuestionType().name() : null)
+                .optionsJson(question.getOptionsJson())
+                .correctAnswer(question.getCorrectAnswer())
+                .explanation(question.getExplanation())
+                .knowledgePoint(question.getKnowledgePoint())
+                .mistakeCount(mistake.getMistakeCount())
+                .lastMistakeTime(mistake.getLastMistakeTime())
+                .mastered(mistake.getMastered())
+                .createdTime(mistake.getCreatedTime())
+                .build();
+    }
+
+
+    /**
      * 批量标记错题为已掌握
      *
      * @param questionIds 题目ID列表
@@ -433,5 +582,39 @@ public class MistakeBookService {
 
         log.info("用户 {} 批量删除 {} 道错题", userId, count);
         return count;
+    }
+
+    /**
+     * 获取错题答题历史
+     *
+     * @param userId 用户ID
+     * @param mistakeId 错题ID
+     * @return 历史记录列表
+     */
+    public List<MistakeHistoryVO> getMistakeHistory(Long userId, Long mistakeId) {
+        // 验证权限
+        Mistake mistake = mistakeRepository.findById(mistakeId)
+                .orElse(null);
+
+        if (mistake == null || !mistake.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("错题不存在或无权访问");
+        }
+
+        // 查询历史记录
+        List<MistakeHistory> historyList =
+                mistakeHistoryRepository.findByMistakeIdOrderByCreatedTimeDesc(mistakeId);
+
+        // 转换为VO
+        return historyList.stream()
+                .map(history -> MistakeHistoryVO.builder()
+                        .id(history.getId())
+                        .mistakeId(history.getMistakeId())
+                        .wrongAnswer(history.getWrongAnswer())
+                        .correctAnswer(history.getCorrectAnswer())
+                        .timeSpent(history.getTimeSpent())
+                        .isCorrect(history.getIsCorrect())
+                        .createdTime(history.getCreatedTime())
+                        .build())
+                .toList();
     }
 }

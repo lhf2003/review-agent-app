@@ -1,4 +1,4 @@
-package com.review.agent.entity.pojo;
+package com.review.agent.common.enums;
 
 /**
  * 题目类型枚举
@@ -34,7 +34,7 @@ public enum QuestionType {
      * 代码识别/调试题
      * 适用于：代码分析、错误排查、逻辑理解
      */
-    CODE_SNIPPET("code_snippet", "代码识别题");
+    CODE_SNIPPET("code_snippet", "代码题");
 
     private final String code;
     private final String displayName;

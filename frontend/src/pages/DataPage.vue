@@ -8,7 +8,6 @@ import { useRouter } from 'vue-router'
 import { Document, Select, UploadFilled, Close } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 import AnalysisLoadingModal from '../components/AnalysisLoadingModal.vue'
-import RecommendationPanel from '../components/collection/RecommendationPanel.vue'
 import GeminiIcon from '../../public/icons/gemini-color.svg'
 import OpenAIIcon from '../../public/icons/openai.svg'
 
@@ -45,15 +44,6 @@ const currentAnalysisFile = ref(null)
 const analysisStage = ref(1)      // 当前阶段：1, 2, 3
 const analysisError = ref(false)  // 是否失败
 let logStream = null
-
-// 智能推荐面板
-const recommendationPanelRef = ref(null)
-const showRecommendation = ref(true)
-
-// 处理推荐创建成功
-function handleRecommendationCreated() {
-  load() // 刷新列表
-}
 
 // 新手引导 Tour
 const showTour = ref(false)
@@ -294,8 +284,8 @@ function handleRetry(fileId) {
       <div class="spacer"></div>
 
       <div class="filter-group" id="filter-group">
-        <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="width: 180px; margin-right: 12px;" />
-        <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 120px" @change="() => { page = 1; load() } ">
+        <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="width: 160px; max-width: 100%;" />
+        <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 110px; max-width: 100%;" @change="() => { page = 1; load() } ">
         <el-option :value="null" label="全部" />
         <el-option :value="0" label="未分析" />
         <el-option :value="2" label="已分析" />
@@ -312,17 +302,9 @@ function handleRetry(fileId) {
       </el-button>
     </div>
 
-    <!-- 智能推荐面板 -->
-    <div class="recommendation-section" v-if="showRecommendation">
-      <RecommendationPanel
-        ref="recommendationPanelRef"
-        @created="handleRecommendationCreated"
-      />
-    </div>
-
     <!-- 表格区域 -->
     <div class="table-wrapper">
-      <el-table id="data-table" :data="tableData" v-loading="loading" style="width:100%; height:100%;" row-key="id" size="small" class="glass-table">
+      <el-table id="data-table" :data="tableData" v-loading="loading" style="width: 100%; max-width: 100%;" row-key="id" size="small" class="glass-table">
         <template #empty>
             <el-empty description="暂无数据" :image-size="100" />
         </template>
@@ -497,25 +479,24 @@ function handleRetry(fileId) {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px; /* Increased gap for better separation */
-  /* Ensure it takes full height of parent */
+  gap: 16px;
   min-height: 0;
-  padding: 0 4px; /* Add slight side padding */
+  padding: 0 4px;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-shrink: 0;
-  background: transparent; /* Transparent to show page bg */
+  background: transparent;
   padding: 4px 0;
-  flex-wrap: wrap; /* Allow wrapping on small screens */
-}
-
-.recommendation-section {
-  flex-shrink: 0;
-  margin-bottom: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
@@ -524,21 +505,27 @@ function handleRetry(fileId) {
   }
 
   .toolbar .el-input {
-    width: 100% !important; /* Full width search on mobile */
-    order: 3; /* Move search to next line */
+    width: 100% !important;
+    max-width: 100%;
+    flex: 1;
+    min-width: 120px;
   }
 
   .toolbar .el-select {
-    width: 120px !important;
-    order: 2;
+    width: auto !important;
+    min-width: 100px;
   }
 
   .toolbar .el-radio-group {
-    order: 1;
+    flex-wrap: wrap;
+  }
+
+  .toolbar .el-radio-button {
+    font-size: 13px;
   }
 
   .spacer {
-    display: none; /* Hide spacer on mobile to let flex-wrap work better */
+    display: none;
   }
 }
 
@@ -548,9 +535,11 @@ function handleRetry(fileId) {
 
 .table-wrapper {
   flex: 1;
-  min-height: 0; /* Crucial for scrolling */
-  border-radius: 16px; /* Apple-style rounded corners */
+  min-height: 0;
+  border-radius: 16px;
   overflow: hidden;
+  overflow-x: auto;
+  max-width: 100%;
 
   /* Glass Effect */
   background: rgba(255, 255, 255, 0.6);
@@ -620,12 +609,14 @@ html.dark :deep(.el-table td.el-table__cell) {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding: 12px 20px;
+  padding: 12px 16px;
   background: #ffffff;
   border-top: none;
-  border-radius: 16px; /* Pill shape */
+  border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
   margin-bottom: 4px;
+  max-width: 100%;
+  overflow: hidden;
   transition: background-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
@@ -634,6 +625,40 @@ html.dark .pagination-bar {
   background: #1c1c1e;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 响应式表格优化 */
+@media (max-width: 768px) {
+  .table-wrapper {
+    border-radius: 12px;
+  }
+
+  :deep(.el-table) {
+    font-size: 13px;
+  }
+
+  :deep(.el-table__cell) {
+    padding: 8px 4px;
+  }
+
+  :deep(.el-table__header-wrapper),
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+
+  .pagination-bar {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .pagination-bar :deep(.el-pagination) {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .pagination-bar :deep(.el-pagination__sizes) {
+    display: none;
+  }
 }
 
 /* Import Dialog Styles */

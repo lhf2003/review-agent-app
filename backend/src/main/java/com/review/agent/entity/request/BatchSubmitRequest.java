@@ -33,5 +33,10 @@ public class BatchSubmitRequest {
          * 用户答案
          */
         private String userAnswer;
+
+        /**
+         * 答题用时（秒）
+         */
+        private Integer timeSpent;
     }
 }

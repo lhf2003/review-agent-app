@@ -31,6 +31,14 @@ public class QuizRecord {
     @Column(name = "created_time")
     private LocalDateTime createdTime;
 
+    /**
+     * 做题时间（用户实际提交答案的时间）
+     * 区别于 created_time（记录创建时间）
+     * 用于学习数据统计和趋势分析
+     */
+    @Column(name = "submit_time")
+    private LocalDateTime submitTime;
+
     @Column(name = "updated_time")
     private LocalDateTime updatedTime;
 

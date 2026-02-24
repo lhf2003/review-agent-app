@@ -109,7 +109,7 @@ async function createQuiz() {
   apiCompleted.value = false
 
   try {
-    const quiz = await api.generateQuiz({ collectionId: info.value.id })
+    const quiz = await api.generateQuiz(info.value.id)
     // API 完成，记录 quizId，等待进度条到 100%
     quizCompletedId.value = quiz.id
     apiCompleted.value = true

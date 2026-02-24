@@ -605,8 +605,8 @@ public class UserService {
                     currentProgress = (int) unlockedAchievementCount;
                     break;
                 case "perfect":
-                    // 查询是否有满分的测验
-                    List<QuizRecord> perfectQuizzes = quizRecordRepository.findAllByUserIdAndStatusOrderByCreatedTimeAsc(userId, 1);
+                    // 查询是否有满分的测验（按做题时间排序）
+                    List<QuizRecord> perfectQuizzes = quizRecordRepository.findAllByUserIdAndStatusOrderBySubmitTimeAsc(userId, 1);
                     shouldUnlock = perfectQuizzes.stream().anyMatch(q -> q.getTotalScore() == 100);
                     currentProgress = perfectQuizzes.stream().anyMatch(q -> q.getTotalScore() == 100) ? 100 : 0;
                     break;

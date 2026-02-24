@@ -48,6 +48,12 @@ public class Mistake {
     @Column(name = "updated_time")
     private LocalDateTime updatedTime;
 
+    @Column(name = "snoozed_until")
+    private LocalDateTime snoozedUntil;
+
+    @Column(name = "snooze_count")
+    private Integer snoozeCount = 0;
+
     @PrePersist
     public void prePersist() {
         if (this.createdTime == null) {

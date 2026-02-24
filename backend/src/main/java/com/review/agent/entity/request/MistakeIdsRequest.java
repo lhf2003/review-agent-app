@@ -17,5 +17,5 @@ public class MistakeIdsRequest {
      * 错题ID列表
      */
     @NotEmpty(message = "错题ID列表不能为空")
-    private List<Long> mistakeIds;
+    private List<Long> questionIds;
 }
