@@ -404,9 +404,25 @@ html.dark .glass-panel {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* 筛选栏深色模式样式 */
+html.dark .filter-bar {
+  background: rgba(40, 40, 42, 0.64);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+
 .mistake-list-pane.is-embedded {
   gap: 12px;
   padding: 0;
+
+  .filter-bar {
+    margin: 0 0 12px 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
 }
 
 // 筛选和搜索栏
@@ -415,9 +431,30 @@ html.dark .glass-panel {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 0 16px;
+  height: 52px;
+  min-height: 52px;
+  margin: -16px -16px 16px -16px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
-  border-radius: 16px;
+  box-sizing: border-box;
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.9);
+
+    html.dark & {
+      background: rgba(50, 50, 52, 0.8);
+    }
+  }
+
+  html.dark & {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
 }
 
 .custom-radio-group {
@@ -434,40 +471,63 @@ html.dark .glass-panel {
   }
 
   :deep(.el-radio-button__inner) {
-    border: none;
-    background: transparent;
-    border-radius: 8px;
-    padding: 6px 12px;
-    margin-right: 0;
-    color: var(--el-text-color-regular);
+    border: none !important;
+    background: transparent !important;
+    border-radius: 8px !important;
+    padding: 6px 12px !important;
+    margin-right: 0 !important;
+    color: #86868b !important;
+    font-size: 13px;
     font-weight: 500;
+    white-space: nowrap;
     transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: none !important;
 
     &:hover {
-      color: var(--el-text-color-primary);
+      color: #1d1d1f !important;
+      background: transparent !important;
     }
   }
 
-  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-    background: rgba(255, 255, 255, 0.9);
-    color: var(--el-text-color-primary);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-    font-weight: 600;
-
-    html.dark & {
-      background: rgba(255, 255, 255, 0.15);
-      color: #f5f5f7;
-    }
+  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner),
+  :deep(.el-radio-button.is-active .el-radio-button__inner) {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #1d1d1f !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+    border-color: transparent !important;
   }
 
   :deep(.el-radio-button) {
     &:first-child .el-radio-button__inner {
-      border-radius: 8px;
+      border-radius: 8px !important;
     }
 
     &:last-child .el-radio-button__inner {
-      border-radius: 8px;
+      border-radius: 8px !important;
     }
+  }
+}
+
+/* 深色模式适配 */
+html.dark .custom-radio-group {
+  :deep(.el-radio-button__inner) {
+    color: #86868b !important;
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+
+    &:hover {
+      color: #f5f5f7 !important;
+      background: transparent !important;
+    }
+  }
+
+  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner),
+  :deep(.el-radio-button.is-active .el-radio-button__inner) {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #f5f5f7 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+    border-color: transparent !important;
   }
 }
 

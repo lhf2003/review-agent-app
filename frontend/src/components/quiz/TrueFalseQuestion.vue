@@ -101,7 +101,15 @@ const handleSelect = (value) => {
 // 监听 props.userAnswer 变化
 watch(() => props.userAnswer, (newAnswer) => {
   if (newAnswer) {
-    selectedValue.value = newAnswer.toLowerCase()
+    const answer = newAnswer.toString().trim().toLowerCase()
+    // 支持多种格式：true/false, 是/否, yes/no, 1/0
+    if (answer === 'true' || answer === '是' || answer === 'yes' || answer === '1') {
+      selectedValue.value = 'true'
+    } else if (answer === 'false' || answer === '否' || answer === 'no' || answer === '0') {
+      selectedValue.value = 'false'
+    } else {
+      selectedValue.value = answer
+    }
   } else {
     // userAnswer 为空或 null 时，重置选中状态
     selectedValue.value = null
@@ -140,11 +148,12 @@ defineExpose({
     <!-- 选项卡片 -->
     <div class="options-container">
       <!-- 选项 -->
-      <div 
+      <div
         class="option-item option-true"
         :class="{
           'is-selected': displayAnswer === 'true' && selectedValue === 'true',
           'is-show-correct': shouldShowCorrect && props.correctAnswer.toLowerCase() === 'true',
+          'is-wrong': isSubmitted && selectedValue === 'true' && !isCorrect,
           'is-hovered': isHoveredTrue,
           'is-disabled': isSubmitted
         }"
@@ -171,11 +180,12 @@ defineExpose({
       </div>
 
       <!-- 否选项 -->
-      <div 
+      <div
         class="option-item option-false"
         :class="{
           'is-selected': displayAnswer === 'false' && selectedValue === 'false',
           'is-show-correct': shouldShowCorrect && props.correctAnswer.toLowerCase() === 'false',
+          'is-wrong': isSubmitted && selectedValue === 'false' && !isCorrect,
           'is-hovered': isHoveredFalse,
           'is-disabled': isSubmitted
         }"
@@ -204,23 +214,30 @@ defineExpose({
 
     <!-- 答题后显示的解析 -->
     <transition name="fade">
-      <div v-if="isSubmitted" class="explanation-box">
+      <div
+        v-if="isSubmitted"
+        class="explanation-box"
+        :class="{ 'is-correct': isCorrect, 'is-wrong': !isCorrect }"
+      >
         <div class="explanation-header">
-          <el-icon>
-            <InfoFilled />
-          </el-icon>
+          <div class="status-icon" :class="isCorrect ? 'is-correct' : 'is-wrong'">
+            <el-icon v-if="isCorrect"><SuccessFilled /></el-icon>
+            <el-icon v-else><CircleCloseFilled /></el-icon>
+          </div>
           <div class="explanation-title">
-            {{ isCorrect ? '答案正确！' : '答案错误' }}
+            {{ isCorrect ? '答案正确' : '答案错误' }}
           </div>
         </div>
         <div class="explanation-content">
-          <!-- 答错时显示正确答案 -->
-          <div v-if="!isCorrect" class="explanation-text">
-            <strong>正确答案：</strong>{{ correctAnswer === 'true' ? '是' : '否' }}
+          <!-- 正确答案 -->
+          <div class="correct-answer-section">
+            <span class="section-label">正确答案</span>
+            <span class="section-value">{{ correctAnswer === 'true' ? '是' : '否' }}</span>
           </div>
-          <!-- 有解析时显示解析内容 -->
+          <!-- 解析内容 -->
           <div v-if="props.hasExplanation && props.explanation" class="explanation-detail">
-            <p><strong>解析：</strong>{{ props.explanation }}</p>
+            <div class="detail-label">解析</div>
+            <div class="detail-content">{{ props.explanation }}</div>
           </div>
         </div>
       </div>
@@ -368,6 +385,29 @@ defineExpose({
 
       .option-value { color: var(--false-color); }
     }
+
+    // 用户选择错误时的样式
+    &.is-selected.is-wrong {
+      border-color: #ff3b30;
+      background: linear-gradient(135deg, rgba(255, 59, 48, 0.15) 0%, rgba(255, 59, 48, 0.08) 100%);
+      box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.1);
+      animation: shake 0.5s ease-in-out;
+      z-index: 3;
+
+      .option-value {
+        color: #ff3b30;
+      }
+
+      .answer-icon {
+        animation: iconPop 0.3s ease both;
+      }
+    }
+
+    @keyframes iconPop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
     
     &.is-show-correct {
       border-color: var(--success-color) !important;
@@ -481,6 +521,21 @@ defineExpose({
       background: rgba(255, 69, 58, 0.2);
 
       .option-value { color: #ff453a; }
+    }
+
+    // 用户选择错误时的深色模式样式
+    .option-item.is-selected.is-wrong {
+      border-color: #ff453a;
+      background: linear-gradient(135deg, rgba(255, 69, 58, 0.25) 0%, rgba(255, 69, 58, 0.15) 100%);
+      box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.15);
+
+      .option-value {
+        color: #ff453a;
+      }
+
+      .answer-icon {
+        animation: iconPop 0.3s ease both;
+      }
     }
   }
 }

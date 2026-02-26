@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Document, ArrowLeft, CircleCheck, CircleClose } from '@element-plus/icons-vue'
+import { Document, ArrowLeft } from '@element-plus/icons-vue'
 import QuestionRenderer from './QuestionRenderer.vue'
 import CustomScroll from '../CustomScroll.vue'
 import { api } from '../../api/http'
@@ -199,29 +199,6 @@ watch(() => props.questionId, (newId) => {
         <p v-if="!currentAnswer" class="submit-hint">请先选择/输入答案</p>
       </div>
 
-      <!-- 提交结果提示 -->
-      <div v-else class="result-section">
-        <div class="result-card" :class="submitResult?.correct ? 'correct' : 'wrong'">
-          <div class="result-header">
-            <el-icon :size="24">
-              <component :is="submitResult?.correct ? 'CircleCheck' : 'CircleClose'" />
-            </el-icon>
-            <span class="result-text">{{ submitResult?.correct ? '回答正确！' : '回答错误' }}</span>
-          </div>
-          <div v-if="!submitResult?.correct" class="result-detail">
-            <div class="correct-answer-display">
-              <span class="label">正确答案：</span>
-              <span class="value">{{ questionDetail.correctAnswer }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 解析展示 -->
-        <div v-if="questionDetail.explanation" class="explanation-section">
-          <div class="explanation-title">答案解析</div>
-          <div class="explanation-content">{{ questionDetail.explanation }}</div>
-        </div>
-      </div>
     </CustomScroll>
   </div>
 </template>
@@ -326,97 +303,11 @@ watch(() => props.questionId, (newId) => {
   }
 }
 
-// 结果区域
-.result-section {
-  margin-top: 16px;
-}
-
-.result-card {
-  padding: 16px 20px;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  &.correct {
-    background: linear-gradient(135deg, rgba(103, 194, 58, 0.1) 0%, rgba(103, 194, 58, 0.05) 100%);
-    border: 1px solid rgba(103, 194, 58, 0.3);
-
-    .result-header {
-      color: var(--el-color-success);
-    }
-  }
-
-  &.wrong {
-    background: linear-gradient(135deg, rgba(245, 108, 108, 0.1) 0%, rgba(245, 108, 108, 0.05) 100%);
-    border: 1px solid rgba(245, 108, 108, 0.3);
-
-    .result-header {
-      color: var(--el-color-danger);
-    }
-  }
-}
-
-.result-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.result-detail {
-  padding-top: 8px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-
-  .correct-answer-display {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    .label {
-      font-size: 13px;
-      color: var(--el-text-color-secondary);
-    }
-
-    .value {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--el-color-success);
-    }
-  }
-}
-
-// 解析区域
-.explanation-section {
-  margin-top: 16px;
-  padding: 16px 20px;
-  background: var(--el-fill-color-light);
-  border-radius: 12px;
-
-  .explanation-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
-    margin-bottom: 8px;
-  }
-
-  .explanation-content {
-    font-size: 14px;
-    color: var(--el-text-color-regular);
-    line-height: 1.6;
-  }
-}
-
 // 深色模式适配
 html.dark {
   .submit-section {
     background: rgba(64, 158, 255, 0.1);
     border-color: rgba(64, 158, 255, 0.3);
-  }
-
-  .result-detail {
-    border-top-color: rgba(255, 255, 255, 0.1);
   }
 }
 </style>

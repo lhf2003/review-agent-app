@@ -142,7 +142,7 @@ onMounted(() => {
         <div v-else-if="activeView === 'history'" key="history" class="view-container split-layout">
            <!-- 左侧列表 -->
            <div class="list-pane glass-panel">
-             <QuizHistoryPage :embedded="true" @select-quiz="handleSelectQuiz" />
+             <QuizHistoryPage :embedded="true" :selected-quiz-id="currentQuizId" @select-quiz="handleSelectQuiz" />
            </div>
            
            <!-- 右侧详情 -->

@@ -157,7 +157,7 @@ onMounted(() => {
             <span class="subtitle-text">习题详情</span>
           </div>
         </div>
-        
+
         <!-- 统计信息 (整合到 Header) -->
         <div class="header-right statistics-inline">
           <div class="stat-item">
@@ -171,15 +171,6 @@ onMounted(() => {
           <div class="stat-item">
             <span class="stat-label">得分</span>
             <span class="stat-value">{{ quizDetail.totalScore || '-' }}</span>
-          </div>
-          <div class="stat-item status-item">
-            <el-tag v-if="quizDetail.isOutdated" type="warning" size="small" effect="dark">已过期</el-tag>
-            <el-tag v-else-if="quizDetail.status === 1" type="success" size="small" effect="dark">已完成</el-tag>
-            <el-tag v-else type="info" size="small" effect="dark">进行中</el-tag>
-          </div>
-          <div class="stat-item time-item">
-            <span class="stat-label">时间</span>
-            <span class="stat-value">{{ quizDetail.createdTime }}</span>
           </div>
         </div>
       </div>
@@ -274,7 +265,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: 0 16px;
+  height: 52px;
+  min-height: 52px;
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -301,11 +294,11 @@ onMounted(() => {
 }
 
 .title-icon {
-  font-size: 26px;
+  font-size: 22px;
   color: var(--el-color-primary);
   background: var(--el-color-primary-light-9);
-  padding: 6px;
-  border-radius: 8px;
+  padding: 4px;
+  border-radius: 6px;
   display: flex;
   transition: all 0.2s ease;
 }

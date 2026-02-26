@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { InfoFilled } from '@element-plus/icons-vue'
+import { InfoFilled, SuccessFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 
 /**
  * 代码识别题组件
@@ -175,7 +175,7 @@ const handleLineClick = (lineIndex, lineNumber) => {
     // 尝试匹配 "line X" 格式
     const match = line.match(/line\s*(\d+)/i)
     if (match) {
-      return `line ${match[2]}`
+      return `line ${match[1]}`
     }
     return line
   })
@@ -194,12 +194,12 @@ watch(() => props.userAnswer, (newAnswer) => {
       // 匹配行号 "line X" 格式
       const lineMatch = answer.match(/line\s*(\d+)/i)
       if (lineMatch) {
-        const lineNum = parseInt(lineMatch[2])
+        const lineNum = parseInt(lineMatch[1])
         // 查找匹配的代码行
         const lineIndex = codeLines.value.findIndex(line => {
           const lineMatch2 = line.match(/line\s*(\d+)/i)
           if (lineMatch2) {
-            return parseInt(lineMatch2[2]) === lineNum
+            return parseInt(lineMatch2[1]) === lineNum
           }
           return false
         })
@@ -295,34 +295,41 @@ defineExpose({
       </div>
     <!-- 答题后显示的解析 -->
     <transition name="fade">
-      <div v-if="isSubmitted" class="explanation-box">
+      <div
+        v-if="isSubmitted"
+        class="explanation-box"
+        :class="{ 'is-correct': isCorrect, 'is-wrong': !isCorrect }"
+      >
         <div class="explanation-header">
-          <el-icon><InfoFilled /></el-icon>
+          <div class="status-icon" :class="isCorrect ? 'is-correct' : 'is-wrong'">
+            <el-icon v-if="isCorrect"><SuccessFilled /></el-icon>
+            <el-icon v-else><CircleCloseFilled /></el-icon>
+          </div>
           <div class="explanation-title">
-            {{ isCorrect ? '答案正确！' : '答案错误' }}
+            {{ isCorrect ? '答案正确' : '答案错误' }}
           </div>
         </div>
         <div class="explanation-content">
-          <div v-if="isCorrect">
-            <div class="explanation-text">
-              <strong>正确答案：</strong>{{ correctAnswer }}
-            </div>
+          <!-- 正确答案 -->
+          <div class="correct-answer-section">
+            <span class="section-label">正确答案</span>
+            <span class="section-value">{{ correctAnswer }}</span>
           </div>
-          <div v-else>
-            <div class="explanation-text">
-              <strong>正确答案：</strong>{{ correctAnswer }}
-            </div>
-            <div v-if="errorLocation" class="explanation-detail">
-              <p><strong>错误位置：</strong>{{ errorLocation }}</p>
-            </div>
+          <!-- 错误位置（如果有） -->
+          <div v-if="errorLocation" class="explanation-detail" style="margin-bottom: 12px; border-left-color: #ff9500;">
+            <div class="detail-label">错误位置</div>
+            <div class="detail-content">{{ errorLocation }}</div>
           </div>
-          
-          <!-- 统一显示解析内容 -->
+          <!-- 解析内容 -->
           <div v-if="explanation" class="explanation-detail">
-            <p><strong>解析：</strong>{{ explanation }}</p>
+            <div class="detail-label">解析</div>
+            <div class="detail-content">{{ explanation }}</div>
           </div>
           <div v-else class="explanation-detail">
-             <p><strong>说明：</strong>{{ isCorrect ? '请找出代码中的问题并选择对应的代码行。' : '您的答案不正确。请再次检查代码。' }}</p>
+            <div class="detail-label">说明</div>
+            <div class="detail-content">
+              {{ isCorrect ? '请找出代码中的问题并选择对应的代码行。' : '您的答案不正确。请再次检查代码。' }}
+            </div>
           </div>
         </div>
       </div>
@@ -491,8 +498,9 @@ defineExpose({
     }
     
     &.is-wrong {
-      background: rgba(255, 59, 48, 0.15);
-      box-shadow: inset 3px 0 0 var(--danger-color);
+      background: linear-gradient(90deg, rgba(255, 59, 48, 0.2) 0%, rgba(255, 59, 48, 0.1) 100%);
+      box-shadow: inset 3px 0 0 var(--danger-color), inset 0 0 0 1px rgba(255, 59, 48, 0.3);
+      animation: shake 0.5s ease-in-out;
     }
     
     &.is-disabled {

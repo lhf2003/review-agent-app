@@ -94,7 +94,7 @@ const isCorrectOption = (index) => {
 // 检查选项是否被用户选中
 const isSelected = (index) => {
   if (!props.userAnswer) return false
-  const userAnswers = props.userAnswer.split(',')
+  const userAnswers = props.userAnswer.split(',').map(a => a.trim().toUpperCase())
   const currentLetter = optionLetters.value(index)
   return userAnswers.includes(currentLetter)
 }
@@ -238,23 +238,30 @@ defineExpose({
 
     <!-- 答题后显示的解析 -->
     <transition name="fade">
-      <div v-if="isSubmitted" class="explanation-box">
+      <div
+        v-if="isSubmitted"
+        class="explanation-box"
+        :class="{ 'is-correct': isCurrentAnswerCorrect, 'is-wrong': !isCurrentAnswerCorrect }"
+      >
         <div class="explanation-header">
-          <el-icon>
-            <InfoFilled />
-          </el-icon>
+          <div class="status-icon" :class="isCurrentAnswerCorrect ? 'is-correct' : 'is-wrong'">
+            <el-icon v-if="isCurrentAnswerCorrect"><SuccessFilled /></el-icon>
+            <el-icon v-else><CircleCloseFilled /></el-icon>
+          </div>
           <div class="explanation-title">
-            {{ isCurrentAnswerCorrect ? '答案正确！' : '答案错误' }}
+            {{ isCurrentAnswerCorrect ? '答案正确' : '答案错误' }}
           </div>
         </div>
         <div class="explanation-content">
-          <!-- 答错时显示正确答案 -->
-          <div v-if="!isCurrentAnswerCorrect" class="explanation-text">
-            <strong>正确答案：</strong>{{ correctAnswer }}
+          <!-- 正确答案 -->
+          <div class="correct-answer-section">
+            <span class="section-label">正确答案</span>
+            <span class="section-value">{{ correctAnswer }}</span>
           </div>
-          <!-- 有解析时显示解析内容 -->
+          <!-- 解析内容 -->
           <div v-if="props.hasExplanation && props.explanation" class="explanation-detail">
-            <p><strong>解析：</strong>{{ props.explanation }}</p>
+            <div class="detail-label">解析</div>
+            <div class="detail-content">{{ props.explanation }}</div>
           </div>
         </div>
       </div>
@@ -369,19 +376,32 @@ defineExpose({
     }
     
     &.is-wrong {
-      background: var(--el-color-danger-light-9);
+      background: linear-gradient(135deg, rgba(245, 108, 108, 0.2) 0%, rgba(245, 108, 108, 0.1) 100%);
+      border: 2px solid var(--danger-color);
+      box-shadow: 0 0 0 4px rgba(245, 108, 108, 0.1);
       animation: shake 0.5s ease-in-out;
+      z-index: 3;
 
       .option-marker {
         background: var(--danger-color);
         border-color: var(--danger-color);
+        box-shadow: 0 2px 8px rgba(245, 108, 108, 0.4);
       }
-      
+
       .option-content {
         color: var(--danger-color);
-        text-decoration: line-through;
-        opacity: 0.8;
+        font-weight: 600;
       }
+
+      .answer-status-icon {
+        animation: iconPop 0.3s ease both;
+      }
+    }
+
+    @keyframes iconPop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
     }
     
     &.is-disabled {
@@ -500,10 +520,24 @@ defineExpose({
     }
     
     .option-item.is-wrong {
-      background: rgba(255, 69, 58, 0.2);
-      border: none;
-      
-      .option-content { color: #ff453a; }
+      background: linear-gradient(135deg, rgba(255, 69, 58, 0.3) 0%, rgba(255, 69, 58, 0.15) 100%);
+      border: 2px solid #ff453a;
+      box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.15);
+
+      .option-content {
+        color: #ff453a;
+        font-weight: 600;
+      }
+
+      .option-marker {
+        background: #ff453a;
+        border-color: #ff453a;
+        box-shadow: 0 2px 10px rgba(255, 69, 58, 0.5);
+      }
+
+      .answer-status-icon {
+        animation: iconPop 0.3s ease both;
+      }
     }
   }
 }

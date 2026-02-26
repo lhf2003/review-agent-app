@@ -12,13 +12,17 @@ const props = defineProps({
   embedded: {
     type: Boolean,
     default: false
+  },
+  selectedQuizId: {
+    type: String,
+    default: ''
   }
 })
 
 const emit = defineEmits(['select-quiz'])
 
 // 筛选条件
-const statusFilter = ref(null)
+const statusFilter = ref('all')
 const collectionFilter = ref(null)
 const collectionOptions = ref([])
 
@@ -35,8 +39,14 @@ const loading = ref(false)
 async function loadHistory() {
   loading.value = true
   try {
+    // 将字符串值映射为 API 需要的数字值
+    const statusMap = {
+      'all': null,
+      'completed': 1,
+      'progress': 0
+    }
     const response = await api.getQuizHistory({
-      status: statusFilter.value,
+      status: statusMap[statusFilter.value],
       collectionId: collectionFilter.value,
       page: currentPage.value - 1,
       size: pageSize.value
@@ -122,20 +132,11 @@ onMounted(() => {
     <!-- 筛选器栏 -->
     <div class="filter-bar glass-card">
       <div class="filter-controls">
-        <div class="filter-tabs">
-          <button
-            :class="['filter-tab', { active: statusFilter === null }]"
-            @click="statusFilter = null; loadHistory()"
-          >全部</button>
-          <button
-            :class="['filter-tab', { active: statusFilter === 1 }]"
-            @click="statusFilter = 1; loadHistory()"
-          >已完成</button>
-          <button
-            :class="['filter-tab', { active: statusFilter === 0 }]"
-            @click="statusFilter = 0; loadHistory()"
-          >进行中</button>
-        </div>
+        <el-radio-group v-model="statusFilter" @change="loadHistory" class="filter-tabs">
+          <el-radio-button value="all">全部</el-radio-button>
+          <el-radio-button value="completed">已完成</el-radio-button>
+          <el-radio-button value="progress">进行中</el-radio-button>
+        </el-radio-group>
 
         <el-select
           v-model="collectionFilter"
@@ -187,7 +188,7 @@ onMounted(() => {
           <div
             v-for="quiz in quizHistory"
             :key="quiz.quizId"
-            class="quiz-card glass-card"
+            :class="['quiz-card', 'glass-card', { 'is-selected': String(quiz.quizId) === props.selectedQuizId }]"
             @click="goToDetail(quiz.quizId)"
           >
             <div class="card-header">
@@ -277,10 +278,21 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  border-radius: 16px;
+  padding: 0 16px;
+  height: 52px;
+  min-height: 52px;
+  margin: -16px -16px 16px -16px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   gap: 12px;
+  box-sizing: border-box;
+}
+
+.filter-bar:hover {
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .filter-controls {
@@ -293,6 +305,7 @@ onMounted(() => {
 }
 
 .filter-tabs {
+  --el-fill-color-light: transparent;
   display: flex;
   gap: 3px;
   background: rgba(0, 0, 0, 0.04);
@@ -301,35 +314,71 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.filter-tab {
-  padding: 6px 12px;
-  border: none;
-  background: transparent;
-  color: #86868b;
+.filter-tabs :deep(.el-radio-button__inner) {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  margin-right: 0 !important;
+  color: #86868b !important;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
   white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: none !important;
 }
 
-.filter-tab:hover {
-  color: #1d1d1f;
+.filter-tabs :deep(.el-radio-button__inner:hover) {
+  color: #1d1d1f !important;
+  background: transparent !important;
 }
 
-.filter-tab.active {
-  background: rgba(255, 255, 255, 0.9);
-  color: #1d1d1f;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+.filter-tabs :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner),
+.filter-tabs :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #1d1d1f !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+  border-color: transparent !important;
 }
 
-.filter-divider {
-  width: 1px;
-  height: 20px;
-  background: rgba(0, 0, 0, 0.08);
-  margin: 0;
-  flex-shrink: 0;
+/* 确保首尾按钮圆角正确 */
+.filter-tabs :deep(.el-radio-button:first-child .el-radio-button__inner) {
+  border-radius: 8px !important;
+}
+
+.filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: 8px !important;
+}
+
+/* 深色模式适配 */
+html.dark .filter-tabs {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .filter-tabs :deep(.el-radio-button__inner) {
+  color: #86868b !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html.dark .filter-tabs :deep(.el-radio-button__inner:hover) {
+  color: #f5f5f7 !important;
+  background: transparent !important;
+}
+
+html.dark .filter-tabs :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner),
+html.dark .filter-tabs :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #f5f5f7 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+  border-color: transparent !important;
+}
+
+/* 深色模式首尾按钮圆角 */
+html.dark .filter-tabs :deep(.el-radio-button:first-child .el-radio-button__inner),
+html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: 8px !important;
 }
 
 .collection-select {
@@ -353,27 +402,6 @@ onMounted(() => {
     border-color: #0071e3;
     background: white;
   }
-
-  /* ============ 加载状态 ============ */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 0;
-  color: #86868b;
-  flex: 1;
-}
-
-.loading-icon {
-  color: #86868b;
-  margin-bottom: 16px;
-}
-
-.loading-text {
-  font-size: 14px;
-  margin: 0;
-}
 
 /* ============ 习题列表 ============ */
 .quiz-list-wrapper {
@@ -404,6 +432,20 @@ onMounted(() => {
 
 .quiz-card:active {
   transform: scale(0.99);
+}
+
+.quiz-card.is-selected {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(var(--el-color-primary-rgb), 0.4);
+  box-shadow:
+    0 0 0 1px rgba(var(--el-color-primary-rgb), 0.15) inset,
+    0 4px 16px -2px rgba(var(--el-color-primary-rgb), 0.12),
+    0 8px 24px -4px rgba(0, 0, 0, 0.08);
+}
+
+.quiz-card.is-selected:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(var(--el-color-primary-rgb), 0.5);
 }
 
 .card-header {
@@ -625,20 +667,29 @@ html.dark .quiz-history-page {
     background: rgba(50, 50, 52, 0.8);
   }
 
+  .quiz-card.is-selected {
+    background: rgba(50, 50, 52, 0.8);
+    border-color: rgba(var(--el-color-primary-rgb), 0.35);
+    box-shadow:
+      0 0 0 1px rgba(var(--el-color-primary-rgb), 0.12) inset,
+      0 4px 16px -2px rgba(var(--el-color-primary-rgb), 0.15),
+      0 8px 24px -4px rgba(0, 0, 0, 0.2);
+  }
+
+  .quiz-card.is-selected:hover {
+    background: rgba(55, 55, 57, 0.9);
+    border-color: rgba(var(--el-color-primary-rgb), 0.45);
+  }
+
+  .filter-bar {
+    background: rgba(40, 40, 42, 0.64);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
+
   .card-title {
-    color: #f5f5f7;
-  }
-
-  .filter-tabs {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .filter-tab {
-    color: #86868b;
-  }
-
-  .filter-tab.active {
-    background: rgba(255, 255, 255, 0.15);
     color: #f5f5f7;
   }
 

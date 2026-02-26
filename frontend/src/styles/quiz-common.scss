@@ -46,55 +46,156 @@
   letter-spacing: -0.01em;
 }
 
-// 解析框
+// 解析框 - 优化后的玻璃拟态设计
 .explanation-box {
-  margin-top: 32px;
-  padding: 24px;
-  border-radius: 20px;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  backdrop-filter: blur(10px);
+  position: relative;
+  margin-top: 28px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 4px 24px -2px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
   animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-  opacity: 0.95;
+  overflow: hidden;
+
+  // 状态指示条
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--el-color-primary);
+  }
+
+  &.is-correct::before {
+    background: linear-gradient(90deg, #34c759 0%, #30d158 100%);
+  }
+
+  &.is-wrong::before {
+    background: linear-gradient(90deg, #ff3b30 0%, #ff453a 100%);
+  }
+
+  &.is-partial::before {
+    background: linear-gradient(90deg, #ff9500 0%, #ffcc00 100%);
+  }
 
   .explanation-header {
     display: flex;
-    gap: 10px;
     align-items: center;
-    margin-bottom: 16px;
+    gap: 12px;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+
+    .el-icon {
+      font-size: 20px;
+    }
+  }
+
+  .explanation-title {
+    font-size: 15px;
     font-weight: 600;
     color: var(--el-text-color-primary);
-    font-size: 16px;
   }
 
   .explanation-content {
-    font-size: 15px;
+    padding: 20px;
+    font-size: 14px;
     line-height: 1.7;
     color: var(--el-text-color-regular);
+  }
 
-    .explanation-text {
-      margin-bottom: 16px;
-      color: var(--el-text-color-primary);
-      padding: 8px 16px;
-      background: rgba(0, 0, 0, 0.04);
-      border-radius: 10px;
-      display: inline-block;
-      font-weight: 500;
+  // 正确答案区域
+  .correct-answer-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(52, 199, 89, 0.08);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(52, 199, 89, 0.15);
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #34c759;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .explanation-detail {
-      padding-left: 20px;
-      border-left: 3px solid var(--el-color-primary);
+    .section-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+      font-family: 'SF Mono', monospace;
+    }
+  }
+
+  // 解析详情区域
+  .explanation-detail {
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 12px;
+    border-left: 3px solid var(--el-color-primary);
+
+    .detail-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--el-text-color-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .detail-content {
+      font-size: 14px;
+      line-height: 1.8;
       color: var(--el-text-color-regular);
 
       p { margin: 0; }
     }
   }
 
-  .explanation-title {
-    font-size: 16px;
+  // 状态图标
+  .status-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.is-correct {
+      background: rgba(52, 199, 89, 0.15);
+      color: #34c759;
+    }
+
+    &.is-wrong {
+      background: rgba(255, 59, 48, 0.15);
+      color: #ff3b30;
+    }
+
+    &.is-partial {
+      background: rgba(255, 149, 0, 0.15);
+      color: #ff9500;
+    }
+  }
+
+  // 正确率徽章
+  .accuracy-badge {
+    margin-left: auto;
+    padding: 4px 10px;
+    background: rgba(255, 149, 0, 0.12);
+    color: #ff9500;
+    font-size: 12px;
     font-weight: 600;
-    color: var(--el-text-color-primary);
+    border-radius: 20px;
   }
 }
 
@@ -120,20 +221,71 @@
 
 html.dark {
   .explanation-box {
-    background: rgba(44, 44, 46, 0.6);
+    background: linear-gradient(135deg, rgba(40, 40, 42, 0.8) 0%, rgba(30, 30, 32, 0.9) 100%);
     border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 4px 24px -2px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 
-    .explanation-text {
-      background: var(--el-fill-color-darker);
-      color: white;
+    .explanation-header {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .explanation-title {
+      color: #f5f5f7;
     }
 
     .explanation-content {
       color: rgba(255, 255, 255, 0.8);
     }
 
+    .correct-answer-section {
+      background: rgba(52, 199, 89, 0.12);
+      border-color: rgba(52, 199, 89, 0.25);
+
+      .section-label {
+        color: #4cd964;
+      }
+
+      .section-value {
+        color: #f5f5f7;
+      }
+    }
+
     .explanation-detail {
-      color: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.03);
+      border-left-color: var(--el-color-primary);
+
+      .detail-label {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      .detail-content {
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+
+    .status-icon {
+      &.is-correct {
+        background: rgba(52, 199, 89, 0.2);
+        color: #4cd964;
+      }
+
+      &.is-wrong {
+        background: rgba(255, 69, 58, 0.2);
+        color: #ff453a;
+      }
+
+      &.is-partial {
+        background: rgba(255, 149, 0, 0.2);
+        color: #ff9500;
+      }
+    }
+
+    .accuracy-badge {
+      background: rgba(255, 149, 0, 0.2);
+      color: #ff9500;
     }
   }
 

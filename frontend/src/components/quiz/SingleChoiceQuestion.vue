@@ -132,11 +132,27 @@ const handleOptionSelect = (index, option) => {
   emit('answer-changed', selectedLetter)
 }
 
+// 选项字母数组
+const letters = ['A', 'B', 'C', 'D', 'E', 'F']
+
 // 监听 props.userAnswer 变化，同步选中状态
 watch(() => props.userAnswer, (newAnswer) => {
   if (newAnswer && newAnswer.length > 0) {
-    const targetLetter = newAnswer.charAt(0).toUpperCase()
-    const targetIndex = props.options.findIndex(opt => opt.startsWith(targetLetter))
+    // 提取答案中的字母部分（支持 "B" 或 "B. xxx" 格式）
+    const answerStr = newAnswer.toString().trim().toUpperCase()
+    const letterMatch = answerStr.match(/^([A-F])/)
+    if (letterMatch) {
+      const targetLetter = letterMatch[1]
+      const targetIndex = letters.findIndex(l => l === targetLetter)
+      if (targetIndex >= 0 && targetIndex < props.options.length) {
+        selectedIndex.value = targetIndex
+        return
+      }
+    }
+    // 如果没有匹配到字母，尝试直接匹配选项内容
+    const targetIndex = props.options.findIndex(opt =>
+      opt.toLowerCase().includes(answerStr.toLowerCase())
+    )
     if (targetIndex >= 0) {
       selectedIndex.value = targetIndex
     }
@@ -206,23 +222,30 @@ defineExpose({
 
     <!-- 答题后显示的解析 -->
     <transition name="fade">
-      <div v-if="isSubmitted" class="explanation-box">
+      <div
+        v-if="isSubmitted"
+        class="explanation-box"
+        :class="{ 'is-correct': isCurrentAnswerCorrect, 'is-wrong': !isCurrentAnswerCorrect }"
+      >
         <div class="explanation-header">
-          <el-icon>
-            <InfoFilled />
-          </el-icon>
+          <div class="status-icon" :class="isCurrentAnswerCorrect ? 'is-correct' : 'is-wrong'">
+            <el-icon v-if="isCurrentAnswerCorrect"><SuccessFilled /></el-icon>
+            <el-icon v-else><CircleCloseFilled /></el-icon>
+          </div>
           <div class="explanation-title">
-            {{ isCurrentAnswerCorrect ? '答案正确！' : '答案错误' }}
+            {{ isCurrentAnswerCorrect ? '答案正确' : '答案错误' }}
           </div>
         </div>
         <div class="explanation-content">
-          <!-- 答错时显示正确答案 -->
-          <div v-if="!isCurrentAnswerCorrect" class="explanation-text">
-            <strong>正确答案：</strong>{{ correctAnswer }}
+          <!-- 正确答案 -->
+          <div class="correct-answer-section">
+            <span class="section-label">正确答案</span>
+            <span class="section-value">{{ correctAnswer }}</span>
           </div>
-          <!-- 有解析时显示解析内容 -->
+          <!-- 解析内容 -->
           <div v-if="props.hasExplanation && props.explanation" class="explanation-detail">
-            <p><strong>解析：</strong>{{ props.explanation }}</p>
+            <div class="detail-label">解析</div>
+            <div class="detail-content">{{ props.explanation }}</div>
           </div>
         </div>
       </div>
@@ -380,22 +403,35 @@ defineExpose({
     }
   }
 
-  // Wrong State
+  // Wrong State - 用户选择的错误答案
   .option-item.is-wrong {
-    background: var(--el-color-danger-light-9);
+    background: linear-gradient(135deg, rgba(245, 108, 108, 0.15) 0%, rgba(245, 108, 108, 0.08) 100%);
+    border: 2px solid var(--danger-color);
+    box-shadow: 0 0 0 4px rgba(245, 108, 108, 0.1);
     animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    z-index: 3;
 
     .option-marker {
       background: var(--danger-color);
       color: white;
-      opacity: 0.9;
+      box-shadow: 0 2px 8px rgba(245, 108, 108, 0.4);
     }
 
     .option-content {
       color: var(--danger-color);
-      text-decoration: line-through;
-      opacity: 0.8;
+      font-weight: 600;
     }
+
+    // 错误图标样式
+    .answer-icon {
+      animation: iconPop 0.3s ease both;
+    }
+  }
+
+  @keyframes iconPop {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   // Disabled State
@@ -469,14 +505,23 @@ html.dark .single-choice-question {
   }
 
   .option-item.is-wrong {
-    background: rgba(255, 69, 58, 0.2);
-    border: none;
+    background: linear-gradient(135deg, rgba(255, 69, 58, 0.25) 0%, rgba(255, 69, 58, 0.15) 100%);
+    border: 2px solid #ff453a;
+    box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.15);
 
-    .option-content { color: #ff453a; }
+    .option-content {
+      color: #ff453a;
+      font-weight: 600;
+    }
 
     .option-marker {
-      background: var(--danger-color);
+      background: #ff453a;
       color: white;
+      box-shadow: 0 2px 10px rgba(255, 69, 58, 0.5);
+    }
+
+    .answer-icon {
+      animation: iconPop 0.3s ease both;
     }
   }
 }

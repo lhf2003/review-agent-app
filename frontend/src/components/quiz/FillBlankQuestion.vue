@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { SuccessFilled, CircleCloseFilled, InfoFilled } from '@element-plus/icons-vue'
+import { SuccessFilled, CircleCloseFilled, InfoFilled, WarningFilled } from '@element-plus/icons-vue'
 
 /**
  * 填空题组件
@@ -235,36 +235,36 @@ defineExpose({
 
     <!-- 答题后显示的解析 -->
     <transition name="fade">
-      <div v-if="isSubmitted" class="explanation-box">
+      <div
+        v-if="isSubmitted"
+        class="explanation-box"
+        :class="{ 'is-correct': isAllCorrect, 'is-wrong': !isAllCorrect }"
+      >
+        <div class="explanation-header">
+          <div class="status-icon" :class="isAllCorrect ? 'is-correct' : hasAnyFilled ? 'is-partial' : 'is-wrong'">
+            <el-icon v-if="isAllCorrect"><SuccessFilled/></el-icon>
+            <el-icon v-else-if="hasAnyFilled"><WarningFilled/></el-icon>
+            <el-icon v-else><CircleCloseFilled/></el-icon>
+          </div>
+          <div class="explanation-title">
+            <template v-if="isAllCorrect">全部正确</template>
+            <template v-else-if="hasAnyFilled">部分正确</template>
+            <template v-else>未作答</template>
+          </div>
+        </div>
         <div class="explanation-content">
-          <el-icon>
-            <InfoFilled/>
-          </el-icon>
-          <div class="explanation-text">
-            <template v-if="isAllCorrect">
-              <div class="explanation-title">全部正确！</div>
-            </template>
-            <template v-else-if="hasAnyFilled">
-              <div class="explanation-title">部分正确</div>
-              <div class="explanation-detail">
-                正确率：{{ Math.round(correctCount / props.blankCount * 100) }}%
-                {{ correctCount }}/{{ props.blankCount }}
-              </div>
-              <div class="explanation-detail" style="margin-top: 8px;">
-                <strong>正确答案：</strong>{{ correctAnswer }}
-              </div>
-            </template>
-            <template v-else>
-              <div class="explanation-title">未作答</div>
-              <div class="explanation-detail">
-                <strong>正确答案：</strong>{{ correctAnswer }}
-              </div>
-            </template>
-            
-            <!-- 统一显示解析内容 -->
-            <div v-if="explanation" class="explanation-detail" style="margin-top: 12px; border-top: 1px solid var(--el-border-color-light); padding-top: 12px;">
-              <p><strong>解析：</strong>{{ explanation }}</p>
-            </div>
+          <!-- 正确率和正确答案 -->
+          <div class="correct-answer-section">
+            <span class="section-label">正确答案</span>
+            <span class="section-value">{{ correctAnswer }}</span>
+            <span v-if="!isAllCorrect" class="accuracy-badge">
+              {{ Math.round(correctCount / props.blankCount * 100) }}%
+            </span>
+          </div>
+          <!-- 解析内容 -->
+          <div v-if="explanation" class="explanation-detail">
+            <div class="detail-label">解析</div>
+            <div class="detail-content">{{ explanation }}</div>
           </div>
         </div>
       </div>
@@ -419,19 +419,32 @@ defineExpose({
   }
 
   .blank-item.is-wrong {
-    background: rgba(255, 59, 48, 0.08);
-    border-color: var(--danger-color);
+    background: linear-gradient(135deg, rgba(255, 59, 48, 0.12) 0%, rgba(255, 59, 48, 0.06) 100%);
+    border: 2px solid var(--danger-color);
+    box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.08);
     animation: shake 0.5s ease-in-out;
+    z-index: 2;
 
     .blank-input {
       color: var(--danger-color);
-      text-decoration: line-through;
+      font-weight: 600;
     }
 
     .blank-number {
-      background: rgba(255, 59, 48, 0.2);
+      background: rgba(255, 59, 48, 0.25);
       color: var(--danger-color);
+      font-weight: 700;
     }
+
+    .blank-status-icon {
+      animation: iconPop 0.3s ease both;
+    }
+  }
+
+  @keyframes iconPop {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   .blank-item.is-empty {
@@ -522,16 +535,23 @@ defineExpose({
     }
 
     .blank-item.is-wrong {
-      background: rgba(255, 69, 58, 0.2);
-      border-color: var(--danger-color);
+      background: linear-gradient(135deg, rgba(255, 69, 58, 0.25) 0%, rgba(255, 69, 58, 0.15) 100%);
+      border: 2px solid #ff453a;
+      box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.1);
 
       .blank-input {
         color: #ff453a;
+        font-weight: 600;
       }
 
       .blank-number {
-        background: rgba(255, 69, 58, 0.3);
+        background: rgba(255, 69, 58, 0.35);
         color: white;
+        font-weight: 700;
+      }
+
+      .blank-status-icon {
+        animation: iconPop 0.3s ease both;
       }
     }
   }
