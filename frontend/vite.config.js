@@ -7,11 +7,18 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     host: true,
-    port: 5173,
+    port: 5179,
     proxy: {
       '/api': {
         target: 'http://localhost:8002',
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false
+      },
+      '/chat': {
+        target: 'http://localhost:8002/api',
+        changeOrigin: true,
+        secure: false,
+        ws: true
       }
     }
   },

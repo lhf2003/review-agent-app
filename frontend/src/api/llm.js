@@ -83,10 +83,10 @@ export const llmApi = {
     const headers = { Accept: 'text/event-stream' }
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    const url = new URL('/chat', window.location.origin)
-    url.searchParams.set('request', requestText || '')
+    // 使用相对路径，让 Vite proxy 生效
+    const url = `/chat?request=${encodeURIComponent(requestText || '')}`
 
-    const p = fetch(url.toString(), { method: 'GET', headers, signal: controller.signal })
+    const p = fetch(url, { method: 'GET', headers, signal: controller.signal })
     handleStream(p, handlers)
     return { cancel: () => controller.abort() }
   },
@@ -100,10 +100,11 @@ export const llmApi = {
     const headers = { Accept: 'text/event-stream' }
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    const url = new URL(BASE_URL + '/chat/with-analysis', window.location.origin)
-    url.searchParams.set('request', requestText || '')
+    // 使用相对路径，让 Vite proxy 生效
+    // 注意：后端端点是 /chat/with-analysis，不是 /api/chat/with-analysis
+    const url = `/chat/with-analysis?request=${encodeURIComponent(requestText || '')}`
 
-    const p = fetch(url.toString(), { method: 'POST', headers, signal: controller.signal })
+    const p = fetch(url, { method: 'POST', headers, signal: controller.signal })
     handleStream(p, handlers)
     return { cancel: () => controller.abort() }
   }

@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, nextTick, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Moon, Sunny, FullScreen, Menu as MenuIcon, WarningFilled, Reading } from '@element-plus/icons-vue'
+import { Moon, Sunny, FullScreen, Menu as MenuIcon, WarningFilled, Reading, Delete } from '@element-plus/icons-vue'
 import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
 import { useThemeStore } from './stores/theme'
@@ -153,13 +153,36 @@ watch(() => chatStore.messages, () => {
   })
 }, { deep: true })
 
-function sendChat() {
+function sendChat(event) {
+  if (event) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
   if (!auth.userId) { ElMessage.warning('请先登录'); return }
   const text = (chatInput.value || '').trim()
   if (!text) { ElMessage.warning('请输入内容'); return }
-  
+
   chatStore.sendMessage(text)
   chatInput.value = ''
+
+  // 重置 textarea 高度
+  nextTick(() => {
+    const textarea = document.querySelector('.chat-input-area')
+    if (textarea) {
+      textarea.style.height = 'auto'
+    }
+  })
+}
+
+function handleEnter(event) {
+  // 只在单独按下 Enter 键时发送消息
+  event.preventDefault()
+  event.stopPropagation()
+  event.stopImmediatePropagation()
+
+  sendChat()
+  return false
 }
 
 async function saveAvatar() {
@@ -321,6 +344,11 @@ watch(() => auth.isAuthenticated, (val) => {
               <span class="chat-title">AI Assistant {{ chatStore.mode === 'analysis' ? '(Analysis Mode)' : '' }}</span>
             </div>
             <div class="chat-header-right">
+              <el-tooltip content="清空对话" placement="bottom">
+                <el-button circle text @click="chatStore.clearContext">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-tooltip>
               <el-button circle text @click="chatStore.toggleFullScreen">
                 <el-icon><FullScreen /></el-icon>
               </el-button>
@@ -335,8 +363,8 @@ watch(() => auth.isAuthenticated, (val) => {
               <el-icon class="empty-icon"><ChatDotRound /></el-icon>
               <p>有什么我可以帮你的吗？</p>
             </div>
-            
-            <div v-for="(m, i) in chatStore.messages" :key="i" class="message-row" :class="m.role">
+
+            <div v-for="m in chatStore.messages" :key="m.id" class="message-row" :class="m.role">
               <div class="avatar-container">
                 <el-avatar v-if="m.role === 'user'" :size="36" :src="auth.username ? 'https://ui-avatars.com/api/?name=' + auth.username : ''" class="user-avatar-icon">User</el-avatar>
                 <div v-else class="ai-avatar">
@@ -344,12 +372,18 @@ watch(() => auth.isAuthenticated, (val) => {
                 </div>
               </div>
               <div class="message-content">
-              <div class="bubble" v-if="m.role === 'user'">{{ m.content }}</div>
-              <div class="bubble markdown-body" v-else v-html="renderMarkdown(m.content)"></div>
+                <!-- 用户消息内容 -->
+                <div v-if="m.role === 'user'" class="bubble">
+                  {{ m.content }}
+                </div>
+
+                <!-- AI 消息内容 -->
+                <div v-else class="bubble markdown-body" v-html="renderMarkdown(m.content || '')"></div>
+              </div>
             </div>
-            </div>
-            
-            <div v-if="chatStore.isStreaming && chatStore.messages.length > 0 && chatStore.messages[chatStore.messages.length - 1].role !== 'assistant'" class="message-row assistant">
+
+            <!-- 打字动画 -->
+            <div v-if="chatStore.isStreaming" class="message-row assistant">
                <div class="avatar-container">
                  <div class="ai-avatar">
                    <el-icon><Cpu /></el-icon>
@@ -364,19 +398,31 @@ watch(() => auth.isAuthenticated, (val) => {
           </div>
           
           <div class="chat-footer">
-            <div class="input-container" :class="{ 'has-content': chatInput && chatInput.trim().length > 0 }">
-              <el-input 
-                v-model="chatInput" 
-                placeholder="输入你的问题..." 
-                @keyup.enter="sendChat" 
-                type="textarea"
-                :autosize="{ minRows: 1, maxRows: 4 }"
-                resize="none"
-                class="chat-input-area"
-              />
-              <el-button type="primary" circle class="send-btn" @click="sendChat" :disabled="!chatInput.trim() && !chatStore.isStreaming">
-                <el-icon><Position /></el-icon>
-              </el-button>
+            <div class="input-wrapper">
+              <div class="input-container" :class="{ 'has-content': chatInput && chatInput.trim().length > 0 }">
+                <textarea
+                  v-model="chatInput"
+                  placeholder="输入你的问题... (按 Enter 发送，Shift+Enter 换行)"
+                  @keydown.enter.prevent.exact="handleEnter"
+                  class="chat-input-area"
+                  rows="1"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                ></textarea>
+                <button
+                  class="send-btn"
+                  @click="sendChat"
+                  :disabled="!chatInput.trim()"
+                  type="button"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="send-icon">
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="input-hint">按 Enter 发送 · Shift+Enter 换行</div>
             </div>
           </div>
         </div>
@@ -916,67 +962,191 @@ html.dark .dock-spacer {
 .dot:nth-child(2) { animation-delay: -0.16s; }
 @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
-.chat-footer {
-  padding: 20px 24px;
-  background: var(--el-bg-color);
-  /* Remove top border for a cleaner look */
-  border-top: none;
+/* 消息状态指示器 */
+.message-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  animation: fadeIn 0.3s ease;
 }
-.chat-input-area :deep(.el-textarea__inner) {
-  box-shadow: none !important;
-  background: transparent !important;
-  padding: 2px 0; /* Slight padding fix */
-  resize: none;
-  min-height: 24px !important;
-  font-size: 15px;
-  line-height: 1.6;
+
+.message-status.sending {
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+}
+
+.message-status.failed {
+  background: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
+  border: 1px solid var(--el-color-danger-light-7);
+}
+
+.message-status .el-icon {
+  font-size: 16px;
+}
+
+.message-status .el-button {
+  margin-left: auto;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 取消按钮 */
+.message-row.user .bubble {
+  position: relative;
+}
+
+.cancel-btn {
+  position: absolute;
+  right: -32px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--el-text-color-secondary);
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  color: var(--el-color-danger);
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* 消息状态样式 */
+.message-row.sending {
+  opacity: 0.7;
+}
+
+.message-row.failed {
+  opacity: 0.8;
+}
+
+.message-row.streaming .bubble {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Chat Footer - Modern Input Design */
+.chat-footer {
+  padding: 16px 20px 20px;
+  background: linear-gradient(to top, var(--el-bg-color) 0%, var(--el-bg-color) 80%, transparent 100%);
+}
+
+.input-wrapper {
+  max-width: 768px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .input-container {
-  display: flex; gap: 12px; align-items: flex-end;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
   background: var(--el-fill-color-blank);
   padding: 12px 16px;
-  border-radius: 18px; /* Modern curvature */
-  border: 1px solid var(--el-border-color);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* Subtle depth */
+  border-radius: 24px;
+  border: 1px solid var(--el-border-color-lighter);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.02) inset;
 }
 
 .input-container:hover {
-  border-color: var(--el-border-color-darker);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
-  transform: translateY(-1px);
+  border-color: var(--el-border-color);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.03) inset;
 }
 
-.input-container.has-content,
 .input-container:focus-within {
   border-color: var(--el-color-primary);
   background: var(--el-bg-color);
-  box-shadow: 0 0 0 3px var(--el-color-primary-light-9), 0 8px 24px rgba(0,0,0,0.08);
+  box-shadow:
+    0 0 0 3px var(--el-color-primary-light-9),
+    0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
+.input-container.has-content {
+  border-color: var(--el-color-primary-light-5);
+}
+
+.chat-input-area {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 10px 4px;
+  font-size: 15px;
+  line-height: 1.6;
+  resize: none;
+  overflow-y: auto;
+  font-family: inherit;
+  color: var(--el-text-color-primary);
+  max-height: 160px;
+  min-height: 28px;
+}
+
+.chat-input-area::placeholder {
+  color: var(--el-text-color-placeholder);
+  opacity: 0.8;
+}
+
+/* Modern Send Button */
 .send-btn {
   background: var(--el-color-primary);
   border: none;
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  flex-shrink: 0;
+  border-radius: 50%;
   width: 36px;
   height: 36px;
-  margin-bottom: 2px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px var(--el-color-primary-light-5);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+  margin-bottom: 4px;
+  box-shadow:
+    0 2px 8px var(--el-color-primary-light-5),
+    0 4px 12px var(--el-color-primary-light-8);
 }
+
 .send-btn:hover:not(:disabled) {
-  transform: scale(1.1) rotate(-10deg);
-  box-shadow: 0 6px 16px var(--el-color-primary-light-3);
+  transform: scale(1.08) rotate(-5deg);
   background: var(--el-color-primary-light-3);
+  box-shadow:
+    0 4px 12px var(--el-color-primary-light-3),
+    0 6px 20px var(--el-color-primary-light-7);
 }
+
 .send-btn:active:not(:disabled) {
-  transform: scale(0.92);
+  transform: scale(0.95);
 }
+
 .send-btn:disabled {
   background: var(--el-fill-color-darker);
   box-shadow: none;
@@ -984,12 +1154,25 @@ html.dark .dock-spacer {
   cursor: not-allowed;
   transform: none;
 }
-.send-btn .el-icon {
-  font-size: 18px;
-  transition: transform 0.3s ease;
+
+.send-icon {
+  width: 18px;
+  height: 18px;
+  color: white;
+  transition: transform 0.25s ease;
 }
-.send-btn:hover:not(:disabled) .el-icon {
-  transform: translateX(2px) translateY(-2px);
+
+.send-btn:hover:not(:disabled) .send-icon {
+  transform: translate(1px, -1px);
+}
+
+.input-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
+  opacity: 0.7;
+  user-select: none;
+  padding: 0 8px;
 }
 
 /* Responsive Design */
