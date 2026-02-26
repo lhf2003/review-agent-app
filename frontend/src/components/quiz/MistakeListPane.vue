@@ -691,6 +691,8 @@ html.dark .glass-panel {
   text-overflow: ellipsis;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   letter-spacing: -0.01em;
+  word-break: break-word; /* 防止连续下划线导致溢出 */
+  overflow-wrap: break-word;
 
   html.dark & {
     color: #f5f5f7;

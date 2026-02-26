@@ -465,7 +465,7 @@ watch(() => auth.isAuthenticated, (val) => {
   z-index: 100;
   display: flex;
   justify-content: center;
-  padding: 16px 8px;
+  padding: 2px 6px;
   transition: all 0.3s ease;
 }
 

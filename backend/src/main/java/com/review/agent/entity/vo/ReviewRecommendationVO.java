@@ -64,4 +64,9 @@ public class ReviewRecommendationVO {
      * 推荐优先级（数值越高越优先）
      */
     private Integer priority;
+
+    /**
+     * 填空题的空位数量
+     */
+    private Integer blankCount;
 }

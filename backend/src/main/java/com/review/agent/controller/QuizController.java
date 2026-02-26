@@ -79,12 +79,16 @@ public class QuizController {
      * 提交单个答案
      *
      * @param request 包含 questionId 和 userAnswer
-     * @return 操作结果
+     * @return 答题结果（包含是否正确、正确答案、解析等）
      */
     @PostMapping("/submit-answer")
-    public BaseResponse<Void> submitAnswer(@Valid @RequestBody SubmitAnswerRequest request) {
-        quizService.submitAnswer(request.getQuestionId(), request.getUserAnswer());
-        return ResultUtil.success();
+    public BaseResponse<SubmitAnswerResultVO> submitAnswer(@Valid @RequestBody SubmitAnswerRequest request) {
+        SubmitAnswerResultVO result = quizService.submitAnswer(
+                request.getQuestionId(),
+                request.getUserAnswer(),
+                request.getReviewMode()
+        );
+        return ResultUtil.success(result);
     }
 
     /**

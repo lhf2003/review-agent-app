@@ -70,13 +70,14 @@ const props = defineProps({
 })
 
 const emit = defineEmits([
-  'answer-changed'
+  'answer-selected'
 ])
 
 // 填空索引（从0开始）
-const blankIndices = computed(() =>
-    Array.from({length: props.blankCount}, (_, i) => i)
-)
+const blankIndices = computed(() => {
+    const count = props.blankCount || 0
+    return Array.from({length: count}, (_, i) => i)
+})
 
 // 用户答案数组（按逗号或分号分隔）
 const userAnswers = ref([])
@@ -151,7 +152,7 @@ const handleInput = (index, event) => {
 
 // 触发答案变化事件
 const emitAnswerChanged = () => {
-  emit('answer-changed', userAnswers.value.join(','))
+  emit('answer-selected', userAnswers.value.join(','))
 }
 
 // 暴露聚焦方法

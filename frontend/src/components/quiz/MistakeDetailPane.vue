@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Document, Edit, Star, Clock, Close, Select, Delete, Loading } from '@element-plus/icons-vue'
+import { Document, Star, Clock, Close, Select, Delete, Loading } from '@element-plus/icons-vue'
 import QuestionRenderer from './QuestionRenderer.vue'
 import CustomScroll from '../CustomScroll.vue'
 import { api } from '../../api/http'
@@ -36,14 +36,13 @@ async function loadQuestionDetail() {
 
   loading.value = true
   try {
-    // 获取题目详情（复用错题列表接口的数据）
     const mistakeList = await api.getMistakeList('all')
     const target = mistakeList.find(m => m.questionId === props.questionId)
 
     if (target) {
       questionDetail.value = target
-      // TODO: 后端需要提供错题历史数据接口
-      mistakeHistory.value = []
+      // 加载错题历史
+      await loadMistakeHistory()
       knowledgeMastery.value = {
         knowledgePoint: target.knowledgePoint,
         masteryLevel: target.mastered ? '已掌握' : '学习中',
@@ -58,6 +57,17 @@ async function loadQuestionDetail() {
   }
 }
 
+// 加载错题历史
+async function loadMistakeHistory() {
+  if (!props.mistakeId) return
+  try {
+    const history = await api.getMistakeHistory(props.mistakeId)
+    mistakeHistory.value = history
+  } catch (error) {
+    console.error('加载错题历史失败:', error)
+  }
+}
+
 // 标记为已掌握
 async function markAsMastered() {
   if (!props.questionId) return
@@ -67,7 +77,6 @@ async function markAsMastered() {
     await api.markMistakesMastered([props.questionId])
     ElMessage.success('已标记为掌握')
 
-    // 更新本地状态
     if (questionDetail.value) {
       questionDetail.value.mastered = true
     }
@@ -125,31 +134,25 @@ function getMasteryColor(level) {
   return '#909399'
 }
 
-/**
- * 解析选项JSON字符串为数组
- */
+// 解析选项JSON
 function parseOptions(optionsJson) {
   if (!optionsJson) return []
   try {
     return JSON.parse(optionsJson)
   } catch (e) {
-    console.error('解析选项失败:', e)
     return []
   }
 }
 
-/**
- * 获取题目类型字符串（从枚举转换）
- */
+// 获取题目类型
 function getQuestionType(questionType) {
   if (typeof questionType === 'string') {
     return questionType.toLowerCase()
   }
-  // 如果是枚举对象，获取其name值
   return questionType?.name?.toLowerCase() || 'single_choice'
 }
 
-// 监听可见状态
+// 监听题目变化
 watch(() => props.questionId, (newId) => {
   if (newId) {
     loadQuestionDetail()
@@ -200,91 +203,91 @@ watch(() => props.questionId, (newId) => {
           </el-button>
         </div>
       </div>
-      
+
       <CustomScroll class="pane-content">
-      <!-- 题目内容 -->
-      <QuestionRenderer
-        v-if="questionDetail"
-        class="mistake-question-renderer"
-        :question="questionDetail.questionText"
-        :type="getQuestionType(questionDetail.questionType)"
-        :options="parseOptions(questionDetail.optionsJson)"
-        :user-answer="questionDetail.userAnswer || undefined"
-        :correct-answer="questionDetail.correctAnswer"
-        :explanation="questionDetail.explanation"
-        :is-submitted="true"
-        :question-id="questionDetail.questionId"
-        :knowledge-point="questionDetail.knowledgePoint"
-        :mistake-count="questionDetail.blankCount"
-      />
+        <!-- 题目内容 -->
+        <QuestionRenderer
+          v-if="questionDetail"
+          class="mistake-question-renderer"
+          :question="questionDetail.questionText"
+          :type="getQuestionType(questionDetail.questionType)"
+          :options="parseOptions(questionDetail.optionsJson)"
+          :user-answer="questionDetail.userAnswer || undefined"
+          :correct-answer="questionDetail.correctAnswer"
+          :explanation="questionDetail.explanation"
+          :is-submitted="true"
+          :question-id="questionDetail.questionId"
+          :knowledge-point="questionDetail.knowledgePoint"
+          :blank-count="questionDetail.blankCount"
+        />
 
-      <!-- 知识点掌握度 -->
-      <div class="mastery-section">
-        <div class="section-header">
-          <el-icon><Star /></el-icon>
-          <span>知识点掌握度</span>
-        </div>
-        <div v-if="knowledgeMastery" class="mastery-card">
-          <div class="mastery-header">
-            <span class="knowledge-point">{{ knowledgeMastery.knowledgePoint }}</span>
-            <el-tag
-              :color="getMasteryColor(knowledgeMastery.masteryLevel)"
-              effect="dark"
-              size="small"
-            >
-              {{ knowledgeMastery.masteryLevel }}
-            </el-tag>
+        <!-- 知识点掌握度 -->
+        <div class="mastery-section">
+          <div class="section-header">
+            <el-icon><Star /></el-icon>
+            <span>知识点掌握度</span>
           </div>
-          <div class="mastery-stats">
-            <div class="stat-item">
-              <span class="stat-label">正确率</span>
-              <span class="stat-value">{{ knowledgeMastery.correctRate }}%</span>
+          <div v-if="knowledgeMastery" class="mastery-card">
+            <div class="mastery-header">
+              <span class="knowledge-point">{{ knowledgeMastery.knowledgePoint }}</span>
+              <el-tag
+                :color="getMasteryColor(knowledgeMastery.masteryLevel)"
+                effect="dark"
+                size="small"
+              >
+                {{ knowledgeMastery.masteryLevel }}
+              </el-tag>
             </div>
-            <div class="stat-item">
-              <span class="stat-label">最后复习</span>
-              <span class="stat-value">{{ formatDate(knowledgeMastery.lastReview) }}</span>
-            </div>
-          </div>
-          <div class="progress-bar">
-            <div
-              class="progress-fill"
-              :style="{
-                width: knowledgeMastery.correctRate + '%',
-                backgroundColor: getMasteryColor(knowledgeMastery.masteryLevel)
-              }"
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 错误历史 -->
-      <div class="history-section">
-        <div class="section-header">
-          <el-icon><Clock /></el-icon>
-          <span>错误历史</span>
-          <el-badge :value="mistakeHistory.length" type="danger" />
-        </div>
-        <div class="history-list">
-          <div
-            v-for="(record, index) in mistakeHistory"
-            :key="index"
-            class="history-item"
-          >
-            <div class="history-icon">
-              <el-icon color="#f56c6c"><Close /></el-icon>
-            </div>
-            <div class="history-content">
-              <div class="history-date">{{ formatDate(record.date) }}</div>
-              <div class="history-detail">
-                <span class="wrong-answer">你的答案: {{ record.wrongAnswer }}</span>
-                <span class="correct-answer">正确答案: {{ record.correctAnswer }}</span>
+            <div class="mastery-stats">
+              <div class="stat-item">
+                <span class="stat-label">正确率</span>
+                <span class="stat-value">{{ knowledgeMastery.correctRate }}%</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">最后复习</span>
+                <span class="stat-value">{{ formatDate(knowledgeMastery.lastReview) }}</span>
               </div>
             </div>
-            <div class="history-time">{{ formatTime(record.timeSpent) }}</div>
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                :style="{
+                  width: knowledgeMastery.correctRate + '%',
+                  backgroundColor: getMasteryColor(knowledgeMastery.masteryLevel)
+                }"
+              ></div>
+            </div>
           </div>
         </div>
-      </div>
-    </CustomScroll>
+
+        <!-- 错误历史 -->
+        <div class="history-section">
+          <div class="section-header">
+            <el-icon><Clock /></el-icon>
+            <span>错误历史</span>
+            <el-badge :value="mistakeHistory.length" type="danger" />
+          </div>
+          <div class="history-list">
+            <div
+              v-for="(record, index) in mistakeHistory"
+              :key="index"
+              class="history-item"
+            >
+              <div class="history-icon">
+                <el-icon color="#f56c6c"><Close /></el-icon>
+              </div>
+              <div class="history-content">
+                <div class="history-date">{{ formatDate(record.date) }}</div>
+                <div class="history-detail">
+                  <span class="wrong-answer">你的答案: {{ record.wrongAnswer }}</span>
+                  <span class="correct-answer">正确答案: {{ record.correctAnswer }}</span>
+                </div>
+              </div>
+              <div class="history-time">{{ formatTime(record.timeSpent) }}</div>
+            </div>
+          </div>
+        </div>
+      </CustomScroll>
     </template>
   </div>
 </template>
@@ -449,243 +452,148 @@ watch(() => props.questionId, (newId) => {
   }
 
   html.dark & {
-    background: linear-gradient(135deg, rgba(64, 158, 255, 0.18) 0%, rgba(64, 158, 255, 0.06) 100%);
-    border-color: rgba(64, 158, 255, 0.25);
-
-    &::before {
-      background: linear-gradient(90deg,
-        transparent,
-        rgba(64, 158, 255, 0.4),
-        transparent
-      );
-    }
-
-    &:hover {
-      box-shadow: 0 8px 24px rgba(64, 158, 255, 0.2);
-    }
+    background: linear-gradient(135deg, rgba(64, 158, 255, 0.15) 0%, rgba(64, 158, 255, 0.05) 100%);
+    border-color: rgba(64, 158, 255, 0.2);
   }
 }
 
 .mastery-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 18px;
-}
+  align-items: center;
+  margin-bottom: 16px;
 
-.knowledge-point {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
+  .knowledge-point {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+    letter-spacing: -0.2px;
+  }
 }
 
 .mastery-stats {
   display: flex;
-  gap: 32px;
-  margin-bottom: 18px;
+  gap: 24px;
+  margin-bottom: 16px;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
+  gap: 4px;
 
-.stat-label {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  font-weight: 500;
-}
+  .stat-label {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    font-weight: 500;
+  }
 
-.stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--el-text-color-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-  letter-spacing: -0.5px;
+  .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--el-text-color-primary);
+    letter-spacing: -0.3px;
+  }
 }
 
 .progress-bar {
   height: 6px;
   background: rgba(0, 0, 0, 0.06);
-  border-radius: 4px;
+  border-radius: 3px;
   overflow: hidden;
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent
-    );
-    animation: shimmer 2s infinite;
-  }
 
   html.dark & {
-    background: rgba(255, 255, 255, 0.12);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
+    background: rgba(255, 255, 255, 0.1);
   }
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 4px;
-  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
-  position: relative;
-  z-index: 1;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-// 错误历史 - 增强时间轴设计
+// 错误历史
 .history-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 18px;
-    top: 12px;
-    bottom: 12px;
-    width: 2px;
-    background: linear-gradient(180deg,
-      rgba(0, 0, 0, 0.06),
-      rgba(0, 0, 0, 0.12),
-      rgba(0, 0, 0, 0.06)
-    );
-    z-index: 0;
-
-    html.dark & {
-      background: linear-gradient(180deg,
-        rgba(255, 255, 255, 0.08),
-        rgba(255, 255, 255, 0.15),
-        rgba(255, 255, 255, 0.08)
-      );
-    }
-  }
 }
 
 .history-item {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 12px;
-  background: var(--el-bg-color);
+  gap: 12px;
+  padding: 14px;
+  background: rgba(245, 108, 108, 0.04);
   border-radius: 12px;
-  border: 1px solid transparent;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
-  cursor: pointer;
+  border: 1px solid rgba(245, 108, 108, 0.1);
+  transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.02);
+    background: rgba(245, 108, 108, 0.08);
     transform: translateX(4px);
+  }
 
-    html.dark & {
-      background: rgba(255, 255, 255, 0.04);
+  html.dark & {
+    background: rgba(245, 108, 108, 0.08);
+    border-color: rgba(245, 108, 108, 0.15);
+
+    &:hover {
+      background: rgba(245, 108, 108, 0.12);
     }
   }
 }
 
 .history-icon {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--el-bg-color);
-  border: 3px solid var(--el-bg-color-page);
+  background: rgba(245, 108, 108, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
 
   html.dark & {
-    background: rgba(30, 41, 59, 0.8);
-    border-color: rgba(255, 255, 255, 0.05);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  .history-item:hover & {
-    transform: scale(1.1);
+    background: rgba(245, 108, 108, 0.2);
   }
 }
 
 .history-content {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-top: 3px;
 }
 
 .history-date {
   font-size: 12px;
   color: var(--el-text-color-secondary);
+  margin-bottom: 4px;
   font-weight: 500;
-  letter-spacing: 0.2px;
 }
 
 .history-detail {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   font-size: 13px;
-}
 
-.wrong-answer {
-  color: var(--el-color-danger);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  &::before {
-    content: '×';
-    font-size: 14px;
-    font-weight: 700;
+  .wrong-answer {
+    color: #f56c6c;
+    font-weight: 500;
   }
-}
 
-.correct-answer {
-  color: var(--el-color-success);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  &::before {
-    content: '✓';
-    font-size: 14px;
-    font-weight: 700;
+  .correct-answer {
+    color: #67c23a;
+    font-weight: 500;
   }
 }
 
 .history-time {
-  flex-shrink: 0;
   font-size: 12px;
   color: var(--el-text-color-secondary);
+  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
-  padding-top: 4px;
-  font-weight: 500;
 }
 
 // 响应式设计
@@ -696,29 +604,19 @@ watch(() => props.questionId, (newId) => {
 
   .detail-header {
     padding: 12px 16px;
-  }
 
-  .mistake-question-renderer {
-    margin-bottom: 12px;
+    .header-actions {
+      gap: 8px;
+    }
   }
 
   .mastery-section,
   .history-section {
     padding: 16px;
-    margin-bottom: 12px;
   }
 
   .mastery-stats {
-    gap: 24px;
-  }
-
-  .history-item {
-    padding: 10px;
-  }
-
-  .history-icon {
-    width: 32px;
-    height: 32px;
+    gap: 16px;
   }
 }
 </style>

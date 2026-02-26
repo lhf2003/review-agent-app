@@ -486,7 +486,7 @@ function handleRetry(fileId) {
   flex-direction: column;
   gap: 16px;
   min-height: 0;
-  padding: 0 4px;
+  padding: 0 6px;
   max-width: 100%;
   overflow: hidden;
   box-sizing: border-box;

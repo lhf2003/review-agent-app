@@ -77,4 +77,9 @@ public class MistakeVo {
      * 创建时间
      */
     private LocalDateTime createdTime;
+
+    /**
+     * 填空题的空位数量
+     */
+    private Integer blankCount;
 }

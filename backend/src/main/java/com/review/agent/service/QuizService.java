@@ -218,7 +218,7 @@ public class QuizService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void submitAnswer(Long questionId, String userAnswer) {
+    public SubmitAnswerResultVO submitAnswer(Long questionId, String userAnswer, Boolean reviewMode) {
         QuizQuestion question = quizQuestionRepository.findById(questionId)
                 .orElseThrow(() -> new RuntimeException("Question not found"));
 
@@ -246,10 +246,24 @@ public class QuizService {
                 question.getQuizId()
         );
 
+        // 如果是复习模式提交，更新错题的最后复习时间
+        if (Boolean.TRUE.equals(reviewMode)) {
+            mistakeBookService.updateLastReviewTime(questionId);
+        }
+
         // Update knowledge mastery
         if (question.getKnowledgePoint() != null) {
             knowledgeMasteryService.updateMastery(question.getKnowledgePoint(), isCorrect, null);
         }
+
+        // Return result
+        return new SubmitAnswerResultVO(
+                isCorrect,
+                userAnswer,
+                correctAnswer,
+                question.getExplanation(),
+                question.getKnowledgePoint()
+        );
     }
 
     /**

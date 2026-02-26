@@ -23,4 +23,9 @@ public class SubmitAnswerRequest {
      */
     @NotBlank(message = "答案不能为空")
     private String userAnswer;
+
+    /**
+     * 是否为复习模式提交
+     */
+    private Boolean reviewMode = false;
 }

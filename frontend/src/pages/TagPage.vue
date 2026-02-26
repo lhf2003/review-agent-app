@@ -109,7 +109,7 @@ function toggleTrendFullscreen() {
   width: 100%;
   overflow: hidden;
   gap: 16px;
-  padding: 0 4px;
+  padding: 0 6px;
   min-height: 0;
 }
 

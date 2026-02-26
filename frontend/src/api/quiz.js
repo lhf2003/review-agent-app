@@ -9,9 +9,12 @@ export const quizApi = {
 
   /**
    * 提交单个答案
+   * @param {number} questionId - 题目ID
+   * @param {string} userAnswer - 用户答案
+   * @param {boolean} reviewMode - 是否为复习模式
    */
-  submitAnswer(questionId, userAnswer) {
-    return request('/quiz/submit-answer', { method: 'POST', body: { questionId, userAnswer } })
+  submitAnswer(questionId, userAnswer, reviewMode = false) {
+    return request('/quiz/submit-answer', { method: 'POST', body: { questionId, userAnswer, reviewMode } })
   },
 
   /**

@@ -6,11 +6,12 @@ import QuizHistoryPage from './QuizHistoryPage.vue'
 import QuizDetailPage from './QuizDetailPage.vue'
 import MistakeListPane from '../../components/quiz/MistakeListPane.vue'
 import MistakeDetailPane from '../../components/quiz/MistakeDetailPane.vue'
+import ReviewModePane from '../../components/quiz/ReviewModePane.vue'
 import RecommendationsPage from './RecommendationsPage.vue'
 import { api } from '../../api/http'
 
 const router = useRouter()
-const activeView = ref('recommendations') // recommendations, history, mistake - 智能推荐为默认视图
+const activeView = ref('recommendations') // recommendations, history, mistake, mistake-review - 智能推荐为默认视图
 const currentQuizId = ref('')
 const mistakeCount = ref(0)
 const recommendationCount = ref(0)
@@ -74,10 +75,26 @@ function handleRecommendationsLoaded(count) {
 
 // 从推荐页面开始复习
 function handleStartReviewFromRecommendations(data) {
-  // 跳转到错题详情视图
+  // 跳转到错题详情视图，进入复习模式
   currentMistakeId.value = data.mistakeId
   currentQuestionId.value = data.questionId
-  activeView.value = 'mistake'
+  // 使用 'review' 模式，初始隐藏答案，需要用户提交
+  activeView.value = 'mistake-review'
+}
+
+// 处理复习提交完成
+function handleReviewSubmitted(questionId) {
+  // 刷新错题数量统计
+  loadMistakeCount()
+  loadRecommendationCount()
+}
+
+// 处理复习关闭（下一题或完成）
+function handleReviewClosed() {
+  // 清空当前题目，返回推荐列表
+  currentMistakeId.value = null
+  currentQuestionId.value = null
+  activeView.value = 'recommendations'
 }
 
 onMounted(() => {
@@ -181,6 +198,27 @@ onMounted(() => {
              </Transition>
            </div>
         </div>
+
+        <!-- 复习模式（独立组件） -->
+        <div v-else-if="activeView === 'mistake-review'" key="mistake-review" class="view-container">
+          <div class="review-pane-wrapper glass-panel">
+            <ReviewModePane
+              v-if="currentMistakeId"
+              :key="currentQuestionId"
+              :mistake-id="currentMistakeId"
+              :question-id="currentQuestionId"
+              @submitted="handleReviewSubmitted"
+              @closed="handleReviewClosed"
+            />
+            <div v-else class="empty-detail-state">
+              <div class="empty-icon-wrapper">
+                <el-icon :size="48"><Document /></el-icon>
+              </div>
+              <h3>暂无复习题目</h3>
+              <p>请从智能推荐中选择题目进行复习</p>
+            </div>
+          </div>
+        </div>
       </Transition>
     </main>
   </div>
@@ -194,7 +232,7 @@ onMounted(() => {
   width: 100%;
   overflow: hidden;
   gap: 16px;
-  padding: 0 4px;
+  padding: 0 6px;
   min-height: 0;
 }
 
@@ -300,6 +338,10 @@ onMounted(() => {
   position: relative;
   display: flex;
   flex-direction: column;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Adjust inner components to fit pane */
@@ -310,6 +352,13 @@ onMounted(() => {
 }
 
 /* MistakeBookPage 已有自己的布局，不需要额外宽度设置 */
+
+/* 复习模式容器 */
+.review-pane-wrapper {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+}
 
 /* Scrollbar for detail pane - Not needed as inner list scrolls */
 /* Empty State */

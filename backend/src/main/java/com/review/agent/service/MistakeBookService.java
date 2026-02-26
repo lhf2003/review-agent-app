@@ -147,6 +147,24 @@ public class MistakeBookService {
     }
 
     /**
+     * 更新错题的最后复习时间
+     * 在复习模式下答题时调用
+     *
+     * @param questionId 题目ID
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void updateLastReviewTime(Long questionId) {
+        Long userId = securityUtils.getCurrentUserId();
+        List<Mistake> mistakes = mistakeRepository.findByUserIdAndQuestionId(userId, questionId);
+
+        if (!mistakes.isEmpty()) {
+            Mistake mistake = mistakes.get(0);
+            mistake.setLastMistakeTime(LocalDateTime.now());
+            mistakeRepository.save(mistake);
+        }
+    }
+
+    /**
      * 获取用户所有错题
      *
      * @return 错题列表
@@ -280,6 +298,7 @@ public class MistakeBookService {
                             .questionText(question.getQuestionText())
                             .questionType(question.getQuestionType() != null ? question.getQuestionType().getCode() : null)
                             .knowledgePoint(question.getKnowledgePoint())
+                            .blankCount(question.getBlankCount())
                             .build();
 
             // 计算下次复习时间（艾宾浩斯遗忘曲线）
@@ -303,8 +322,21 @@ public class MistakeBookService {
             recommendations.add(vo);
         }
 
-        // 4. 按优先级排序
-        recommendations.sort((a, b) -> b.getPriority().compareTo(a.getPriority()));
+        // 4. 按优先级降序排序（优先级高的在前，相同优先级按下次复习时间升序）
+        recommendations.sort((a, b) -> {
+            int priorityCompare = Integer.compare(
+                b.getPriority() != null ? b.getPriority() : 0,
+                a.getPriority() != null ? a.getPriority() : 0
+            );
+            if (priorityCompare != 0) {
+                return priorityCompare;
+            }
+            // 优先级相同，按下次复习时间升序（快到期的在前）
+            if (a.getNextReviewDate() != null && b.getNextReviewDate() != null) {
+                return a.getNextReviewDate().compareTo(b.getNextReviewDate());
+            }
+            return 0;
+        });
 
         // 5. 限制返回数量（最多20条）
         List<com.review.agent.entity.vo.ReviewRecommendationVO> result =
@@ -485,6 +517,7 @@ public class MistakeBookService {
                             .lastMistakeTime(mistake.getLastMistakeTime())
                             .mastered(mistake.getMastered())
                             .createdTime(mistake.getCreatedTime())
+                            .blankCount(question.getBlankCount())
                             .build();
                 })
                 .filter(vo -> vo != null)
@@ -530,6 +563,7 @@ public class MistakeBookService {
                 .lastMistakeTime(mistake.getLastMistakeTime())
                 .mastered(mistake.getMastered())
                 .createdTime(mistake.getCreatedTime())
+                .blankCount(question.getBlankCount())
                 .build();
     }
 
