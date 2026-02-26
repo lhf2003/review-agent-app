@@ -27,7 +27,7 @@ public class QuickCreateResultVO {
     private Integer createdCount;
 
     /**
-     * 新解锁的成就（暂未实现）
+     * 新解锁的成就列表
      */
-    private List<Object> newlyUnlockedAchievements;
+    private List<UserStatsVo.AchievementVo> newlyUnlockedAchievements;
 }

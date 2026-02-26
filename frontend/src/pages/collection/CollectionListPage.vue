@@ -223,6 +223,13 @@ function handleQuickCreateSuccess(result) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-radius: 24px;
+  background-color: var(--el-bg-color-page);
+}
+
+/* Dark Mode - 三级背景色层级 */
+html.dark .page-container {
+  background-color: #161616;
 }
 
 .grid-container {
@@ -263,6 +270,10 @@ function handleQuickCreateSuccess(result) {
 }
 
 @media (max-width: 768px) {
+  .page-container {
+    border-radius: 20px;
+  }
+
   .header-actions {
     width: 100%;
     flex-direction: column;
@@ -270,6 +281,10 @@ function handleQuickCreateSuccess(result) {
 
   .header-actions .el-button {
     width: 100%;
+  }
+
+  .collection-card {
+    border-radius: 16px;
   }
 }
 
@@ -279,16 +294,20 @@ function handleQuickCreateSuccess(result) {
     align-items: flex-start;
     margin-bottom: 20px;
   }
-  
+
   .title-area {
     width: 100%;
+  }
+
+  .card-actions .action-btn {
+    opacity: 1;
   }
 }
 
 .collection-card {
   background: #ffffff;
   border: none;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 20px;
   margin-bottom: 20px;
   cursor: pointer;
@@ -304,7 +323,7 @@ function handleQuickCreateSuccess(result) {
   width: 48px;
   height: 48px;
   background: var(--el-fill-color-light);
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -355,8 +374,8 @@ function handleQuickCreateSuccess(result) {
 }
 
 .action-btn {
-  padding: 4px;
-  border-radius: 4px;
+  padding: 6px;
+  border-radius: 8px;
   opacity: 0;
   transition: opacity 0.2s;
   display: flex;
@@ -385,15 +404,15 @@ function handleQuickCreateSuccess(result) {
   }
 }
 
-/* Dark Mode Support */
+/* Dark Mode Support - 三级背景色层级 */
 html.dark .collection-card {
-  background: #1c1c1e;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: #161616;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 html.dark .collection-card:hover {
-  background: #2c2c2e;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  background: #25252a;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
 }
 </style>

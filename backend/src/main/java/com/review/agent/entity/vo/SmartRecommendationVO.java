@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,7 +17,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SmartRecommendationVO {
+public class SmartRecommendationVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * 推荐列表
@@ -35,7 +38,9 @@ public class SmartRecommendationVO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class RecommendationItem {
+    public static class RecommendationItem implements Serializable {
+
+        private static final long serialVersionUID = 1L;
         /**
          * 推荐ID（用于忽略操作）
          */
@@ -84,7 +89,10 @@ public class SmartRecommendationVO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class AnalysisResultPreview {
+    public static class AnalysisResultPreview implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
         /**
          * 分析结果ID
          */

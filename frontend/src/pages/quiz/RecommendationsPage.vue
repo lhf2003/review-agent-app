@@ -93,19 +93,20 @@ defineExpose({
 
     <!-- 右侧：复习推荐卡片列表 -->
     <div class="right-pane glass-panel">
-      <CustomScroll class="review-recommendations">
-        <div class="section-header">
-          <div class="header-content">
-            <h3>复习推荐</h3>
-            <p class="section-subtitle">基于艾宾浩斯遗忘曲线的智能复习计划</p>
-          </div>
-          <div class="header-decoration">
-            <el-tag effect="dark" round type="primary" class="count-tag" v-if="recommendations.length > 0">
-              {{ recommendations.length }} 项待复习
-            </el-tag>
-          </div>
+      <!-- 固定顶部栏 -->
+      <div class="section-header">
+        <div class="header-content">
+          <h3>复习推荐</h3>
+          <p class="section-subtitle">基于艾宾浩斯遗忘曲线的智能复习计划</p>
         </div>
+        <div class="header-decoration">
+          <el-tag effect="dark" round type="primary" class="count-tag" v-if="recommendations.length > 0">
+            {{ recommendations.length }} 项待复习
+          </el-tag>
+        </div>
+      </div>
 
+      <CustomScroll class="review-recommendations">
         <!-- 加载状态 -->
         <div v-if="loading" class="loading-state">
           <el-skeleton
@@ -189,18 +190,22 @@ defineExpose({
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 24px;
+  padding: 0 24px 24px 24px;
   gap: 24px;
 }
 
-// 标题区域
+// 标题区域 - 固定顶部栏样式（参考 QuizDetailPage.vue）
 .section-header {
   flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  transition: background 0.3s ease;
 
   .header-content {
     display: flex;
@@ -210,18 +215,18 @@ defineExpose({
 
   h3 {
     margin: 0;
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 600;
     letter-spacing: -0.01em;
     color: var(--el-text-color-primary);
   }
 
   .section-subtitle {
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--el-text-color-secondary);
   }
-  
+
   .count-tag {
     font-weight: 600;
     letter-spacing: 0.5px;
@@ -289,6 +294,7 @@ html.dark {
   }
 
   .section-header {
+    background: rgba(30, 41, 59, 0.7);
     border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 
@@ -339,13 +345,23 @@ html.dark {
   }
 
   .section-header {
+    padding: 12px 16px;
+
     h3 {
-      font-size: 20px;
+      font-size: 18px;
     }
-    
+
+    .section-subtitle {
+      font-size: 12px;
+    }
+
     .count-tag {
       display: none; // 移动端空间不足时隐藏
     }
+  }
+
+  .review-recommendations {
+    padding: 0 16px 16px 16px;
   }
 }
 </style>

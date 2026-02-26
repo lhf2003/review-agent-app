@@ -217,7 +217,7 @@ async function exportCollection() {
   <div class="collection-detail-page" v-loading="loading">
     <!-- 顶部导航 -->
     <div class="nav-header">
-      <el-page-header :icon="ArrowLeft" @back="router.back()">
+      <el-page-header :icon="ArrowLeft" title="返回" @back="router.back()">
         <template #content>
           <span class="header-title">合集详情</span>
         </template>
@@ -226,7 +226,7 @@ async function exportCollection() {
             导出 Markdown
           </el-button>
           <el-button type="primary" :icon="Reading" @click="startLearning" class="action-btn" round>
-            AI 学习辅导
+            AI 习题
           </el-button>
         </template>
       </el-page-header>
@@ -317,24 +317,28 @@ async function exportCollection() {
   --page-padding: 32px;
   --card-radius: 16px;
   --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   height: 100%;
   display: flex;
   flex-direction: column;
   background-color: var(--el-bg-color-page);
   overflow: hidden;
+  border-radius: 24px;
 }
 
 .nav-header {
   padding: 12px var(--page-padding);
-  background: rgba(255, 255, 255, 0.8);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   position: sticky;
   top: 0;
   z-index: 10;
   backdrop-filter: blur(20px) saturate(180%);
   transition: all 0.3s ease;
-  
+  border-radius: 20px;
+  margin: 12px 16px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
   .header-title {
     font-weight: 600;
     font-size: 18px;
@@ -351,22 +355,39 @@ async function exportCollection() {
     font-weight: 500;
     padding: 8px 20px;
     height: 36px;
+    border-radius: 10px;
     transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-    
+
     &:hover {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
     }
-    
+
     &:active {
       transform: translateY(0);
     }
   }
 }
 
+html.dark .collection-detail-page {
+  background-color: #161616;
+}
+
 html.dark .nav-header {
-  background: rgba(28, 28, 30, 0.75);
+  background: rgba(35, 35, 40, 0.9);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .hero-card {
+  background: #161616;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .problem-card {
+  background: #161616;
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .content-wrapper {
@@ -384,13 +405,13 @@ html.dark .nav-header {
 // Hero Card Styles
 .hero-card {
   background: var(--el-bg-color);
-  border-radius: var(--card-radius);
+  border-radius: 20px;
   padding: 24px;
   margin-bottom: 24px;
   position: relative;
   overflow: hidden;
   border: 1px solid var(--el-border-color-lighter);
-  box-shadow: var(--el-box-shadow-light);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 
   &.compact {
     .hero-content {
@@ -400,7 +421,7 @@ html.dark .nav-header {
       width: 48px;
       height: 48px;
       font-size: 24px;
-      border-radius: 12px;
+      border-radius: 14px;
     }
     .title {
       font-size: 20px;
@@ -424,7 +445,7 @@ html.dark .nav-header {
     width: 64px;
     height: 64px;
     background: var(--el-color-primary-light-9);
-    border-radius: 16px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -505,6 +526,7 @@ html.dark .nav-header {
   .list-container {
     flex: 1;
     min-height: 0;
+    border-radius: 14px;
     overflow: hidden;
     overflow-x: hidden;
   }
@@ -513,7 +535,7 @@ html.dark .nav-header {
 .problem-card {
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color-light);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -542,7 +564,7 @@ html.dark .nav-header {
     align-items: center;
     justify-content: center;
     background: var(--el-fill-color-light);
-    border-radius: 8px;
+    border-radius: 10px;
     transition: var(--transition-base);
     flex-shrink: 0;
   }
@@ -622,11 +644,13 @@ html.dark .nav-header {
   .problem-card {
     padding: 16px;
     gap: 12px;
-    
+    border-radius: 12px;
+
     .card-index {
       width: 32px;
       height: 32px;
       font-size: 14px;
+      border-radius: 8px;
     }
     
     .delete-btn {

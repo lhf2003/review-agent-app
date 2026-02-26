@@ -1,5 +1,6 @@
 package com.review.agent.service;
 
+import com.review.agent.entity.pojo.AchievementDefinition;
 import com.review.agent.entity.pojo.AnalysisCollection;
 import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.pojo.AnalysisTag;
@@ -8,6 +9,8 @@ import com.review.agent.entity.pojo.MainTag;
 import com.review.agent.entity.request.QuickCreateRequest;
 import com.review.agent.entity.vo.QuickCreateResultVO;
 import com.review.agent.entity.vo.SmartRecommendationVO;
+import com.review.agent.entity.vo.UserStatsVo;
+import com.review.agent.repository.AchievementDefinitionRepository;
 import com.review.agent.repository.AnalysisCollectionRepository;
 import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.AnalysisTagRepository;
@@ -18,7 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +63,12 @@ public class SmartCollectionService {
 
     @Resource
     private AnalysisCollectionRepository analysisCollectionRepository;
+
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private AchievementDefinitionRepository achievementDefinitionRepository;
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
@@ -359,12 +371,35 @@ public class SmartCollectionService {
         // 4. 清除推荐缓存
         clearRecommendationCache(userId);
 
+        // 5. 触发成就检查，获取新解锁的成就
+        List<String> newlyUnlockedCodes = userService.checkAndUnlockAchievements(userId);
+
+        // 6. 获取新解锁的成就详细信息
+        List<UserStatsVo.AchievementVo> newlyUnlockedAchievements = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(newlyUnlockedCodes)) {
+            List<AchievementDefinition> definitions = achievementDefinitionRepository.findByCodeIn(newlyUnlockedCodes);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+            for (AchievementDefinition definition : definitions) {
+                UserStatsVo.AchievementVo vo = new UserStatsVo.AchievementVo();
+                vo.setCode(definition.getCode());
+                vo.setName(definition.getName());
+                vo.setDescription(definition.getDescription());
+                vo.setIcon(definition.getIcon());
+                vo.setTarget(definition.getConditionValue());
+                vo.setUnlocked(true);
+                vo.setProgress(definition.getConditionValue());
+                vo.setUnlockedTime(LocalDateTime.now().format(formatter));
+                newlyUnlockedAchievements.add(vo);
+            }
+        }
+
         log.info("用户 {} 快速创建合集 {} 成功，包含 {} 个分析结果", userId, collection.getId(), results.size());
 
         return QuickCreateResultVO.builder()
             .collectionId(collection.getId())
             .createdCount(results.size())
-            .newlyUnlockedAchievements(Collections.emptyList())
+            .newlyUnlockedAchievements(newlyUnlockedAchievements)
             .build();
     }
 
