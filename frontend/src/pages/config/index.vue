@@ -24,6 +24,12 @@ import ConfigSidebar from './components/ConfigSidebar.vue'
   align-items: flex-start;
 }
 
+@media (max-width: 768px) {
+  .config-layout {
+    padding: 16px;
+  }
+}
+
 .sidebar-wrapper {
   width: 240px;
   flex-shrink: 0;

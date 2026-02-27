@@ -146,8 +146,7 @@ async function loadStats() {
       quizScoreTrend: data.quizScoreTrend || [],
       knowledgeMastery: data.knowledgeMastery || []
     }
-  } catch (error) {
-    console.error('加载统计数据失败:', error)
+  } catch {
   } finally {
     statsLoading.value = false
   }

@@ -195,21 +195,21 @@ function formatDate(dateStr) {
 $ease-apple: cubic-bezier(0.25, 1, 0.5, 1);
 $ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
-// Light Mode Colors
+// Light Mode Colors - Apple System Style
 $glass-bg-light: rgba(255, 255, 255, 0.7);
 $glass-border-light: rgba(255, 255, 255, 0.8);
 $glass-shadow-light: 0 8px 32px rgba(0, 0, 0, 0.06);
 $text-primary-light: #1d1d1f;
 $text-secondary-light: #6e6e73;
-$icon-bg-light: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+$icon-bg-light: linear-gradient(135deg, #4A9EFF 0%, #007AFF 100%);
 
-// Dark Mode Colors
+// Dark Mode Colors - Apple System Style
 $glass-bg-dark: rgba(30, 30, 30, 0.6);
 $glass-border-dark: rgba(255, 255, 255, 0.1);
 $glass-shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.4);
 $text-primary-dark: #f5f5f7;
 $text-secondary-dark: rgba(255, 255, 255, 0.6);
-$icon-bg-dark: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+$icon-bg-dark: linear-gradient(135deg, #5CADFF 0%, #0A84FF 100%);
 $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 
 .achievements-section {
@@ -271,11 +271,11 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
 
   .is-dark & {
     background: $icon-bg-dark;
-    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
   }
 }
 
@@ -306,12 +306,12 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 }
 
 .progress-fill {
-  stroke: #0d9488;
+  stroke: #34C759;
   stroke-linecap: round;
   transition: stroke-dasharray 0.8s $ease-apple;
 
   .is-dark & {
-    stroke: #14b8a6;
+    stroke: #30D158;
   }
 }
 
@@ -322,10 +322,10 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   transform: translate(-50%, -50%);
   font-size: 11px;
   font-weight: 700;
-  color: #0d9488;
+  color: #34C759;
 
   .is-dark & {
-    color: #14b8a6;
+    color: #30D158;
   }
 }
 
@@ -408,12 +408,12 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   }
 
   .filter-button.active & {
-    background: rgba(13, 148, 136, 0.15);
-    color: #0d9488;
+    background: rgba(0, 122, 255, 0.15);
+    color: #007AFF;
 
     .is-dark & {
-      background: rgba(20, 184, 166, 0.2);
-      color: #14b8a6;
+      background: rgba(10, 132, 255, 0.2);
+      color: #0A84FF;
     }
   }
 }
@@ -503,12 +503,12 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   justify-content: center;
   background: $icon-bg-light;
   color: white;
-  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
   transition: all 0.3s $ease-apple;
 
   .is-dark & {
     background: $icon-bg-dark;
-    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.25);
+    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.25);
   }
 
   &.is-locked {
@@ -551,11 +551,11 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 }
 
 .check-badge {
-  background: #0d9488;
+  background: #34C759;
   color: white;
 
   .is-dark & {
-    background: #14b8a6;
+    background: #30D158;
   }
 }
 
@@ -599,17 +599,17 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 
 .unlock-date {
   font-size: 11px;
-  color: #0d9488;
+  color: #007AFF;
   font-weight: 600;
-  background: rgba(13, 148, 136, 0.1);
+  background: rgba(0, 122, 255, 0.1);
   padding: 3px 8px;
   border-radius: 6px;
   white-space: nowrap;
   flex-shrink: 0;
 
   .is-dark & {
-    color: #14b8a6;
-    background: rgba(20, 184, 166, 0.15);
+    color: #0A84FF;
+    background: rgba(10, 132, 255, 0.15);
   }
 }
 
@@ -650,7 +650,7 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
+  background: linear-gradient(90deg, #34C759 0%, #30D158 100%);
   border-radius: 3px;
   transition: width 0.6s $ease-apple;
 }

@@ -260,4 +260,10 @@ onBeforeRouteLeave((to, from, next) => {
   margin: 16px 0;
   border-top-color: var(--el-border-color-lighter);
 }
+
+@media (max-width: 768px) {
+  .form-card {
+    padding: 16px;
+  }
+}
 </style>

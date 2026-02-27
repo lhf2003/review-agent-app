@@ -41,8 +41,8 @@ async function encryptPassword(password) {
         binary += String.fromCharCode(bytes[i]);
       }
       return window.btoa(binary);
-    } catch (e) {
-      console.warn('WebCrypto AES-GCM failed, falling back to forge', e);
+    } catch {
+      // WebCrypto failed, will fall back to node-forge
     }
   }
   try {
@@ -56,8 +56,7 @@ async function encryptPassword(password) {
     const tagRaw = cipher.mode.tag.getBytes();
     const combinedRaw = ivRaw + ctRaw + tagRaw;
     return window.btoa(combinedRaw);
-  } catch (e) {
-    console.error('Encryption fallback failed', e);
+  } catch {
     throw new Error('加密不可用：请使用HTTPS或更新浏览器');
   }
 }
@@ -69,10 +68,9 @@ export function getToken() {
   try {
     const token = localStorage.getItem('token')
     return token || null
-  } catch (e) {
-    console.error('Failed to get token from localStorage', e)
+  } catch {
+    return null
   }
-  return null
 }
 
 /**
@@ -86,10 +84,9 @@ export function getUserId() {
       const auth = JSON.parse(authRaw)
       return auth.userId
     }
-  } catch (e) {
-    console.error('Failed to parse auth from localStorage', e)
+  } catch {
+    return null
   }
-  return null
 }
 
 /**

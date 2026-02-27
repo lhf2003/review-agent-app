@@ -172,15 +172,15 @@ html.dark {
   --el-table-header-bg-color: #F9FAFB; /* Light gray header */
   --el-table-row-hover-bg-color: #F2F2F7 !important;
   --el-table-border-color: rgba(0, 0, 0, 0.06);
-  /* Fix white flash on theme switch - Optimized for smoothness */
-  transition: background-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  /* Remove transition to prevent scale/zoom effect on theme switch */
+  transition: none !important;
 }
 
-/* Ensure all table parts transition smoothly */
+/* Ensure table parts have no transition during theme switch */
 .el-table th.el-table__cell,
 .el-table td.el-table__cell,
 .el-table tr {
-  transition: background-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  transition: none !important;
 }
 
 .el-table th.el-table__cell {
@@ -236,8 +236,9 @@ html.dark .el-table .el-table__cell {
   height: 24px !important;
   line-height: 24px !important;
   letter-spacing: -0.01em;
-  transition: all 0.2s ease;
-  
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: background-color 0.2s ease, opacity 0.2s ease !important;
+
   /* Remove glow mixin, use flat translucent style */
   box-shadow: none !important; 
 }
@@ -318,10 +319,11 @@ html.dark {
   border-radius: 999px !important; /* Fully rounded corners (Pill shape) */
   font-weight: 500 !important;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
   border: 1px solid transparent !important; /* Cleaner border handling */
   box-shadow: none !important; /* Flat by default */
-  
+
   /* Subtle letter spacing */
   letter-spacing: -0.01em;
 }
@@ -450,7 +452,8 @@ html.dark {
   background-color: #ffffff;
   /* Enhanced shadow for separation from #F5F5F7 background */
   box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 10px 24px rgba(0,0,0,0.05), 0 20px 48px -8px rgba(0,0,0,0.04) !important;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: box-shadow 0.3s ease, transform 0.3s ease !important;
   overflow: hidden;
 }
 
@@ -531,7 +534,8 @@ html.dark {
   font-weight: 500;
   font-size: 13px;
   padding: 6px 12px;
-  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) !important; /* Smooth spring-like el-form  */
+  /* Remove transition: all to prevent scale effect on theme switch, keep only transform for the pop effect */
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
   box-shadow: none !important;
 }
 
@@ -564,7 +568,8 @@ html.dark {
   border-radius: 10px !important;
   box-shadow: none !important; /* Remove default border/shadow */
   padding: 4px 12px !important;
-  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 .el-input__wrapper:hover {

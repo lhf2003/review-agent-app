@@ -35,8 +35,7 @@ async function fetchCollections() {
   try {
     const res = await api.getCollectionList()
     collections.value = res.list || []
-  } catch (e) {
-    console.error(e)
+  } catch {
   } finally {
     loading.value = false
   }
@@ -80,7 +79,6 @@ async function handleConfirm() {
     mode.value = 'select'
     selectedCollectionId.value = null
   } catch (e) {
-    console.error('加入合集失败:', e)
     ElMessage.error(e.message || '操作失败')
   } finally {
     loading.value = false

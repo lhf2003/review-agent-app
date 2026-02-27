@@ -130,8 +130,7 @@ async function fetchModels(providerId) {
     if (models && Array.isArray(models)) {
       props.providerForms[providerId].models = models
     }
-  } catch (e) {
-    console.error('Failed to fetch models', e)
+  } catch {
   }
 }
 
@@ -190,8 +189,7 @@ async function loadSelectedModels(providerId) {
     } else {
         props.providerForms[providerId].activeModels = []
     }
-  } catch (e) {
-    console.error('Failed to load selected models', e)
+  } catch {
   }
 }
 
@@ -262,8 +260,7 @@ async function loadDefaultModels() {
                 defaultModels.value.SMART_ANALYSIS = m.modelName
             }
         })
-    } catch (e) {
-        console.error('Failed to load default models', e)
+    } catch {
     } finally {
         loadingDefaultModels.value = false
     }
@@ -297,7 +294,6 @@ async function saveDefaultModels() {
         ElMessage.success('默认模型配置已保存')
         emit('save')
     } catch (e) {
-        console.error('Failed to save default models', e)
         ElMessage.error('保存失败: ' + e.message)
     } finally {
         savingDefaultModels.value = false

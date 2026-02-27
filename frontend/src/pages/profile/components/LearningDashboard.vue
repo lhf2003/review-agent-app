@@ -126,7 +126,7 @@ const TEST_MODE = false  // 改为 true 启用
 
 if (TEST_MODE) {
   setTimeout(() => {
-    console.log('[测试] 使用测试数据替换 API 数据')
+    
     dashboardData.value = testDashboardData
   }, 2000)
 }
@@ -145,9 +145,9 @@ async function loadDashboardData() {
   loading.value = true
   try {
     const data = await quizApi.getDashboard()
-    console.log('[LearningDashboard] API 响应数据:', data)
-    console.log('[LearningDashboard] data.knowledgeRadar:', data?.knowledgeRadar)
-    console.log('[LearningDashboard] knowledgeRadar 类型:', typeof data?.knowledgeRadar, '数组长度:', Array.isArray(data?.knowledgeRadar))
+    
+    
+    
 
     if (data) {
       dashboardData.value = {
@@ -163,10 +163,10 @@ async function loadDashboardData() {
         }
       }
 
-      console.log('[LearningDashboard] dashboardData.value:', dashboardData.value)
+      
     }
   } catch (e) {
-    console.error('加载仪表盘数据失败:', e)
+    
     ElMessage.error('加载学习数据失败')
   } finally {
     loading.value = false
@@ -181,7 +181,7 @@ async function loadTrendData() {
       dashboardData.value.scoreTrend = data || []
     }
   } catch (e) {
-    console.error('加载趋势数据失败:', e)
+    
   }
 }
 

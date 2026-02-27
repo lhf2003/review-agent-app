@@ -392,8 +392,20 @@ public class QuizService {
                 return  userAnswer.trim().equalsIgnoreCase(correctAnswer.trim());
 
             case FILL_BLANK:
-                // Fill blank: allow partial match (case-insensitive)
-                return userAnswer.trim().equalsIgnoreCase(correctAnswer.trim());
+                // Fill blank: split by comma/semicolon, compare each blank case-insensitively
+                String[] userBlanks = userAnswer.split("[,;]");
+                String[] correctBlanks = correctAnswer.split("[,;]");
+
+                if (userBlanks.length != correctBlanks.length) {
+                    return false;
+                }
+
+                for (int i = 0; i < userBlanks.length; i++) {
+                    if (!userBlanks[i].trim().equalsIgnoreCase(correctBlanks[i].trim())) {
+                        return false;
+                    }
+                }
+                return true;
 
             case SINGLE_CHOICE:
             case CODE_SNIPPET:

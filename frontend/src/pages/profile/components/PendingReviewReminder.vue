@@ -37,7 +37,7 @@ async function loadPendingStats() {
       stats.value = resp
     }
   } catch (e) {
-    console.error('Failed to load pending stats:', e)
+    
   }
 }
 
@@ -47,7 +47,7 @@ async function loadPendingReviews() {
     const resp = await request('/notification/pending')
     pendingReviews.value = Array.isArray(resp) ? resp.slice(0, 5) : []
   } catch (e) {
-    console.error('Failed to load pending reviews:', e)
+    
   } finally {
     loading.value = false
   }

@@ -142,8 +142,7 @@ public class MistakeBookController {
      * 稍后复习（延迟复习提醒）
      *
      * @param request 请求体 {mistakeId: 123, hours: 24}
-     * @return 操作结果
-     */
+     * @retu
     @PostMapping("/snooze")
     public BaseResponse<Void> snoozeReview(@Valid @RequestBody SnoozeReviewRequest request) {
         try {

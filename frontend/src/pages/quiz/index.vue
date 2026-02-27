@@ -53,7 +53,7 @@ async function loadMistakeCount() {
     const stats = await api.getMistakeStats()
     mistakeCount.value = stats.totalCount || 0
   } catch (error) {
-    console.error('加载错题数量失败:', error)
+    
   }
 }
 
@@ -64,7 +64,7 @@ async function loadRecommendationCount() {
     // 使用未掌握的错题数量作为推荐数量
     recommendationCount.value = stats.unmastered || 0
   } catch (error) {
-    console.error('加载推荐数量失败:', error)
+    
   }
 }
 

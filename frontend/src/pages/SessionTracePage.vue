@@ -40,7 +40,7 @@ async function fetchSimilarIssues() {
     const res = await api.getSimilarIssues(activeSession.value.analysisResultId)
     similarIssues.value = res || []
   } catch (e) {
-    console.error(e)
+    
     similarIssues.value = []
   }
 }

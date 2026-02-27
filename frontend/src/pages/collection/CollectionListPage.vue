@@ -227,6 +227,13 @@ function handleQuickCreateSuccess(result) {
   background-color: var(--el-bg-color-page);
 }
 
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px;
+    border-radius: 16px;
+  }
+}
+
 /* Dark Mode - 三级背景色层级 */
 html.dark .page-container {
   background-color: #161616;

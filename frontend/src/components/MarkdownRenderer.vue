@@ -59,9 +59,8 @@ function handleClick(e) {
             btn.textContent = originalText
             btn.classList.remove('copied')
           }, 2000)
-        }).catch(err => {
+        }).catch(() => {
           ElMessage.error('复制失败')
-          console.error(err)
         })
       }
     }

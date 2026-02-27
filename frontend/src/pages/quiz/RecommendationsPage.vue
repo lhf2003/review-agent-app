@@ -277,10 +277,11 @@ defineExpose({
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 
+  box-shadow:
     0 4px 24px -1px rgba(0, 0, 0, 0.04),
     0 0 0 1px rgba(255, 255, 255, 0.3) inset;
-  transition: all 0.3s ease;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: box-shadow 0.3s ease, transform 0.3s ease !important;
 }
 
 // 深色模式适配

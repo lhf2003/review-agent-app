@@ -234,8 +234,7 @@ async function loadRecommendations() {
         selectRecommendation(recommendations.value[0])
       }
     }
-  } catch (e) {
-    console.error('加载推荐失败:', e)
+  } catch {
   } finally {
     loading.value = false
   }

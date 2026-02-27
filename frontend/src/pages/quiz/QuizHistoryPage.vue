@@ -109,7 +109,7 @@ async function loadCollections() {
     const result = await api.getCollectionList()
     collectionOptions.value = result.list || []
   } catch (error) {
-    console.error('加载合集列表失败:', error)
+    
   }
 }
 
@@ -265,7 +265,8 @@ onMounted(() => {
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.24);
   box-shadow: 0 2px 16px -1px rgba(0, 0, 0, 0.04);
-  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: box-shadow 0.25s ease, transform 0.25s ease !important;
 }
 
 .glass-card:hover {
@@ -324,7 +325,8 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
-  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease !important;
   box-shadow: none !important;
 }
 
@@ -390,7 +392,8 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
   background: rgba(255, 255, 255, 0.6);
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: none;
-  transition: all 0.2s ease;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: border-color 0.2s ease, background-color 0.2s ease !important;
   padding: 1px 11px;
 }
 
@@ -581,7 +584,8 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: background-color 0.2s ease, transform 0.2s ease !important;
 }
 
 .create-btn:hover {
@@ -614,7 +618,8 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
   height: 28px;
   border-radius: 6px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: background-color 0.2s ease, color 0.2s ease !important;
   font-size: 12px;
 }
 
@@ -630,7 +635,7 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
 
 @media (max-width: 768px) {
   .quiz-history-page {
-    padding: 12px;
+    padding: 16px;
   }
 }
 

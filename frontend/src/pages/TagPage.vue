@@ -263,4 +263,11 @@ html.dark .nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-
   background-color: var(--el-color-primary);
   color: white;
 }
+
+/* ============ Responsive ============ */
+@media (max-width: 768px) {
+  .glass-panel {
+    padding: 16px;
+  }
+}
 </style>

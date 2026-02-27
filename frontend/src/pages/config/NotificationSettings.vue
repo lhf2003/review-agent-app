@@ -76,7 +76,7 @@ async function requestNotificationPermission() {
       ElMessage.warning('通知权限被拒绝，请在浏览器设置中开启')
     }
   } catch (e) {
-    console.error('Failed to request notification permission:', e)
+    
     ElMessage.error('请求通知权限失败')
   }
 }
@@ -476,5 +476,11 @@ html.dark .form-card {
 
 html.dark .info-card {
   background: rgba(50, 50, 50, 0.6);
+}
+
+@media (max-width: 768px) {
+  .form-card {
+    padding: 16px;
+  }
 }
 </style>

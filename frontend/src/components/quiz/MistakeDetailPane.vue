@@ -63,8 +63,7 @@ async function loadMistakeHistory() {
   try {
     const history = await api.getMistakeHistory(props.mistakeId)
     mistakeHistory.value = history
-  } catch (error) {
-    console.error('加载错题历史失败:', error)
+  } catch {
   }
 }
 
@@ -356,7 +355,8 @@ watch(() => props.questionId, (newId) => {
   background: var(--el-color-primary-light-9);
   padding: 6px;
   border-radius: 8px;
-  transition: all 0.2s ease;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: transform 0.2s ease !important;
 
   html.dark & {
     background: rgba(64, 158, 255, 0.15);
@@ -377,7 +377,8 @@ watch(() => props.questionId, (newId) => {
   border-radius: 16px;
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: box-shadow 0.3s ease, transform 0.3s ease !important;
 
   &:hover {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
@@ -430,7 +431,8 @@ watch(() => props.questionId, (newId) => {
   border: 1px solid rgba(64, 158, 255, 0.15);
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: box-shadow 0.3s ease, transform 0.3s ease !important;
 
   &::before {
     content: '';
@@ -528,7 +530,8 @@ watch(() => props.questionId, (newId) => {
   background: rgba(245, 108, 108, 0.04);
   border-radius: 12px;
   border: 1px solid rgba(245, 108, 108, 0.1);
-  transition: all 0.2s ease;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: background-color 0.2s ease, transform 0.2s ease !important;
 
   &:hover {
     background: rgba(245, 108, 108, 0.08);

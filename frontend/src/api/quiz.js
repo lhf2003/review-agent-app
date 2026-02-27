@@ -156,16 +156,9 @@ export const quizApi = {
    * @param {number} mistakeId - 错题ID
    */
   getMistakeHistory(mistakeId) {
-    console.log('[quizApi] 请求错题历史，mistakeId:', mistakeId)
     return request(`/mistake-book/history/${mistakeId}`)
-      .then(data => {
-        console.log('[quizApi] 错题历史响应:', data)
-        return Array.isArray(data) ? data : []
-      })
-      .catch(error => {
-        console.error('[quizApi] 获取错题历史失败:', error)
-        return []
-      })
+      .then(data => Array.isArray(data) ? data : [])
+      .catch(() => [])
   },
 
   // ========== 学习仪表盘 ==========

@@ -65,8 +65,7 @@ async function loadWordCloud() {
     const data = await api.getWordReport(dates.startDate, dates.endDate)
     wordCloudSource.value = data || {}
     updateWordCloudChart()
-  } catch (e) {
-    console.error(e)
+  } catch {
   }
 }
 

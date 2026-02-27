@@ -47,7 +47,6 @@ export const analysisApi = {
    */
   getAnalysisByFile(fileId) {
     // return request('/analysis/by-file', { params: { fileId } })
-    console.warn('[API] getAnalysisByFile 使用 mock 数据，后端接口暂未实现')
     return Promise.resolve({
       list: [
         { id: 11, title: '示例详情', problemStatement: '示例问题详情', rootCause: '示例根因', mastery: 50, tags: ['Demo'], date: '2025-11-29' },

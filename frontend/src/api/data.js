@@ -33,9 +33,8 @@ export const dataApi = {
    * 更新文件状态
    * ⚠️ 后端暂未提供此接口，暂时禁用
    */
-  updateFileStatus(id, status) {
-    // return request('/file-info/status', { method: 'PATCH', params: { id, status } })
-    console.warn('[API] updateFileStatus 接口后端暂未实现')
+  updateFileStatus() {
+    // API not implemented on backend yet
     return Promise.reject(new Error('接口未实现'))
   },
 
@@ -86,9 +85,8 @@ export const dataApi = {
    * 更新数据状态
    * ⚠️ 后端暂未提供此接口，暂时禁用
    */
-  dataUpdateStatus(id, status) {
-    // return request('/data/status', { method: 'PATCH', params: { id, status } })
-    console.warn('[API] dataUpdateStatus 接口后端暂未实现')
+  dataUpdateStatus() {
+    // API not implemented on backend yet
     return Promise.reject(new Error('接口未实现'))
   },
 

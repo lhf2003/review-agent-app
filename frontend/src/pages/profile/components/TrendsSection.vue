@@ -147,7 +147,7 @@ async function loadStats() {
       knowledgeMastery: data.knowledgeMastery || []
     }
   } catch (error) {
-    console.error('加载统计数据失败:', error)
+    
   } finally {
     statsLoading.value = false
   }

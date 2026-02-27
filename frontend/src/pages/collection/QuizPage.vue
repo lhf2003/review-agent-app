@@ -69,7 +69,6 @@ async function startQuiz() {
       ElMessage.warning('未能生成题目，请确保合集有已分析的内容')
     }
   } catch (e) {
-    console.error('生成题目失败:', e)
     ElMessage.error(`生成题目失败: ${e.message || '未知错误'}`)
   } finally {
     loading.value = false
@@ -172,8 +171,6 @@ async function submitAllAnswers() {
     showResultDialog.value = true
 
   } catch (e) {
-    console.error('提交答案失败:', e)
-
     // 根据错误类型显示不同提示
     if (e.response?.status === 401) {
       ElMessage.error('登录已过期，请重新登录')

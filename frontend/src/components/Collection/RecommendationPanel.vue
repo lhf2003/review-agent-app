@@ -113,8 +113,7 @@ async function loadRecommendations() {
       recommendations.value = data.recommendations || []
       totalUnarchived.value = data.totalUnarchived || 0
     }
-  } catch (e) {
-    console.error('加载推荐失败:', e)
+  } catch {
   } finally {
     loading.value = false
   }

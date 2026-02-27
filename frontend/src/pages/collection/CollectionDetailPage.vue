@@ -198,7 +198,6 @@ async function exportCollection() {
   try {
     exporting.value = true
     const blob = await api.exportCollection(info.value.id)
-    console.log('导出的 Blob:', blob)
     // 从 Content-Disposition 提取文件名，或使用默认名称
     const safeName = (info.value.name || 'collection').replace(/[\\/:*?"<>|]/g, '_')
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')

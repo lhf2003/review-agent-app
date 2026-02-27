@@ -46,16 +46,13 @@ async function loadQuestionDetail() {
   loading.value = true
   try {
     // 通过questionId精确查询错题详情
-    console.log('[MistakeDrawer] 精确查询错题详情，questionId:', props.questionId)
     const target = await quizApi.getMistakeByQuestionId(props.questionId)
 
     if (target) {
       questionDetail.value = target
 
       // 获取错误历史
-      console.log('[MistakeDrawer] 获取错题历史，mistakeId:', target.id)
       const history = await quizApi.getMistakeHistory(target.id)
-      console.log('[MistakeDrawer] 错题历史数据:', history)
 
       mistakeHistory.value = history.map(h => ({
         date: h.createdTime,
@@ -79,11 +76,9 @@ async function loadQuestionDetail() {
         lastReview: target.lastMistakeTime
       }
     } else {
-      console.warn('[MistakeDrawer] 未找到错题记录，questionId:', props.questionId)
       ElMessage.warning('未找到该题目的错题记录')
     }
   } catch (e) {
-    console.error('[MistakeDrawer] 加载题目详情失败:', e)
     ElMessage.error('加载题目详情失败: ' + e.message)
   } finally {
     loading.value = false

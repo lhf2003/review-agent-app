@@ -138,7 +138,7 @@ async function fetchMistakes() {
     }))
     updateStats(mistakes.value)
   } catch (error) {
-    console.error('获取错题列表失败:', error)
+    
     ElMessage.error('加载错题失败')
   } finally {
     loading.value = false
@@ -234,7 +234,7 @@ const markAsMastered = async (mistake) => {
     // 更新统计
     updateStats(mistakes.value)
   } catch (error) {
-    console.error('标记失败:', error)
+    
     ElMessage.error('标记失败')
   }
 }
@@ -302,7 +302,7 @@ const batchAction = async (action, actionName) => {
     fetchMistakes()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('操作失败:', error)
+      
       ElMessage.error(`${actionName}失败`)
     }
   }

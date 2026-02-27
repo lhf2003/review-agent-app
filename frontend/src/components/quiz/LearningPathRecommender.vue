@@ -49,8 +49,7 @@ async function loadRecommendations() {
     }))
 
     emit('recommendations-loaded', recommendations.value)
-  } catch (e) {
-    console.error('加载推荐失败:', e)
+  } catch {
     ElMessage.error('加载推荐失败')
   } finally {
     loading.value = false

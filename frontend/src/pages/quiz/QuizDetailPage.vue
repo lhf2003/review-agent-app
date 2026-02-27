@@ -61,7 +61,7 @@ function parseOptions(optionsJson) {
   try {
     return JSON.parse(optionsJson)
   } catch (e) {
-    console.error('解析选项失败:', e)
+    
     return []
   }
 }
@@ -300,7 +300,8 @@ onMounted(() => {
   padding: 4px;
   border-radius: 6px;
   display: flex;
-  transition: all 0.2s ease;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: transform 0.2s ease !important;
 }
 
 .title-text {
@@ -363,12 +364,16 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  .quiz-detail-page {
+    padding: 16px;
+  }
+
   .page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .header-right {
     width: 100%;
     justify-content: space-between;

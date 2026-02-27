@@ -144,12 +144,10 @@ function onAction(row) {
       },
       onErrorEvent: (errorMessage) => {
         // 后端发送的错误事件
-        console.error('[DataPage] 分析失败:', errorMessage)
         analysisError.value = true
       },
-      onError: (err) => {
+      onError: () => {
         // 网络错误或连接错误
-        console.error('[DataPage] SSE 连接错误:', err)
         analysisError.value = true
       },
       onDone: () => {
@@ -210,7 +208,6 @@ onMounted(() => {
         }, 30000)
       } else {
         // 元素未准备好，跳过本次引导
-        console.warn('[Tour] 部分目标元素未渲染，跳过引导')
       }
     }, 1500)
   }

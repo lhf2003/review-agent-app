@@ -92,7 +92,6 @@ async function submitAnswer() {
 
     emit('submitted', props.questionId)
   } catch (error) {
-    console.error('提交答案错误:', error)
     ElMessage.error('提交失败: ' + (error.message || '未知错误'))
   } finally {
     submitting.value = false

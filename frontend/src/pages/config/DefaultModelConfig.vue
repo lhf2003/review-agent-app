@@ -191,7 +191,7 @@ async function loadDefaultModels() {
             }
         })
     } catch (e) {
-        console.error('Failed to load default models', e)
+        
     } finally {
         loadingDefaultModels.value = false
     }
@@ -226,7 +226,7 @@ async function loadModelConfig() {
             })
         }
     } catch (e) {
-        console.error('Failed to load model config', e)
+        
     }
 }
 
@@ -244,7 +244,7 @@ async function loadSelectedModels(providerId) {
         providerForms.value[providerId].activeModels = []
     }
   } catch (e) {
-    console.error('Failed to load selected models', e)
+    
   }
 }
 
@@ -275,7 +275,7 @@ async function saveDefaultModels() {
         await api.updateUserDefaultModels(modelConfigs)
         ElMessage.success('默认模型配置已保存')
     } catch (e) {
-        console.error('Failed to save default models', e)
+        
         ElMessage.error('保存失败: ' + e.message)
     } finally {
         savingDefaultModels.value = false
@@ -354,5 +354,15 @@ async function saveDefaultModels() {
   padding: 12px 32px;
   font-weight: 600;
   border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .config-container {
+    padding: 16px;
+  }
+
+  .save-section {
+    padding-top: 16px;
+  }
 }
 </style>

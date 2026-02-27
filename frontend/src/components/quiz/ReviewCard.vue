@@ -136,8 +136,7 @@ async function handleDismiss(event) {
   try {
     await quizApi.snoozeReview(props.recommendation.mistakeId, 24)
     emit('dismiss', props.recommendation)
-  } catch (error) {
-    console.error('延迟复习失败:', error)
+  } catch {
     ElMessage.error('操作失败,请稍后重试')
   }
 }

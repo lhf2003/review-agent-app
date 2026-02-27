@@ -66,8 +66,7 @@ async function loadTrend() {
     const res = await api.getDateTagCountTrend(dates.startDate, dates.endDate)
     trendSource.value = res || {}
     updateTrendChart()
-  } catch (e) {
-    console.error(e)
+  } catch {
   } finally {
     trendLoading.value = false
   }

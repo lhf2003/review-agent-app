@@ -55,8 +55,7 @@ async function fetchMistakes() {
       mastered: m.mastered,
       createdTime: m.createdTime
     }))
-  } catch (error) {
-    console.error('获取错题列表失败:', error)
+  } catch {
     ElMessage.error('加载错题失败')
   } finally {
     loading.value = false
@@ -142,8 +141,7 @@ const markAsMastered = async (mistake) => {
     if (filterMode.value !== 'all') {
       mistakes.value = mistakes.value.filter(m => m.id !== mistake.id)
     }
-  } catch (error) {
-    console.error('标记失败:', error)
+  } catch {
     ElMessage.error('标记失败')
   }
 }
@@ -189,7 +187,6 @@ const batchAction = async (action, actionName) => {
     fetchMistakes()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('操作失败:', error)
       ElMessage.error(`${actionName}失败`)
     }
   }
@@ -396,7 +393,8 @@ defineExpose({ refreshMistakes })
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.24);
   box-shadow: 0 2px 16px -1px rgba(0, 0, 0, 0.04);
-  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: box-shadow 0.25s ease, transform 0.25s ease !important;
 }
 
 html.dark .glass-panel {
@@ -480,7 +478,8 @@ html.dark .filter-bar {
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
-    transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    /* Remove transition: all to prevent scale effect on theme switch */
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease !important;
     box-shadow: none !important;
 
     &:hover {
@@ -543,7 +542,8 @@ html.dark .custom-radio-group {
       border: 1px solid rgba(0, 0, 0, 0.06);
       border-radius: 10px;
       padding: 4px 12px;
-      transition: all 0.2s ease;
+      /* Remove transition: all to prevent scale effect on theme switch */
+      transition: border-color 0.2s ease, background-color 0.2s ease !important;
       box-shadow: none;
 
       &:hover {
@@ -657,7 +657,8 @@ html.dark .custom-radio-group {
   border-radius: 16px;
   padding: 16px;
   overflow: hidden;
-  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease !important;
   cursor: pointer;
   position: relative;
   box-shadow: 0 2px 16px -1px rgba(0, 0, 0, 0.04);
@@ -775,7 +776,8 @@ html.dark .custom-radio-group {
   color: var(--el-text-color-secondary);
   padding: 4px 8px;
   border-radius: 6px;
-  transition: all 0.2s ease;
+  /* Remove transition: all to prevent scale effect on theme switch */
+  transition: background-color 0.2s ease !important;
 
   .el-icon {
     font-size: 12px;

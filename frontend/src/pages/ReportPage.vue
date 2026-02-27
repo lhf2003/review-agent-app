@@ -416,4 +416,11 @@ html.dark .card-footer {
   border-bottom: none;
   margin-bottom: 0.5em;
 }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header-section {
+    padding: 20px 16px 16px;
+  }
+}
 </style>

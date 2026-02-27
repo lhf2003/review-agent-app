@@ -179,7 +179,7 @@ async function loadData() {
             })
         }
     } catch (e) {
-        console.error('Failed to load data', e)
+        
         ElMessage.error('加载配置失败')
     } finally {
         loading.value = false
@@ -260,7 +260,7 @@ async function fetchModels(providerId) {
       providerForms.value[providerId].models = models
     }
   } catch (e) {
-    console.error('Failed to fetch models', e)
+    
   }
 }
 
@@ -317,7 +317,7 @@ async function loadSelectedModels(providerId) {
         providerForms.value[providerId].activeModels = []
     }
   } catch (e) {
-    console.error('Failed to load selected models', e)
+    
   }
 }
 
@@ -691,5 +691,11 @@ async function saveConfig() {
 .save-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+@media (max-width: 768px) {
+  .provider-config-container {
+    padding: 16px 20px;
+  }
 }
 </style>

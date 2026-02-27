@@ -46,7 +46,7 @@ export function useAchievements() {
         }
       }
     } catch (e) {
-      console.error('加载学习成就数据失败:', e)
+      
     } finally {
       loading.value.achievements = false
       loading.value.trends = false
