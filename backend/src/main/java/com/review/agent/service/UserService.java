@@ -241,7 +241,8 @@ public class UserService {
         }
         userConfigRepository.save(userConfigFromDb);
         // 刷新定时任务
-        if (updateRequest.getScanIntervalSeconds() != null || updateRequest.getDailyAnalysisTime() != null || updateRequest.getWeeklyAnalysisTime() != null) {
+        if (updateRequest.getScanIntervalSeconds() != null || updateRequest.getDailyAnalysisTime() != null || updateRequest.getWeeklyAnalysisTime() != null
+                || updateRequest.getAutoAnalysisEnabled() != null || updateRequest.getAnalysisIntervalMinutes() != null) {
             dynamicScheduledService.reloadUserTask(userId);
         }
     }

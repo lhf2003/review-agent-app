@@ -66,4 +66,13 @@ public interface DataInfoRepository extends JpaRepository<DataInfo, Long> {
     @Modifying
     @Query("delete from DataInfo d where d.id = :id")
     void hardDelete(@Param("id") Long id);
+
+    /**
+     * 查询用户最早未分析的数据（按创建时间升序，取最早的一个）
+     * 状态：0=未分析, 3=有更新
+     * @param userId 用户ID
+     * @return 未分析的数据，没有返回null
+     */
+    @Query("select d from DataInfo d where d.userId = :userId and d.deleted = false and (d.processedStatus = 0 or d.processedStatus = 3) order by d.createdTime asc")
+    List<DataInfo> findUnprocessedByUserIdOrderByCreatedTimeAsc(@Param("userId") Long userId, Pageable pageable);
 }

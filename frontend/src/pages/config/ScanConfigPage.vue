@@ -11,7 +11,9 @@ const loading = ref(false)
 const form = ref({
   scanDirectory: '',
   autoScanEnabled: true,
-  scanIntervalHours: 1
+  scanIntervalHours: 1,
+  autoAnalysisEnabled: false,
+  analysisIntervalMinutes: 10
 })
 
 const originalForm = ref(null)
@@ -30,6 +32,8 @@ async function loadConfig() {
     form.value.autoScanEnabled = !!cfg?.autoScanEnabled
     const seconds = cfg?.scanIntervalSeconds ?? 3600
     form.value.scanIntervalHours = Math.max(1, Math.min(12, Math.round(seconds / 3600)))
+    form.value.autoAnalysisEnabled = !!cfg?.autoAnalysisEnabled
+    form.value.analysisIntervalMinutes = cfg?.analysisIntervalMinutes ?? 10
 
     originalForm.value = JSON.parse(JSON.stringify(form.value))
   } catch (e) {
@@ -46,7 +50,9 @@ async function saveConfig() {
       userId: Number(auth.userId),
       scanDirectory: form.value.scanDirectory,
       autoScanEnabled: form.value.autoScanEnabled,
-      scanIntervalSeconds: form.value.scanIntervalHours * 3600
+      scanIntervalSeconds: form.value.scanIntervalHours * 3600,
+      autoAnalysisEnabled: form.value.autoAnalysisEnabled,
+      analysisIntervalMinutes: form.value.analysisIntervalMinutes
     }
 
     await api.updateConfig(body)
@@ -126,6 +132,31 @@ onBeforeRouteLeave((to, from, next) => {
           </el-form-item>
         </template>
       </div>
+
+      <div class="form-card" style="margin-top: 24px;">
+        <el-form-item class="flex-item">
+          <template #label>
+            <div class="label-text">
+              <span>自动分析</span>
+              <span class="sub-label">定时分析未处理的数据文件</span>
+            </div>
+          </template>
+          <el-switch v-model="form.autoAnalysisEnabled" />
+        </el-form-item>
+
+        <template v-if="form.autoAnalysisEnabled">
+          <el-divider />
+          <el-form-item label="分析间隔">
+            <div class="slider-container">
+              <span class="slider-val">{{ form.analysisIntervalMinutes }} 分钟</span>
+              <el-slider v-model="form.analysisIntervalMinutes" :min="5" :max="60" :step="5" show-stops />
+            </div>
+            <div class="help-text">
+              建议：高频使用设为5-10分钟，日常使用设为15-30分钟
+            </div>
+          </el-form-item>
+        </template>
+      </div>
     </el-form>
 
     <div class="floating-save-bar">
@@ -187,6 +218,13 @@ onBeforeRouteLeave((to, from, next) => {
   font-weight: normal;
   color: var(--el-text-color-secondary);
   margin-top: 2px;
+}
+
+.help-text {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  margin-top: 8px;
+  line-height: 1.5;
 }
 
 .slider-container {

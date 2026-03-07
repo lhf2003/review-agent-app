@@ -31,7 +31,7 @@ import static com.review.agent.common.constant.CommonConstant.*;
 @Slf4j
 @Service
 public class DataInfoService {
-    @Resource
+@Resource
     private DataInfoRepository dataInfoRepository;
     @Resource
     private SyncRecordService syncRecordService;

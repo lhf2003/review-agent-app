@@ -41,7 +41,7 @@ public class AnalysisResult {
     @Column(name = "session_end", columnDefinition = "TINYINT")
     private Integer sessionEnd;
 
-    @Column(name = "session_content")
+    @Column(name = "session_content", columnDefinition = "LONGTEXT")
     private String sessionContent;
 
     @NotNull

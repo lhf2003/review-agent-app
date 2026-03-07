@@ -55,5 +55,16 @@ public class UserConfig {
     @Column(name = "weekly_cron")
     private String weeklyCron;
 
+    /**
+     * 是否启用自动分析
+     */
+    @Column(name = "auto_analysis_enabled", columnDefinition = "TINYINT")
+    private Boolean autoAnalysisEnabled;
+
+    /**
+     * 自动分析间隔（分钟）
+     */
+    @Column(name = "analysis_interval_minutes")
+    private Integer analysisIntervalMinutes;
 
 }

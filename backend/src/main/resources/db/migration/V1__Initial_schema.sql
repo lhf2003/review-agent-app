@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS analysis_result
     solution          LONGTEXT               NULL COMMENT 'AI回复的解决方案',
     session_start     TINYINT                NULL COMMENT '会话开始索引',
     session_end       TINYINT                NULL COMMENT '会话结束索引',
-    session_content   LONGTEXT               NULL COMMENT '会话内容',
+    session_content   TEXT               NULL COMMENT '会话内容',
     status            TINYINT                NOT NULL COMMENT '状态（0=失败 1=成功）',
     created_time      datetime DEFAULT NOW() NULL COMMENT '创建时间',
     deleted           TINYINT(1) DEFAULT 0   NOT NULL COMMENT '删除标记（0-未删除 1-已删除）',

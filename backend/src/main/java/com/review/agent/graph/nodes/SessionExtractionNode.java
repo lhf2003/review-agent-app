@@ -6,6 +6,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONObject;
+import com.review.agent.common.utils.JsonlUtils;
 import com.review.agent.entity.dto.NodeExecuteDto;
 import com.review.agent.graph.utils.NodeRetryHelper;
 import com.review.agent.service.PromptService;
@@ -56,6 +57,22 @@ public class SessionExtractionNode implements NodeAction {
         } else if (optional instanceof List<?> strings) {
             userId = Long.parseLong(strings.get(1).toString());
         }
+
+        // 检查是否为 JSONL 格式（新格式）
+        if (JsonlUtils.isJsonlFormat(originalContent)) {
+            log.info("SessionExtractionNode 检测到 JSONL 格式，直接解析，fileId={}", fileId);
+            List<NodeExecuteDto> nodeDtoList = JsonlUtils.parseJsonlContent(originalContent, userId, fileId);
+            if (!nodeDtoList.isEmpty()) {
+                log.info("SessionExtractionNode JSONL 解析完成: fileId={}, 会话数={}", fileId, nodeDtoList.size());
+                return Map.of("nodeResult", nodeDtoList);
+            }
+            // JSONL 解析失败，降级为单个会话
+            log.warn("SessionExtractionNode JSONL 解析为空，使用降级策略，fileId={}", fileId);
+            return Map.of("nodeResult", createFallbackSession(originalContent, userId, fileId));
+        }
+
+        // 旧格式：使用 AI 提取会话
+        log.info("SessionExtractionNode 使用 AI 提取会话，fileId={}", fileId);
 
         // 获取系统提示词
         String systemPrompt = promptService.getSessionExtractionPrompt("");

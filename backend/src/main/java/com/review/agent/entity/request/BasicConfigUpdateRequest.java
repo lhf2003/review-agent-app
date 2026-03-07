@@ -41,4 +41,14 @@ public class BasicConfigUpdateRequest {
      */
     @JsonFormat(pattern = "HH:mm:ss", timezone = "GMT+8")
     private LocalTime weeklyAnalysisTime;
+
+    /**
+     * 是否启用自动分析
+     */
+    private Boolean autoAnalysisEnabled;
+
+    /**
+     * 自动分析间隔（分钟）
+     */
+    private Integer analysisIntervalMinutes;
 }
