@@ -4,51 +4,69 @@ import com.review.agent.entity.pojo.AnalysisTag;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * 分析结果-标签关联Repository
+ */
+@Repository
 public interface AnalysisTagRepository extends JpaRepository<AnalysisTag, Long> {
+
     /**
-     * 查询主标签被使用次数
-     * @param tagId 主标签id
-     * @return 被使用次数
+     * 根据分析结果ID查询关联
      */
-    @Query("select count(at) from AnalysisTag at where at.tagId = :tagId")
+    List<AnalysisTag> findByAnalysisResultId(Long analysisResultId);
+
+    /**
+     * 根据多个分析结果ID查询关联
+     */
+    List<AnalysisTag> findByAnalysisResultIdIn(List<Long> analysisResultIds);
+
+    /**
+     * 根据标签ID查询关联
+     */
+    List<AnalysisTag> findByTagId(Long tagId);
+
+    /**
+     * 根据分析结果和标签查询
+     */
+    AnalysisTag findByAnalysisResultIdAndTagId(Long analysisResultId, Long tagId);
+
+    /**
+     * 查询主标签
+     */
+    @Query("SELECT at FROM AnalysisTag at WHERE at.analysisResultId = :analysisResultId AND at.isPrimary = true")
+    List<AnalysisTag> findPrimaryTagsByAnalysisResultId(@Param("analysisResultId") Long analysisResultId);
+
+    /**
+     * 删除分析结果的所有标签关联
+     */
+    void deleteByAnalysisResultId(Long analysisResultId);
+
+    /**
+     * 统计某标签被使用的次数
+     */
     long countByTagId(Long tagId);
 
     /**
-     * 查询子标签被使用次数
-     * @param tagId 子标签id
-     * @return 被使用次数
+     * 查询置信度高于阈值的所有关联
      */
-    @Query("select count(at) from AnalysisTag at where at.subTagId = :tagId")
-    long countBySubTagId(Long tagId);
-
-    @Query("select at from AnalysisTag at where at.analysisId in :analysisIdList")
-    List<AnalysisTag> findByAnalysisIdIn(List<Long> analysisIdList);
-
-
-    @Query("""
-            select ar from AnalysisTag ar where ar.analysisId in :analysisResultIdList
-            """)
-    List<AnalysisTag> findAllByAnalysisResultId(List<Long> analysisResultIdList);
+    @Query("SELECT at FROM AnalysisTag at WHERE at.confidence >= :minConfidence")
+    List<AnalysisTag> findByConfidenceGreaterThanEqual(@Param("minConfidence") Integer minConfidence);
 
     /**
-     * 通过合集ID获取标签详情（包括标签名称）
-     *
-     * @param collectionId 合集ID
-     * @return 标签详情列表 [mainTagName, subTagName, recommends]
+     * 根据合集ID查询标签详情
+     * 返回: [标签名称, 父标签名称]
      */
-    @Query(value = "SELECT DISTINCT mt.name, st.name, at.recommends " +
-            "FROM analysis_collection ac " +
-            "JOIN collection_relation cr ON ac.id = cr.collection_id " +
-            "JOIN analysis_result ar ON cr.analysis_result_id = ar.id " +
-            "JOIN analysis_tag at ON ar.id = at.analysis_id " +
-            "LEFT JOIN main_tag mt ON at.tag_id = mt.id " +
-            "LEFT JOIN sub_tag st ON FIND_IN_SET(CAST(st.id AS CHAR), at.sub_tag_id) > 0 " +
-            "WHERE ac.id = :collectionId " +
-            "AND ar.deleted = 0 " +
-            "AND ac.deleted = 0", nativeQuery = true)
+    @Query("""
+        SELECT DISTINCT t.name, parent.name
+        FROM CollectionRelation cr
+        JOIN AnalysisTag at ON cr.analysisResultId = at.analysisResultId
+        JOIN Tag t ON at.tagId = t.id
+        LEFT JOIN Tag parent ON t.parentId = parent.id
+        WHERE cr.collectionId = :collectionId
+        """)
     List<Object[]> findTagDetailsByCollectionId(@Param("collectionId") Long collectionId);
-
 }

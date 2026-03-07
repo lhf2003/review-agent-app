@@ -28,10 +28,10 @@ public class MultiLLMConfig {
     private Integer dimensions;
 
     // 模型配置常量 - 默认使用百炼模型
-    private static final String CHAT_MODEL = "qwen-plus";
-    private static final String ANALYSIS_MODEL = "qwen-plus";
-    private static final String CLASSIFY_MODEL = "qwen-plus";
-    private static final String EXTRACT_MODEL = "qwen-plus";
+    private static final String CHAT_MODEL = "qwen3.5-plus";
+    private static final String ANALYSIS_MODEL = "qwen3.5-plus";
+    private static final String CLASSIFY_MODEL = "qwen3.5-plus";
+    private static final String EXTRACT_MODEL = "qwen3.5-plus";
 
     // 温度参数常量 - 控制模型输出的随机性
     private static final double CHAT_TEMPERATURE = 0.6;
@@ -130,12 +130,18 @@ public class MultiLLMConfig {
      */
     @Bean("extractChatModel")
     public DashScopeChatModel extractChatModel(DashScopeApi dashScopeApi) {
+        DashScopeApi api = DashScopeApi.builder()
+                .baseUrl("https://dashscope.aliyuncs.com")
+                .completionsPath("/api/v1/services/aigc/multimodal-generation/generation")
+                .apiKey(apiKey)
+                .build();
         return DashScopeChatModel.builder()
-                .dashScopeApi(dashScopeApi)
+                .dashScopeApi(api)
                 .defaultOptions(DashScopeChatOptions.builder()
                         .model(EXTRACT_MODEL)
                         .temperature(EXTRACT_TEMPERATURE)
                         .maxToken(EXTRACT_MAX_TOKENS)
+                        .incrementalOutput(true)
                         .build())
                 .build();
     }
@@ -176,6 +182,15 @@ public class MultiLLMConfig {
     @Bean("extractChatClient")
     public ChatClient imageChatClient(@Qualifier("extractChatModel") DashScopeChatModel imageChatModel) {
         return ChatClient.builder(imageChatModel).defaultAdvisors(new TokenLoggerAdvisor()).build();
+    }
+
+    /**
+     * 思维范式识别专用ChatClient
+     * 复用分类模型配置（低温度，精确输出）
+     */
+    @Bean("paradigmChatClient")
+    public ChatClient paradigmChatClient(@Qualifier("classifyChatModel") DashScopeChatModel classifyChatModel) {
+        return ChatClient.builder(classifyChatModel).defaultAdvisors(new TokenLoggerAdvisor()).build();
     }
     // endregion
 }

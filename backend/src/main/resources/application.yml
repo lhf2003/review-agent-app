@@ -30,6 +30,12 @@ spring:
     show-sql: false
     hibernate:
       dialect: org.hibernate.dialect.MySQL8Dialect
+      ddl-auto: update
+
+  # Flyway 配置
+  flyway:
+    enabled: false
+
   data:
     redis:
       host: localhost
@@ -104,3 +110,10 @@ rate-limit:
   login-requests-per-minute: 5
   # IP 黑名单（逗号分隔）
   blocked-ips: ${BLOCKED_IPS:}
+
+# 测试配置（仅用于自动化测试，生产环境请设置为 false）
+test:
+  # 是否启用测试 token 接口
+  enabled: ${TEST_ENABLED:true}
+  # 固定测试用户ID
+  user-id: ${TEST_USER_ID:8}

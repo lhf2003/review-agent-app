@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Document } from '@element-plus/icons-vue'
+import { Document, Share } from '@element-plus/icons-vue'
 import QuizHistoryPage from './QuizHistoryPage.vue'
 import QuizDetailPage from './QuizDetailPage.vue'
 import MistakeListPane from '../../components/quiz/MistakeListPane.vue'
@@ -124,6 +124,19 @@ onMounted(() => {
              <span v-if="mistakeCount > 0" class="mistake-badge-text">({{ mistakeCount }})</span>
            </el-radio-button>
          </el-radio-group>
+       </div>
+
+       <div class="nav-right">
+         <el-button
+           type="primary"
+           plain
+           size="small"
+           @click="$router.push('/knowledge-graph')"
+           class="kg-nav-btn"
+         >
+           <el-icon><Share /></el-icon>
+           知识图谱
+         </el-button>
        </div>
     </div>
 

@@ -88,6 +88,42 @@ html.dark .my-component {
 }
 ```
 
+### Frontend - API Response Handling
+**Rule**: `normalizeResponse` unwraps `data` when `code === 0`, components receive direct data
+```javascript
+// Backend returns: { code: 0, message: "ok", data: { nodes: [...], edges: [...] } }
+// But API layer returns: { nodes: [...], edges: [...] } (data unwrapped)
+
+// ✅ CORRECT - Access data directly
+const data = await knowledgeGraphApi.getSimpleGraph()
+if (data && Array.isArray(data.nodes)) {
+  nodes.value = data.nodes
+}
+
+// ❌ WRONG - Don't check code or access .data
+const res = await knowledgeGraphApi.getSimpleGraph()
+if (res.code === 200) {        // Error: code is undefined
+  nodes.value = res.data.nodes // Error: data is undefined
+}
+```
+**Note**: See `frontend/src/api/base.js` → `normalizeResponse()` for implementation details. When `code !== 0`, an Error is thrown with `message`.
+
+### Backend - Database Migration
+**Rule**: Use Flyway for database version control
+```bash
+# Migration files location
+backend/src/main/resources/db/migration/
+
+# Naming convention
+V1__Initial_schema.sql
+V2__Add_user_profile.sql
+V3.1__Fix_quiz_index.sql
+
+# Baseline (for existing databases)
+spring.flyway.baseline-on-migrate=true
+```
+See [AI-CODE-GUIDE.md#rule-db-002](./AI-CODE-GUIDE.md#rule-db-002) for full details.
+
 ---
 
 ## Project Architecture Overview
@@ -175,3 +211,4 @@ See [AI-CODE-GUIDE.md#rule-doc-001](./AI-CODE-GUIDE.md#rule-doc-001) for full do
 | Build commands | This file (above) |
 | Module dependencies | [ARCHITECTURE.md#模块索引](./ARCHITECTURE.md#模块索引) |
 | Database schema | [ARCHITECTURE.md#数据模型](./ARCHITECTURE.md#数据模型) |
+| Database migration (Flyway) | [AI-CODE-GUIDE.md#rule-db-002](./AI-CODE-GUIDE.md#rule-db-002) |

@@ -22,7 +22,7 @@ public class UserConfig {
     @Column(name = "scan_directory")
     private String scanDirectory;
 
-    @Column(name = "auto_scan_enabled")
+    @Column(name = "auto_scan_enabled", columnDefinition = "TINYINT")
     private Boolean autoScanEnabled;
 
     @Column(name = "scan_interval_seconds")
@@ -34,7 +34,7 @@ public class UserConfig {
     /**
      * 是否启用每日分析
      */
-    @Column(name = "daily_enabled")
+    @Column(name = "daily_enabled", columnDefinition = "TINYINT")
     private Boolean dailyEnabled;
 
     /**
@@ -46,7 +46,7 @@ public class UserConfig {
     /**
      * 是否启用每周分析
      */
-    @Column(name = "weekly_enabled")
+    @Column(name = "weekly_enabled", columnDefinition = "TINYINT")
     private Boolean weeklyEnabled;
 
     /**

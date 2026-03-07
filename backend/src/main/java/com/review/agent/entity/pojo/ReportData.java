@@ -23,22 +23,21 @@ public class ReportData {
     private Long userId;
 
     @NotNull
-    @Lob
-    @Column(name = "report_content", nullable = false)
+    @Column(name = "report_content", nullable = false, columnDefinition = "LONGTEXT")
     private String reportContent;
 
     @NotNull
-    @Column(name = "type", nullable = false)
+    @Column(name = "type", nullable = false, columnDefinition = "TINYINT")
     private Integer type;
 
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     @NotNull
-    @Column(name = "start_date", nullable = false)
+    @Column(name = "start_date", nullable = false, columnDefinition = "DATE")
     private Date startDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     @NotNull
-    @Column(name = "end_date", nullable = false)
+    @Column(name = "end_date", nullable = false, columnDefinition = "DATE")
     private Date endDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

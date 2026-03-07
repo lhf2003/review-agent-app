@@ -29,15 +29,6 @@ import static com.review.agent.common.constant.CommonConstant.WEEKLY_REPORT;
 @Service
 public class ReportService {
     @Resource
-    private AnalysisTagRepository analysisTagRepository;
-
-    @Resource
-    private MainTagRepository mainTagRepository;
-
-    @Resource
-    private SubTagRepository subTagRepository;
-
-    @Resource
     private AnalysisResultRepository analysisResultRepository;
 
     @Resource

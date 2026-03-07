@@ -1,6 +1,5 @@
 package com.review.agent.service;
 
-import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.entity.pojo.*;
 import com.review.agent.entity.request.StatisticRequest;
 import com.review.agent.entity.vo.StatisticVo;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import javax.sound.sampled.Line;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,9 +25,7 @@ public class StatisticService {
     @Resource
     private AnalysisTagRepository analysisTagRepository;
     @Resource
-    private MainTagRepository mainTagRepository;
-    @Resource
-    private SubTagRepository subTagRepository;
+    private TagRepository tagRepository;
 
     /**
      * 生成词云
@@ -39,23 +35,18 @@ public class StatisticService {
     public Map<String, Integer> generateWordCloud(Long userId, StatisticRequest request) {
         List<AnalysisResult> analysisResultList = analysisResultRepository.findAllByDate(userId, request.getStartDate().atStartOfDay(), request.getEndDate().atTime(23, 59, 59));
         List<Long> analysisResultIdList = analysisResultList.stream().map(AnalysisResult::getId).toList();
-        List<AnalysisTag> analysisTags = analysisTagRepository.findAllByAnalysisResultId(analysisResultIdList);
-        List<MainTag> mainTagList = mainTagRepository.findAllByUserId(userId);
-        List<SubTag> subTagList = subTagRepository.findAllByUserId(userId);
+        List<AnalysisTag> analysisTags = analysisTagRepository.findByAnalysisResultIdIn(analysisResultIdList);
+        List<Tag> tagList = tagRepository.findByUserId(userId);
 
         // <id,name>
-        Map<Long, String> mainTagMap = mainTagList.stream().collect(Collectors.toMap(MainTag::getId, MainTag::getName));
-        Map<Long, String> subTagMap = subTagList.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
+        Map<Long, String> tagMap = tagList.stream().collect(Collectors.toMap(Tag::getId, Tag::getName));
 
         Map<String, Integer> resultMap = new HashMap<>();
         analysisTags.forEach(analysisTag -> {
             if (analysisTag.getTagId() != null) {
-                resultMap.merge(mainTagMap.get(analysisTag.getTagId()), 1, Integer::sum);
-            }
-            if (StringUtils.hasText(analysisTag.getSubTagId())) {
-                String[] subTagIds = analysisTag.getSubTagId().split(",");
-                for (String subTagId : subTagIds) {
-                    resultMap.merge(subTagMap.get(Long.valueOf(subTagId)), 1, Integer::sum);
+                String tagName = tagMap.get(analysisTag.getTagId());
+                if (StringUtils.hasText(tagName)) {
+                    resultMap.merge(tagName, 1, Integer::sum);
                 }
             }
         });
@@ -66,11 +57,9 @@ public class StatisticService {
         // <日期, 统计信息>
         Map<String, List<StatisticVo>> resultMap = new LinkedHashMap<>();
 
-        // 查询用户所有主标签和子标签
-        List<MainTag> mainTagList = mainTagRepository.findAllByUserId(request.getUserId());
-        List<SubTag> subTagList = subTagRepository.findAllByUserId(request.getUserId());
-        Map<Long, String> mainTagMap = mainTagList.stream().collect(Collectors.toMap(MainTag::getId, MainTag::getName));
-        Map<Long, String> subTagMap = subTagList.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
+        // 查询用户所有标签
+        List<Tag> tagList = tagRepository.findByUserId(request.getUserId());
+        Map<Long, String> tagMap = tagList.stream().collect(Collectors.toMap(Tag::getId, Tag::getName));
 
         // 指定时间范围内的数据
         List<AnalysisResult> allByDate = analysisResultRepository.findAllByDate(request.getUserId(), request.getStartDate().atStartOfDay(), request.getEndDate().atStartOfDay());
@@ -85,24 +74,16 @@ public class StatisticService {
                 continue;
             }
             List<Long> analysisIdList = analysisResultList.stream().map(AnalysisResult::getId).toList();
-            List<AnalysisTag> analysisTagList = analysisTagRepository.findAllByAnalysisResultId(analysisIdList);
+            List<AnalysisTag> analysisTagList = analysisTagRepository.findByAnalysisResultIdIn(analysisIdList);
 
-            // 统计主标签和子标签数量 <标签名,数量>
+            // 统计标签数量 <标签名,数量>
             Map<String, Integer> tagNameToCountMap = new HashMap<>();
             for (AnalysisTag analysisTag : analysisTagList) {
-                Long mainTagId = analysisTag.getTagId();
-                String subTagId = analysisTag.getSubTagId();
-                // 主标签
-                if (mainTagId != null) {
-                    String mainTagName = mainTagMap.get(mainTagId);
-                    tagNameToCountMap.merge(mainTagName, 1, Integer::sum);
-                }
-                // 子标签
-                if (StringUtils.hasText(subTagId)) {
-                    List<Long> subTagIdList = Arrays.stream(subTagId.split(",")).map(Long::valueOf).toList();
-                    for (Long id : subTagIdList) {
-                        String subTagName = subTagMap.get(id);
-                        tagNameToCountMap.merge(subTagName, 1, Integer::sum);
+                Long tagId = analysisTag.getTagId();
+                if (tagId != null) {
+                    String tagName = tagMap.get(tagId);
+                    if (StringUtils.hasText(tagName)) {
+                        tagNameToCountMap.merge(tagName, 1, Integer::sum);
                     }
                 }
             }

@@ -3,9 +3,8 @@ package com.review.agent.controller;
 import com.review.agent.common.exception.BaseResponse;
 import com.review.agent.common.utils.ResultUtil;
 import com.review.agent.common.utils.SecurityUtils;
-import com.review.agent.entity.pojo.MainTag;
-import com.review.agent.entity.pojo.SubTag;
-import com.review.agent.entity.pojo.TagRelation;
+import com.review.agent.entity.pojo.Tag;
+import com.review.agent.entity.pojo.TagDimension;
 import com.review.agent.entity.request.TagRecommendRequest;
 import com.review.agent.service.TagService;
 import jakarta.annotation.Resource;
@@ -15,7 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 标签接口
+ * 标签接口（重构版）
+ * 使用新的Tag实体，支持多维度标签体系
  */
 @RestController
 @RequestMapping("/tag")
@@ -43,143 +43,103 @@ public class TagController {
         return ResultUtil.success();
     }
 
-    // region 主标签
+    // region 维度管理
 
     /**
-     * 获取主标签列表
-     * @return 主标签列表
+     * 获取标签维度列表
+     * @return 维度列表
      */
     @GetMapping("/list")
-    public BaseResponse<List<MainTag>> mainTagList() {
+    public BaseResponse<List<TagDimension>> dimensionList() {
+        return ResultUtil.success(tagService.findAllDimensions());
+    }
+
+    // endregion 维度管理
+
+    // region 标签管理
+
+    /**
+     * 获取技术领域标签列表（原主标签）
+     * @return 标签列表
+     */
+    @GetMapping("/tech-domain/list")
+    public BaseResponse<List<Tag>> techDomainTagList() {
         Long userId = securityUtils.getCurrentUserId();
-        return ResultUtil.success(tagService.findMainTagList(userId));
+        return ResultUtil.success(tagService.findTechDomainTags(userId));
     }
 
     /**
-     * 添加主标签
-     * @param mainTag 主标签
+     * 获取标签树结构
+     * @param dimensionId 维度ID（可选）
+     * @return 标签树
+     */
+    @GetMapping("/tree")
+    public BaseResponse<List<TagService.TagVO>> tagTree(@RequestParam(required = false) Long dimensionId) {
+        Long userId = securityUtils.getCurrentUserId();
+        return ResultUtil.success(tagService.getTagTree(userId, dimensionId));
+    }
+
+    /**
+     * 添加标签
+     * @param tag 标签
      * @return 成功
      */
     @PostMapping("/add")
-    public BaseResponse<Void> add(@Valid @RequestBody MainTag mainTag) {
-        Long userId = securityUtils.getCurrentUserId();
-        mainTag.setUserId(userId);
-        tagService.addTag(mainTag);
-        return ResultUtil.success();
+    public BaseResponse<Long> add(@Valid @RequestBody Tag tag) {
+        Long tagId = tagService.addTag(tag);
+        return ResultUtil.success(tagId);
     }
 
     /**
-     * 更新主标签
-     * @param mainTag 主标签
+     * 更新标签
+     * @param tag 标签
      * @return 成功
      */
     @PostMapping("/update")
-    public BaseResponse<Void> update(@Valid @RequestBody MainTag mainTag) {
-        Long userId = securityUtils.getCurrentUserId();
-        mainTag.setUserId(userId);
-        tagService.updateMainTag(mainTag);
+    public BaseResponse<Void> update(@Valid @RequestBody Tag tag) {
+        tagService.updateTag(tag);
         return ResultUtil.success();
     }
 
     /**
-     * 删除主标签
-     * @param id 主标签ID
+     * 删除标签
+     * @param id 标签ID
      * @return 成功
      */
     @DeleteMapping("/delete")
     public BaseResponse<Void> delete(@RequestParam("id") Long id) {
-        Long userId = securityUtils.getCurrentUserId();
-        tagService.deleteMainTag(userId, id);
+        tagService.deleteTag(id);
         return ResultUtil.success();
     }
 
-    // endregion 主标签
+    // endregion 标签管理
 
     // region 子标签
 
     /**
      * 获取子标签列表
+     * @param parentId 父标签ID
      * @return 子标签列表
      */
     @GetMapping("/sub/list")
-    public BaseResponse<List<SubTag>> subTagList() {
+    public BaseResponse<List<Tag>> subTagList(@RequestParam("parentId") Long parentId) {
         Long userId = securityUtils.getCurrentUserId();
-        return ResultUtil.success(tagService.findSubTagList(userId));
+        return ResultUtil.success(tagService.findSubTagsByParentId(userId, parentId));
     }
 
     /**
-     * 添加子标签
-     * @param subTag 子标签
+     * 添加子标签（通过parentId字段）
+     * @param tag 标签（需设置parentId）
      * @return 成功
      */
     @PostMapping("/add/sub")
-    public BaseResponse<Void> addSub(@Valid @RequestBody SubTag subTag) {
-        Long userId = securityUtils.getCurrentUserId();
-        subTag.setUserId(userId);
-        tagService.addSubTag(subTag);
-        return ResultUtil.success();
+    public BaseResponse<Long> addSub(@Valid @RequestBody Tag tag) {
+        if (tag.getParentId() == null) {
+            throw new IllegalArgumentException("子标签必须设置parentId");
+        }
+        Long tagId = tagService.addTag(tag);
+        return ResultUtil.success(tagId);
     }
 
-    /**
-     * 更新子标签
-     * @param subTag 子标签
-     * @return 成功
-     */
-    @PostMapping("/update/sub")
-    public BaseResponse<Void> updateSub(@Valid @RequestBody SubTag subTag) {
-        Long userId = securityUtils.getCurrentUserId();
-        subTag.setUserId(userId);
-        tagService.updateSubTag(subTag);
-        return ResultUtil.success();
-    }
-
-    /**
-     * 删除子标签
-     * @param id 子标签ID
-     * @return 成功
-     */
-    @DeleteMapping("/delete/sub")
-    public BaseResponse<Void> deleteSub(@RequestParam("id") Long id) {
-        Long userId = securityUtils.getCurrentUserId();
-        tagService.deleteSubTag(userId, id);
-        return ResultUtil.success();
-    }
-
-    //endregion 子标签
-
-    //region 关联关系
-
-    /**
-     * 获取主标签关联子标签关系列表
-     * @param mainTagId 主标签ID
-     * @return 主标签关联子标签关系列表
-     */
-    @GetMapping("/list/relation")
-    public BaseResponse<List<SubTag>> tagRelationList(@RequestParam("mainTagId") Long mainTagId) {
-        Long userId = securityUtils.getCurrentUserId();
-        return ResultUtil.success(tagService.findSubTagListByMainTagId(userId, mainTagId));
-    }
-
-    /**
-     * 绑定主标签关联子标签关系
-     * @param tagRelation 主标签关联子标签关系
-     * @return 成功
-     */
-    @PostMapping("/add/relation")
-    public BaseResponse<Void> addRelation(@Valid @RequestBody TagRelation tagRelation) {
-        Long userId = securityUtils.getCurrentUserId();
-        tagRelation.setUserId(userId);
-        tagService.addTagRelation(tagRelation);
-        return ResultUtil.success();
-    }
-
-    /**
-     * 解绑主标签关联子标签关系
-     * @return 成功
-     */
-    @DeleteMapping("/delete/relation")
-    public BaseResponse<Void> deleteRelation(@RequestBody TagRelation tagRelation) {
-        tagService.deleteTagRelation(tagRelation);
-        return ResultUtil.success();
-    }
+    // endregion 子标签
 }

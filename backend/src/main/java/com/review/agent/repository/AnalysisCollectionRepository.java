@@ -10,22 +10,22 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AnalysisCollectionRepository extends JpaRepository<AnalysisCollection, Long> {
-    @Query("select c from AnalysisCollection c where c.userId = :userId and c.deleted = 0 order by c.createdTime desc")
+    @Query("select c from AnalysisCollection c where c.userId = :userId and c.deleted = false order by c.createdTime desc")
     List<AnalysisCollection> findByUserIdOrderByCreatedTimeDesc(Long userId);
 
-    @Query("select c from AnalysisCollection c where c.id = :collectionId and c.userId = :userId and c.deleted = 0")
+    @Query("select c from AnalysisCollection c where c.id = :collectionId and c.userId = :userId and c.deleted = false")
     AnalysisCollection findByIdAndUserId(Long userId, Long collectionId);
 
     /**
      * 统计用户的合集数量（只统计未删除的）
      */
-    @Query("select count(c) from AnalysisCollection c where c.userId = :userId and c.deleted = 0")
+    @Query("select count(c) from AnalysisCollection c where c.userId = :userId and c.deleted = false")
     long countByUserId(Long userId);
 
     /**
      * 获取用户最近创建的3个合集（只包含未删除的）
      */
-    @Query("select c from AnalysisCollection c where c.userId = :userId and c.deleted = 0 order by c.createdTime desc limit 3")
+    @Query("select c from AnalysisCollection c where c.userId = :userId and c.deleted = false order by c.createdTime desc limit 3")
     List<AnalysisCollection> findTop3ByUserIdOrderByCreatedTimeDesc(Long userId);
 
     /**
@@ -34,7 +34,7 @@ public interface AnalysisCollectionRepository extends JpaRepository<AnalysisColl
      * @param deletedAt 删除时间
      */
     @Modifying
-    @Query("update AnalysisCollection c set c.deleted = 1, c.deletedAt = :deletedAt where c.id = :id")
+    @Query("update AnalysisCollection c set c.deleted = true, c.deletedAt = :deletedAt where c.id = :id")
     void softDelete(@Param("id") Long id, @Param("deletedAt") LocalDateTime deletedAt);
 
     /**
@@ -50,6 +50,6 @@ public interface AnalysisCollectionRepository extends JpaRepository<AnalysisColl
      * @param ids 合集ID列表
      * @return 合集列表
      */
-    @Query("select c from AnalysisCollection c where c.id in :ids and c.deleted = 0")
+    @Query("select c from AnalysisCollection c where c.id in :ids and c.deleted = false")
     List<AnalysisCollection> findByIdIn(@Param("ids") List<Long> ids);
 }

@@ -15,6 +15,7 @@ import AchievementsSection from './components/AchievementsSection.vue'
 import LearningPathRecommender from '../../components/quiz/LearningPathRecommender.vue'
 import PendingReviewReminder from './components/PendingReviewReminder.vue'
 import LearningDashboard from './components/LearningDashboard.vue'
+import KnowledgeGraphCard from './components/KnowledgeGraphCard.vue'
 import { useUserInfo } from './composables/useUserInfo'
 import { useStats } from './composables/useStats'
 import { useAnimations } from './composables/useAnimations'
@@ -124,6 +125,7 @@ async function changePassword() {
         <el-radio-button value="learning-data">学习数据</el-radio-button>
         <el-radio-button value="achievements">学习成就</el-radio-button>
         <el-radio-button value="learning-path">学习路径</el-radio-button>
+        <el-radio-button value="knowledge-graph">知识图谱</el-radio-button>
       </el-radio-group>
 
       <!-- 数据概览区块 -->
@@ -168,6 +170,14 @@ async function changePassword() {
       <!-- Learning Path Section - 学习路径推荐 -->
       <div v-show="activeSection === 'learning-path'" class="section-transition">
         <LearningPathRecommender :limit="5" />
+      </div>
+
+      <!-- Knowledge Graph Section - 知识图谱 -->
+      <div v-show="activeSection === 'knowledge-graph'" class="section-transition">
+        <KnowledgeGraphCard />
+        <div class="kg-hint">
+          <p class="hint-text">💡 点击上方卡片查看完整的知识图谱可视化</p>
+        </div>
       </div>
     </CustomScroll>
 

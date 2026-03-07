@@ -33,10 +33,7 @@ public class ExportService {
     private DataInfoRepository dataInfoRepository;
 
     @Resource
-    private MainTagRepository mainTagRepository;
-
-    @Resource
-    private SubTagRepository subTagRepository;
+    private TagRepository tagRepository;
 
     @Resource
     private AnalysisCollectionRepository analysisCollectionRepository;
@@ -59,16 +56,14 @@ public class ExportService {
                 });
 
         // 获取标签信息
-        AnalysisTag analysisTag = analysisTagRepository.findByAnalysisIdIn(List.of(analysisId))
-                .stream()
-                .findFirst()
-                .orElse(null);
+        List<AnalysisTag> analysisTags = analysisTagRepository.findByAnalysisResultId(analysisId);
+        AnalysisTag analysisTag = analysisTags.isEmpty() ? null : analysisTags.get(0);
 
         // 获取文件信息
         DataInfo dataInfo = dataInfoRepository.findById(result.getFileId()).orElse(null);
 
         // 构建标签名称列表
-        List<String> tagNames = buildTagNames(analysisTag);
+        List<String> tagNames = buildTagNames(analysisTags);
 
         // 生成 Markdown
         String markdown = buildAnalysisMarkdown(result, dataInfo, tagNames);
@@ -92,9 +87,9 @@ public class ExportService {
         }
 
         // 批量获取标签信息
-        List<AnalysisTag> analysisTags = analysisTagRepository.findByAnalysisIdIn(analysisIds);
-        Map<Long, AnalysisTag> tagMap = analysisTags.stream()
-                .collect(Collectors.toMap(AnalysisTag::getAnalysisId, tag -> tag, (a, b) -> a));
+        List<AnalysisTag> analysisTags = analysisTagRepository.findByAnalysisResultIdIn(analysisIds);
+        Map<Long, List<AnalysisTag>> tagMap = analysisTags.stream()
+                .collect(Collectors.groupingBy(AnalysisTag::getAnalysisResultId));
 
         // 批量获取文件信息
         List<Long> fileIds = results.stream().map(AnalysisResult::getFileId).distinct().toList();
@@ -111,9 +106,9 @@ public class ExportService {
 
         for (int i = 0; i < results.size(); i++) {
             AnalysisResult result = results.get(i);
-            AnalysisTag tag = tagMap.get(result.getId());
+            List<AnalysisTag> tagList = tagMap.getOrDefault(result.getId(), List.of());
             DataInfo dataInfo = dataInfoMap.get(result.getFileId());
-            List<String> tagNames = buildTagNames(tag);
+            List<String> tagNames = buildTagNames(tagList);
 
             sb.append(buildAnalysisMarkdown(result, dataInfo, tagNames));
 
@@ -156,9 +151,9 @@ public class ExportService {
         List<AnalysisResult> results = analysisResultRepository.findAllById(analysisIds);
 
         // 批量获取标签信息
-        List<AnalysisTag> analysisTags = analysisTagRepository.findByAnalysisIdIn(analysisIds);
-        Map<Long, AnalysisTag> tagMap = analysisTags.stream()
-                .collect(Collectors.toMap(AnalysisTag::getAnalysisId, tag -> tag, (a, b) -> a));
+        List<AnalysisTag> analysisTags = analysisTagRepository.findByAnalysisResultIdIn(analysisIds);
+        Map<Long, List<AnalysisTag>> tagMap = analysisTags.stream()
+                .collect(Collectors.groupingBy(AnalysisTag::getAnalysisResultId));
 
         // 批量获取文件信息
         List<Long> fileIds = results.stream().map(AnalysisResult::getFileId).distinct().toList();
@@ -177,9 +172,9 @@ public class ExportService {
 
         for (int i = 0; i < results.size(); i++) {
             AnalysisResult result = results.get(i);
-            AnalysisTag tag = tagMap.get(result.getId());
+            List<AnalysisTag> tagList = tagMap.getOrDefault(result.getId(), List.of());
             DataInfo dataInfo = dataInfoMap.get(result.getFileId());
-            List<String> tagNames = buildTagNames(tag);
+            List<String> tagNames = buildTagNames(tagList);
 
             sb.append(buildAnalysisMarkdown(result, dataInfo, tagNames));
 
@@ -225,31 +220,23 @@ public class ExportService {
     /**
      * 构建标签名称列表
      */
-    private List<String> buildTagNames(AnalysisTag analysisTag) {
+    private List<String> buildTagNames(List<AnalysisTag> analysisTags) {
         List<String> tagNames = new ArrayList<>();
 
-        if (analysisTag == null) {
+        if (CollectionUtils.isEmpty(analysisTags)) {
             return tagNames;
         }
 
-        // 主标签
-        if (analysisTag.getTagId() != null) {
-            mainTagRepository.findById(analysisTag.getTagId())
-                    .ifPresent(tag -> tagNames.add(tag.getName()));
-        }
+        // 获取所有标签ID
+        Set<Long> tagIds = analysisTags.stream()
+                .map(AnalysisTag::getTagId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-        // 子标签
-        if (StringUtils.hasText(analysisTag.getSubTagId())) {
-            List<Long> subTagIds = Arrays.stream(analysisTag.getSubTagId().split(","))
-                    .map(String::trim)
-                    .filter(StringUtils::hasText)
-                    .map(Long::parseLong)
-                    .toList();
-
-            if (!subTagIds.isEmpty()) {
-                List<SubTag> subTags = subTagRepository.findAllById(subTagIds);
-                tagNames.addAll(subTags.stream().map(SubTag::getName).toList());
-            }
+        // 批量查询标签名称
+        if (!tagIds.isEmpty()) {
+            List<Tag> tags = tagRepository.findAllById(tagIds);
+            tagNames.addAll(tags.stream().map(Tag::getName).toList());
         }
 
         return tagNames;

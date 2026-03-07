@@ -32,6 +32,12 @@ public class KnowledgeMastery {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    /**
+     * 标签ID（与tag表关联）
+     */
+    @Column(name = "tag_id")
+    private Long tagId;
+
     @NotNull(message = "知识点不能为空")
     @Column(name = "knowledge_point", nullable = false, length = 100)
     private String knowledgePoint;
@@ -79,5 +85,16 @@ public class KnowledgeMastery {
     @PreUpdate
     public void preUpdate() {
         this.updatedTime = LocalDateTime.now();
+    }
+
+    /**
+     * 获取掌握度等级（0-100的整数）
+     * 将 masteryScore (BigDecimal) 转换为 int 等级
+     */
+    public int getMasteryLevel() {
+        if (masteryScore == null) {
+            return 0;
+        }
+        return masteryScore.intValue();
     }
 }

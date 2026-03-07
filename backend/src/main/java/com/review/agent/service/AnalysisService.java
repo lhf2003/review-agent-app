@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.review.agent.common.constant.CommonConstant;
 import com.review.agent.common.utils.ExceptionUtils;
+import com.review.agent.entity.dto.MultiDimensionTagResult;
 import com.review.agent.entity.dto.NodeExecuteDto;
 import com.review.agent.entity.pojo.*;
 import com.review.agent.entity.projection.AnalysisResultInfo;
@@ -13,8 +14,7 @@ import com.review.agent.entity.request.AnalysisResultRequest;
 import com.review.agent.entity.vo.AnalysisResultVo;
 import com.review.agent.entity.vo.AnalysisTagVo;
 import com.review.agent.entity.vo.SimilarAnalysisResultVo;
-import com.review.agent.repository.AnalysisResultRepository;
-import com.review.agent.repository.AnalysisTagRepository;
+import com.review.agent.repository.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
@@ -51,6 +51,9 @@ public class AnalysisService {
     private SseService sseService;
     @Resource
     private VectorStoreService vectorStoreService;
+
+    @Resource
+    private TagRelationDiscoveryService tagRelationDiscoveryService;
     @Resource(name = "analysisTaskExecutor")
     private Executor analysisTaskExecutor;
 
@@ -117,7 +120,6 @@ public class AnalysisService {
         List<NodeExecuteDto> nodeExecuteDtoList = null;
 
         List<AnalysisResult> analysisResultList = new ArrayList<>();
-        List<AnalysisTag> analysisTagList = new ArrayList<>();
 
         // 安全地转换对象类型
         if (nodeResultObj.isPresent() && nodeResultObj.get() instanceof List<?> rawList) {
@@ -135,7 +137,7 @@ public class AnalysisService {
             dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_PROCESSED);
             for (NodeExecuteDto executeDto : nodeExecuteDtoList) {
                 String vectorId = addVectorToRedis(executeDto);
-                buildAnalysisResult(vectorId, executeDto, analysisResultList, analysisTagList);
+                buildAnalysisResult(vectorId, executeDto, analysisResultList);
             }
         } else {
             dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_ERROR);
@@ -145,13 +147,7 @@ public class AnalysisService {
         fileInfoService.update(dataInfo);
 
         analysisResultRepository.saveAll(analysisResultList);
-        for (int i = 0; i < analysisTagList.size(); i++) {
-            AnalysisTag analysisTag = analysisTagList.get(i);
-            analysisTag.setAnalysisId(analysisResultList.get(i).getId());
-        }
-        analysisTagRepository.saveAll(analysisTagList);
-
-        log.info("分析结束");
+        log.info("分析结束，共处理 {} 个结果", analysisResultList.size());
     }
 
     /**
@@ -172,7 +168,7 @@ public class AnalysisService {
         return vectorId;
     }
 
-    private void buildAnalysisResult(String vectorId, NodeExecuteDto executeDto, List<AnalysisResult> analysisResultList, List<AnalysisTag> analysisTagList) {
+    private void buildAnalysisResult(String vectorId, NodeExecuteDto executeDto, List<AnalysisResult> analysisResultList) {
         AnalysisResult analysisResult = new AnalysisResult();
         analysisResult.setVectorId(vectorId);
         analysisResult.setUserId(executeDto.getUserId());
@@ -186,13 +182,124 @@ public class AnalysisService {
         analysisResult.setCreatedTime(LocalDateTime.now());
         analysisResultList.add(analysisResult);
 
-        AnalysisTag analysisTag = new AnalysisTag();
-        analysisTag.setTagId(executeDto.getTagId());
-        analysisTag.setSubTagId(executeDto.getSubTagId());
-        analysisTag.setRecommends(executeDto.getRecommends());
-        analysisTagList.add(analysisTag);
+        // 保存多维度标签（新版表）
+        saveMultiDimensionTags(analysisResult.getId(), executeDto.getMultiDimensionResult());
+
+        // 兼容旧版本：从旧字段保存标签
+        saveLegacyTags(analysisResult.getId(), executeDto);
+
+        // 异步触发标签关系发现
+        final Long finalAnalysisResultId = analysisResult.getId();
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000); // 等待事务提交
+                tagRelationDiscoveryService.discoverRelationsForAnalysis(finalAnalysisResultId);
+            } catch (Exception e) {
+                log.warn("标签关系发现失败: {}", e.getMessage());
+            }
+        }).start();
     }
 
+    /**
+     * 保存多维度标签
+     */
+    private void saveMultiDimensionTags(Long analysisResultId, MultiDimensionTagResult multiResult) {
+        if (multiResult == null) {
+            return;
+        }
+
+        // 1. 技术领域标签（主标签）
+        if (multiResult.getTechDomain() != null && multiResult.getTechDomain().getMainTagId() != null) {
+            AnalysisTag mainTag = new AnalysisTag();
+            mainTag.setAnalysisResultId(analysisResultId);
+            mainTag.setTagId(multiResult.getTechDomain().getMainTagId());
+            mainTag.setIsPrimary(true);
+            mainTag.setConfidence(90);
+            analysisTagRepository.save(mainTag);
+
+            // 子标签
+            if (multiResult.getTechDomain().getSubTagIds() != null) {
+                for (int i = 0; i < multiResult.getTechDomain().getSubTagIds().size(); i++) {
+                    AnalysisTag subTag = new AnalysisTag();
+                    subTag.setAnalysisResultId(analysisResultId);
+                    subTag.setTagId(multiResult.getTechDomain().getSubTagIds().get(i));
+                    subTag.setIsPrimary(false);
+                    subTag.setConfidence(85);
+                    analysisTagRepository.save(subTag);
+                }
+            }
+        }
+
+        // 2. 思维范式标签
+        if (multiResult.getThinkingParadigms() != null) {
+            for (MultiDimensionTagResult.ThinkingParadigmResult paradigm : multiResult.getThinkingParadigms()) {
+                if (paradigm.getTagId() != null) {
+                    AnalysisTag paradigmTag = new AnalysisTag();
+                    paradigmTag.setAnalysisResultId(analysisResultId);
+                    paradigmTag.setTagId(paradigm.getTagId());
+                    paradigmTag.setIsPrimary(false);
+                    paradigmTag.setConfidence(paradigm.getConfidence() != null ? paradigm.getConfidence() : 80);
+                    analysisTagRepository.save(paradigmTag);
+                }
+            }
+        }
+
+        // 3. 难度等级标签
+        if (multiResult.getDifficulty() != null && multiResult.getDifficulty().getDifficultyId() != null) {
+            AnalysisTag difficultyTag = new AnalysisTag();
+            difficultyTag.setAnalysisResultId(analysisResultId);
+            difficultyTag.setTagId(multiResult.getDifficulty().getDifficultyId());
+            difficultyTag.setIsPrimary(false);
+            difficultyTag.setConfidence(multiResult.getDifficulty().getConfidence() != null ?
+                    multiResult.getDifficulty().getConfidence() : 75);
+            analysisTagRepository.save(difficultyTag);
+        }
+
+        // 4. 应用场景标签
+        if (multiResult.getScenario() != null && multiResult.getScenario().getScenarioId() != null) {
+            AnalysisTag scenarioTag = new AnalysisTag();
+            scenarioTag.setAnalysisResultId(analysisResultId);
+            scenarioTag.setTagId(multiResult.getScenario().getScenarioId());
+            scenarioTag.setIsPrimary(false);
+            scenarioTag.setConfidence(multiResult.getScenario().getConfidence() != null ?
+                    multiResult.getScenario().getConfidence() : 75);
+            analysisTagRepository.save(scenarioTag);
+        }
+    }
+
+    /**
+     * 兼容旧版本：从旧字段保存标签
+     */
+    private void saveLegacyTags(Long analysisResultId, NodeExecuteDto executeDto) {
+        // 旧版本思维范式标签
+        if (StringUtils.hasText(executeDto.getThinkingParadigmIds())) {
+            // 检查是否已经有保存过的标签（通过multiDimensionResult）
+            List<AnalysisTag> existingTags = analysisTagRepository.findByAnalysisResultId(analysisResultId);
+            if (!existingTags.isEmpty()) {
+                return; // 已经保存过多维度标签，跳过旧逻辑
+            }
+
+            String[] paradigmIds = executeDto.getThinkingParadigmIds().split(",");
+            for (int i = 0; i < paradigmIds.length; i++) {
+                try {
+                    Long paradigmId = Long.parseLong(paradigmIds[i].trim());
+                    // 检查是否已存在
+                    boolean exists = existingTags.stream()
+                            .anyMatch(t -> t.getTagId().equals(paradigmId));
+                    if (!exists) {
+                        AnalysisTag analysisTag = new AnalysisTag();
+                        analysisTag.setAnalysisResultId(analysisResultId);
+                        analysisTag.setTagId(paradigmId);
+                        analysisTag.setIsPrimary(i == 0);
+                        analysisTag.setConfidence(85);
+                        analysisTagRepository.save(analysisTag);
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("无效的思维范式ID: {}", paradigmIds[i]);
+                }
+            }
+        }
+    }
 
     public List<AnalysisTagVo> getTagList(Long userId) {
         List<AnalysisTagVo> resultList = new ArrayList<>();
@@ -200,20 +307,26 @@ public class AnalysisService {
         // 根据用户ID查询标签id到分析结果的映射
         List<AnalysisResult> analysisResultList = analysisResultRepository.findByUserId(userId);
         List<Long> analysisIdList = analysisResultList.stream().map(AnalysisResult::getId).toList();
-        List<AnalysisTag> analysisTagList = analysisTagRepository.findByAnalysisIdIn(analysisIdList);
+        List<AnalysisTag> analysisTagList = analysisTagRepository.findByAnalysisResultIdIn(analysisIdList);
+
         // 过滤空标签
         analysisTagList = analysisTagList.stream().filter(item -> item.getTagId() != null).toList();
 
-        List<Long> mainTagIdList = analysisTagList.stream()
+        List<Long> tagIdList = analysisTagList.stream()
                 .filter(item -> item.getTagId() != null)
                 .map(AnalysisTag::getTagId)
                 .distinct()
                 .toList();
-        List<MainTag> mainTagList = tagService.findByIdList(mainTagIdList);
+
+        List<Tag> tagList = tagService.findByIdList(tagIdList);
+
         // 统计每个标签的出现次数
-        Map<Long, Long> countMap = analysisTagList.stream().collect(Collectors.groupingBy(AnalysisTag::getTagId, Collectors.counting()));
+        Map<Long, Long> countMap = analysisTagList.stream()
+                .collect(Collectors.groupingBy(AnalysisTag::getTagId, Collectors.counting()));
+
         // 构建标签ID到名称的映射
-        Map<Long, String> tagIdToNameMap = mainTagList.stream().collect(Collectors.toMap(MainTag::getId, MainTag::getName));
+        Map<Long, String> tagIdToNameMap = tagList.stream()
+                .collect(Collectors.toMap(Tag::getId, Tag::getName));
 
         // 构建分析标签VO
         for (Map.Entry<Long, String> entry : tagIdToNameMap.entrySet()) {
@@ -227,47 +340,13 @@ public class AnalysisService {
             resultList.add(tagVo);
         }
 
-        // 构建子标签id列表
-        List<String> subTagIdStringList = analysisTagList.stream().map(AnalysisTag::getSubTagId).toList();
-        List<Long> subTagIdList = new ArrayList<>();
-        subTagIdStringList.forEach(item -> {
-            if (StringUtils.hasText(item)) {
-                List<Long> list = Arrays.stream(item.trim().split(","))
-                        .map(Long::parseLong)
-                        .toList();
-                subTagIdList.addAll(list);
-            }
-        });
-        // 去重
-        List<Long> distinctSubTagIdList = subTagIdList.stream().distinct().toList();
-
-        // 构建<id,name>映射
-        List<SubTag> subTags = tagService.findSubTagList(userId);
-        Map<Long, String> subTagMap = subTags.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
-
-        // 构建子标签VO列表
-        distinctSubTagIdList.forEach(id -> {
-            AnalysisTagVo tagVo = new AnalysisTagVo();
-            long count = subTagIdList.stream().filter(item -> item.equals(id)).count();
-            tagVo.setTagId(id);
-            tagVo.setTagName(subTagMap.get(id));
-            tagVo.setCount((int) count);
-            tagVo.setType("sub");
-            resultList.add(tagVo);
-        });
-
         return resultList;
     }
 
-
     public List<AnalysisResultVo> page(Pageable pageable, AnalysisResultRequest resultRequest) {
         // 分页查询分析结果
-        List<AnalysisResultInfo> page = analysisResultRepository.findByPage(pageable, resultRequest.getFileId(), resultRequest.getProblemStatement(), resultRequest.getTagId()
-                , resultRequest.getUserId());
-
-        // 构建子标签ID到名称的映射
-        List<SubTag> subTagList = tagService.findSubTagList(resultRequest.getUserId());
-        Map<Long, String> subTagIdToNameMap = subTagList.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
+        List<AnalysisResultInfo> page = analysisResultRepository.findByPage(pageable, resultRequest.getFileId(),
+                resultRequest.getProblemStatement(), resultRequest.getTagId(), resultRequest.getUserId());
 
         // 构建分析结果VO列表
         List<AnalysisResultVo> resultList = new ArrayList<>(page.size());
@@ -279,14 +358,6 @@ public class AnalysisService {
             vo.setMainTagName(item.getTagName());
             vo.setFileName(item.getFileName());
             vo.setCreateTime(item.getCreateTime());
-            // 转换子标签ID为标签名列表
-            if (item.getSubTagIds() != null && !item.getSubTagIds().isEmpty()) {
-                List<String> subTagNameList = Arrays.stream(item.getSubTagIds().split(","))
-                        .map(Long::parseLong)
-                        .map(subTagIdToNameMap::get)
-                        .toList();
-                vo.setSubTagNameList(subTagNameList);
-            }
             if (item.getRecommendTag() != null && !item.getRecommendTag().isEmpty()) {
                 vo.setRecommendTagList(Arrays.stream(item.getRecommendTag().split(",")).toList());
             }
@@ -305,12 +376,6 @@ public class AnalysisService {
         if (CollectionUtils.isEmpty(list)) {
             return Collections.emptyMap();
         }
-        // 构建子标签ID到名称的映射
-        List<SubTag> subTagList = tagService.findSubTagList(userId);
-        if (CollectionUtils.isEmpty(subTagList)) {
-            return Collections.emptyMap();
-        }
-        Map<Long, String> subTagIdToNameMap = subTagList.stream().collect(Collectors.toMap(SubTag::getId, SubTag::getName));
 
         List<AnalysisResultVo> voList = list.stream().map(item -> {
             AnalysisResultVo vo = new AnalysisResultVo();
@@ -320,19 +385,12 @@ public class AnalysisService {
             vo.setMainTagName(item.getTagName());
             vo.setFileName(item.getFileName().substring(0, item.getFileName().lastIndexOf(".")));
             vo.setCreateTime(item.getCreateTime());
-            // 转换子标签ID为标签名列表
-            if (item.getSubTagIds() != null && !item.getSubTagIds().isEmpty()) {
-                List<String> subTagNameList = Arrays.stream(item.getSubTagIds().split(","))
-                        .map(Long::parseLong)
-                        .map(subTagIdToNameMap::get)
-                        .toList();
-                vo.setSubTagNameList(subTagNameList);
-            }
             if (item.getRecommendTag() != null && !item.getRecommendTag().isEmpty()) {
                 vo.setRecommendTagList(Arrays.stream(item.getRecommendTag().split(",")).toList());
             }
             return vo;
         }).toList();
+
         return voList.stream().collect(Collectors.groupingBy(
                 AnalysisResultVo::getFileName,
                 () -> new TreeMap<>(Comparator.reverseOrder()),

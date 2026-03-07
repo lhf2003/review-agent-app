@@ -1,98 +1,156 @@
 /**
- * 标签相关 API
- * 包含主标签、子标签、标签关系等管理功能
+ * 标签相关 API（重构版）
+ * 支持多维度标签体系：技术领域、思维范式、难度等级、应用场景
  */
 import { request } from './base'
 
 export const tagApi = {
-  // ========== 主标签 ==========
+  // ========== 维度（新接口）==========
 
   /**
-   * 获取主标签列表
+   * 获取标签维度列表
+   * @returns {Promise<Array>} 维度列表 [{id, name, code, description, icon, sortOrder}]
    */
-  getMainTagList() {
+  getDimensionList() {
     return request('/tag/list')
   },
 
+  // ========== 标签树（新接口）==========
+
   /**
-   * 添加主标签
+   * 获取标签树结构
+   * @param {number} dimensionId - 维度ID（可选）
+   * @returns {Promise<Array>} 标签树列表
    */
-  addMainTag(mainTag) {
-    return request('/tag/add', { method: 'POST', body: mainTag })
+  getTagTree(dimensionId) {
+    const params = dimensionId != null ? { dimensionId } : undefined
+    return request('/tag/tree', { params })
+  },
+
+  // ========== 技术领域标签（原主标签）==========
+
+  /**
+   * 获取技术领域标签列表（一级标签）
+   * @returns {Promise<Array>} 标签列表
+   */
+  getMainTagList() {
+    return request('/tag/tech-domain/list')
   },
 
   /**
-   * 更新主标签
+   * 添加标签
+   * @param {Object} tag - 标签对象 {name, dimensionId, parentId, level}
+   * @returns {Promise<number>} 标签ID
    */
-  updateMainTag(mainTag) {
-    return request('/tag/update', { method: 'POST', body: mainTag })
+  addTag(tag) {
+    return request('/tag/add', { method: 'POST', body: tag })
   },
 
   /**
-   * 删除主标签
+   * 更新标签
+   * @param {Object} tag - 标签对象 {id, name, ...}
+   * @returns {Promise<void>}
    */
-  deleteMainTag(id) {
+  updateTag(tag) {
+    return request('/tag/update', { method: 'POST', body: tag })
+  },
+
+  /**
+   * 删除标签
+   * @param {number} id - 标签ID
+   * @returns {Promise<void>}
+   */
+  deleteTag(id) {
     return request('/tag/delete', { method: 'DELETE', params: { id } })
   },
 
-  // ========== 子标签 ==========
+  // ========== 子标签（兼容旧接口）==========
 
   /**
    * 获取子标签列表
+   * @param {number} parentId - 父标签ID
+   * @returns {Promise<Array>} 子标签列表
    */
-  getSubTagList() {
-    return request('/tag/sub/list')
+  getSubTagList(parentId) {
+    return request('/tag/sub/list', { params: { parentId } })
   },
 
   /**
    * 添加子标签
+   * @param {Object} tag - 标签对象 {name, parentId}
+   * @returns {Promise<number>} 标签ID
    */
-  addSubTag(subTag) {
-    return request('/tag/add/sub', { method: 'POST', body: subTag })
+  addSubTag(tag) {
+    return request('/tag/add/sub', { method: 'POST', body: tag })
+  },
+
+  // ========== 兼容旧 API（已废弃，保留以兼容旧代码）==========
+
+  /**
+   * @deprecated 使用 addTag 替代
+   */
+  addMainTag(tag) {
+    return this.addTag({ ...tag, dimensionId: 1, level: 1 })
   },
 
   /**
-   * 更新子标签
+   * @deprecated 使用 updateTag 替代
    */
-  updateSubTag(subTag) {
-    return request('/tag/update/sub', { method: 'POST', body: subTag })
+  updateMainTag(tag) {
+    return this.updateTag(tag)
   },
 
   /**
-   * 删除子标签
+   * @deprecated 使用 deleteTag 替代
+   */
+  deleteMainTag(id) {
+    return this.deleteTag(id)
+  },
+
+  /**
+   * @deprecated 使用 updateTag 替代
+   */
+  updateSubTag(tag) {
+    return this.updateTag(tag)
+  },
+
+  /**
+   * @deprecated 使用 deleteTag 替代
    */
   deleteSubTag(id) {
-    return request('/tag/delete/sub', { method: 'DELETE', params: { id } })
-  },
-
-  // ========== 标签关系 ==========
-
-  /**
-   * 获取标签关系列表
-   */
-  getTagRelations(mainTagId) {
-    const params = mainTagId != null ? { mainTagId } : undefined
-    return request('/tag/list/relation', { params })
+    return this.deleteTag(id)
   },
 
   /**
-   * 添加标签关系
+   * @deprecated 新体系中标签关系通过 parentId 维护
    */
-  addTagRelation(params) {
-    return request('/tag/add/relation', { method: 'POST', body: params })
+  getTagRelations() {
+    // 返回空数组，新体系通过 parentId 维护关系
+    return Promise.resolve([])
   },
 
   /**
-   * 删除标签关系
+   * @deprecated 新体系中标签关系通过 parentId 维护
    */
-  deleteTagRelation(params) {
-    return request('/tag/delete/relation', { method: 'DELETE', body: params })
+  addTagRelation() {
+    // 新体系通过 parentId 维护关系
+    return Promise.resolve()
+  },
+
+  /**
+   * @deprecated 新体系中标签关系通过 parentId 维护
+   */
+  deleteTagRelation() {
+    // 新体系通过 parentId 维护关系
+    return Promise.resolve()
   },
 
   // ========== 推荐标签 ==========
 
   /**
    * 添加推荐标签
+   * @param {Object} body - 请求体
+   * @returns {Promise<void>}
    */
   addRecommendTag(body) {
     return request('/tag/recommand/add', { method: 'POST', body })

@@ -64,4 +64,14 @@ public interface MistakeRepository extends JpaRepository<Mistake, Long> {
      */
     @Query("select m from Mistake m where m.userId = :userId order by m.lastMistakeTime desc limit 10")
     List<Mistake> findRecentMistakesByUserId(@Param("userId") Long userId);
+
+    /**
+     * 统计用户指定题目的总错误次数
+     *
+     * @param userId      用户ID
+     * @param questionIds 题目ID列表
+     * @return 总错误次数
+     */
+    @Query("SELECT SUM(m.mistakeCount) FROM Mistake m WHERE m.userId = :userId AND m.questionId IN :questionIds")
+    Integer sumMistakeCountByUserIdAndQuestionIdIn(@Param("userId") Long userId, @Param("questionIds") List<Long> questionIds);
 }

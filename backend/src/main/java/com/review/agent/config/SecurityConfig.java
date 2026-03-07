@@ -77,10 +77,12 @@ public class SecurityConfig {
                                 "/user/login",
                                 "/user/register",
                                 "/user/forgot-password",
+                                "/user/test-token",
                                 // 前端代理的路径
                                 "/api/user/login",
                                 "/api/user/register",
                                 "/api/user/forgot-password",
+                                "/api/user/test-token",
                                 // 错误页面
                                 "/error"
                         ).permitAll()

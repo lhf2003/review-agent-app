@@ -7,7 +7,7 @@ target/
 .gitignore
 
 # AI
-.claude
+.claude/**
 .trae
 .opencode
 

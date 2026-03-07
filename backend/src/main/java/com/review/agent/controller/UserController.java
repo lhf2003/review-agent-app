@@ -51,6 +51,12 @@ public class UserController {
     @Value("${jwt.expiration:86400000}")
     private Long jwtExpiration;
 
+    @Value("${test.enabled:true}")
+    private Boolean testEnabled;
+
+    @Value("${test.user-id:1}")
+    private Long testUserId;
+
     // region 用户信息接口
 
     /**
@@ -62,6 +68,40 @@ public class UserController {
         userInfo.setPassword(AesUtil.decrypt(userInfo.getPassword()));
         userService.register(userInfo);
         return ResultUtil.success("register success");
+    }
+
+    /**
+     * 获取测试 Token（仅用于自动化测试）
+     * 当 test.enabled=true 时可用，返回固定测试用户的 token
+     */
+    @GetMapping("/test-token")
+    public BaseResponse<LoginResponseVo> getTestToken() {
+        if (!Boolean.TRUE.equals(testEnabled)) {
+            return ResultUtil.error("测试接口未启用");
+        }
+
+        // 获取测试用户信息
+        UserInfo userInfoFromDb = userService.findById(testUserId);
+        if (userInfoFromDb == null) {
+            return ResultUtil.error("测试用户不存在");
+        }
+
+        // 生成 JWT Token
+        String token = jwtUtil.generateToken(userInfoFromDb.getId());
+
+        // 构造用户信息
+        UserInfoFilterVo userInfoFilterVo = new UserInfoFilterVo();
+        BeanUtils.copyProperties(userInfoFromDb, userInfoFilterVo);
+
+        // 构造登录响应
+        LoginResponseVo response = LoginResponseVo.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .userInfo(userInfoFilterVo)
+                .expiresIn(System.currentTimeMillis() + jwtExpiration)
+                .build();
+
+        return ResultUtil.success(response);
     }
 
     /**

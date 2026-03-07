@@ -13,7 +13,7 @@ public class DefaultLlmProvider {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column
-    private Long id;
+    private Integer id;
     @Size(max = 20)
     @Column(name = "name", length = 20)
     private String name;

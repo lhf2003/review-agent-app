@@ -84,11 +84,11 @@ public class CollectionRecommendationServiceImpl implements CollectionRecommenda
 
         return tagData.stream()
             .map(data -> {
-                String mainTag = (String) data[0];
-                String subTag = (String) data[1];
-                return subTag != null && !subTag.isEmpty()
-                    ? mainTag + "-" + subTag
-                    : mainTag;
+                String tagName = (String) data[0];
+                String parentName = (String) data[1];
+                return parentName != null && !parentName.isEmpty()
+                    ? parentName + "-" + tagName
+                    : tagName;
             })
             .distinct()
             .collect(Collectors.toList());

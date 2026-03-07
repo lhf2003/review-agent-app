@@ -63,10 +63,7 @@ public class UserService {
     private AnalysisCollectionRepository analysisCollectionRepository;
 
     @Resource
-    private MainTagRepository mainTagRepository;
-
-    @Resource
-    private SubTagRepository subTagRepository;
+    private TagRepository tagRepository;
 
     @Resource
     private QuizRecordRepository quizRecordRepository;
@@ -157,7 +154,7 @@ public class UserService {
             UserAchievement userAchievement = new UserAchievement();
             userAchievement.setUserId(userId);
             userAchievement.setAchievementCode(ad.getCode());
-            userAchievement.setUnlocked(1);
+            userAchievement.setUnlocked(true);
             userAchievement.setProgress(0);
             userAchievements.add(userAchievement);
         }
@@ -368,10 +365,8 @@ public class UserService {
         // 3. 统计合集数量
         stats.setCollectionCount(analysisCollectionRepository.countByUserId(userId));
 
-        // 4. 统计标签数量 (主标签 + 子标签)
-        long mainTagCount = mainTagRepository.countByUserId(userId);
-        long subTagCount = subTagRepository.countByUserId(userId);
-        stats.setTagCount(mainTagCount + subTagCount);
+        // 4. 统计标签数量
+        stats.setTagCount(tagRepository.countByUserId(userId));
 
         // 5. 统计完成的测验数
         stats.setQuizCompletedCount(quizRecordRepository.countByUserIdAndStatus(userId, 1));
@@ -432,7 +427,7 @@ public class UserService {
 
             UserAchievement userAchievement = userAchievementMap.get(definition.getCode());
             if (userAchievement != null) {
-                vo.setUnlocked(userAchievement.getUnlocked() == 1);
+                vo.setUnlocked(userAchievement.getUnlocked() != null && userAchievement.getUnlocked());
                 vo.setProgress(userAchievement.getProgress());
                 if (userAchievement.getUnlockedTime() != null) {
                     vo.setUnlockedTime(userAchievement.getUnlockedTime().format(formatter));
@@ -569,7 +564,7 @@ public class UserService {
             // 获取用户当前的成就记录
             UserAchievement userAchievement = userAchievementRepository.findByUserIdAndAchievementCode(userId, code);
 
-            if (userAchievement != null && userAchievement.getUnlocked() == 1) {
+            if (userAchievement != null && Boolean.TRUE.equals(userAchievement.getUnlocked())) {
                 // 已解锁，跳过
                 continue;
             }
@@ -617,7 +612,7 @@ public class UserService {
 
             if (shouldUnlock && userAchievement != null) {
                 // 解锁成就
-                userAchievement.setUnlocked(1);
+                userAchievement.setUnlocked(true);
                 userAchievement.setProgress(conditionValue);
                 userAchievement.setUnlockedTime(LocalDateTime.now());
                 userAchievementRepository.save(userAchievement);

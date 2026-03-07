@@ -32,21 +32,20 @@ public class AnalysisResult {
     @Column(name = "problem_statement")
     private String problemStatement;
 
-    @Lob
-    @Column(name = "solution")
+    @Column(name = "solution", columnDefinition = "LONGTEXT")
     private String solution;
 
-    @Column(name = "session_start")
+    @Column(name = "session_start", columnDefinition = "TINYINT")
     private Integer sessionStart;
 
-    @Column(name = "session_end")
+    @Column(name = "session_end", columnDefinition = "TINYINT")
     private Integer sessionEnd;
 
     @Column(name = "session_content")
     private String sessionContent;
 
     @NotNull
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, columnDefinition = "TINYINT")
     private Integer status;
 
     @Column(name = "created_time")
@@ -56,9 +55,9 @@ public class AnalysisResult {
      * 删除标记（软删除）
      * false-未删除，true-已删除
      */
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Column(name = "deleted")
-    private Integer deleted = 0;
+    private Boolean deleted = false;
 
     /**
      * 删除时间（软删除）

@@ -2,274 +2,311 @@ package com.review.agent.service;
 
 import com.review.agent.common.utils.ExceptionUtils;
 import com.review.agent.common.utils.ObjectTransformUtil;
-import com.review.agent.entity.pojo.AnalysisTag;
-import com.review.agent.entity.pojo.MainTag;
-import com.review.agent.entity.pojo.SubTag;
-import com.review.agent.entity.pojo.TagRelation;
+import com.review.agent.common.utils.SecurityUtils;
+import com.review.agent.entity.pojo.*;
 import com.review.agent.entity.request.TagRecommendRequest;
-import com.review.agent.repository.AnalysisTagRepository;
-import com.review.agent.repository.MainTagRepository;
-import com.review.agent.repository.SubTagRepository;
-import com.review.agent.repository.TagRelationRepository;
+import com.review.agent.repository.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 
+/**
+ * 标签服务（重构版）
+ * 使用新的Tag实体，支持多维度标签体系
+ */
 @Slf4j
 @Service
 public class TagService {
-    @Resource
-    private MainTagRepository mainTagRepository;
 
     @Resource
-    private SubTagRepository subTagRepository;
+    private TagRepository tagRepository;
 
     @Resource
-    private TagRelationRepository tagRelationRepository;
+    private TagDimensionRepository tagDimensionRepository;
 
     @Resource
     private AnalysisTagRepository analysisTagRepository;
 
-    public void addRecommendTag(Long userId, TagRecommendRequest request) {
-        List<AnalysisTag> analysisTagList = analysisTagRepository.findAllByAnalysisResultId(List.of(request.getAnalysisId()));
-        AnalysisTag analysisTag = analysisTagList.get(0);
-        String name = request.getName();
-        if (request.getTagType() == 1) {
-            MainTag mainTag = new MainTag();
-            mainTag.setUserId(userId);
-            mainTag.setName(name);
-            // 已有主标签,不能添加主标签
-            if (analysisTag.getTagId() != null) {
-                ExceptionUtils.throwDataAlreadyExists("主标签");
-            }
-            long tagId = addTag(mainTag);
-            analysisTag.setTagId(tagId);
-        } else {
-            SubTag subTag = new SubTag();
-            subTag.setUserId(userId);
-            subTag.setName(name);
-            long newSubTagId = addSubTag(subTag);
-            String oldSubTagId = analysisTag.getSubTagId();
-            if (StringUtils.hasText(oldSubTagId)) {
-                oldSubTagId += "," + newSubTagId;
-            } else {
-                oldSubTagId = newSubTagId + "";
-            }
-            analysisTag.setSubTagId(oldSubTagId);
+    @Resource
+    private SecurityUtils securityUtils;
+
+    // ========== 技术领域标签（原MainTag功能） ==========
+
+    /**
+     * 查询用户的技术领域标签（一级）
+     */
+    public List<Tag> findTechDomainTags(Long userId) {
+        TagDimension techDomain = tagDimensionRepository.findByCode("TECH_DOMAIN")
+                .orElseThrow(() -> new IllegalStateException("技术领域维度不存在"));
+        return tagRepository.findByDimensionIdAndLevelAndUserId(techDomain.getId(), 1, userId);
+    }
+
+    /**
+     * 查询技术领域下的子标签
+     */
+    public List<Tag> findSubTagsByParentId(Long userId, Long parentId) {
+        return tagRepository.findByParentIdOrderByName(parentId);
+    }
+
+    /**
+     * 添加标签
+     */
+    @Transactional
+    public Long addTag(Tag tag) {
+        Long userId = securityUtils.getCurrentUserId();
+
+        if (tag.getName() == null || tag.getName().isEmpty()) {
+            throw new IllegalArgumentException("标签名称不能为空");
         }
 
-        // 更新分析结果
-        String recommends = analysisTag.getRecommends();
-        int startIndex = recommends.indexOf(name);
-        int endIndex = startIndex + name.length();
-        if (name.length() == endIndex) {
-            analysisTag.setRecommends(null);
-        } else {
-            analysisTag.setRecommends(recommends.substring(0, startIndex) + recommends.substring(endIndex + 1));
+        // 设置默认值
+        tag.setId(null);
+        tag.setUserId(userId);
+        tag.setCreatedTime(LocalDateTime.now());
+        tag.setUpdatedTime(LocalDateTime.now());
+
+        if (tag.getLevel() == null) {
+            tag.setLevel(1);
         }
+
+        // 构建路径
+        if (tag.getParentId() != null) {
+            Tag parent = tagRepository.findById(tag.getParentId())
+                    .orElseThrow(() -> new IllegalArgumentException("父标签不存在"));
+            tag.setLevel(parent.getLevel() + 1);
+            tag.setPath(parent.getPath() + "/" + tag.getName());
+        } else {
+            tag.setPath("/" + tag.getName());
+        }
+
+        // 检查名称是否已存在（同一维度下）
+        Optional<Tag> existing = tagRepository.findByNameAndDimensionId(tag.getName(), tag.getDimensionId());
+        if (existing.isPresent()) {
+            throw new IllegalArgumentException("标签名称已存在");
+        }
+
+        Tag saved = tagRepository.save(tag);
+        return saved.getId();
+    }
+
+    @Transactional
+    public void updateTag(Tag tag) {
+        Long userId = securityUtils.getCurrentUserId();
+
+        Tag tagInDb = tagRepository.findById(tag.getId())
+                .orElseThrow(() -> new IllegalArgumentException("标签不存在"));
+
+        // 检查权限
+        if (tagInDb.getUserId() != null && !tagInDb.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("无权操作此标签");
+        }
+
+        BeanUtils.copyProperties(tag, tagInDb, ObjectTransformUtil.getNullPropertyNames(tag));
+        tagInDb.setUpdatedTime(LocalDateTime.now());
+
+        tagRepository.save(tagInDb);
+    }
+
+    @Transactional
+    public void deleteTag(Long id) {
+        Long userId = securityUtils.getCurrentUserId();
+
+        Tag tag = tagRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("标签不存在"));
+
+        // 检查权限
+        if (tag.getUserId() != null && !tag.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("无权删除此标签");
+        }
+
+        // 检查是否被使用
+        long refCount = analysisTagRepository.countByTagId(id);
+        if (refCount > 0) {
+            ExceptionUtils.throwDataInUse("标签");
+        }
+
+        // 递归删除子标签
+        deleteChildTags(id);
+
+        tagRepository.deleteById(id);
+    }
+
+    private void deleteChildTags(Long parentId) {
+        List<Tag> children = tagRepository.findByParentIdOrderByName(parentId);
+        for (Tag child : children) {
+            deleteChildTags(child.getId());
+            tagRepository.deleteById(child.getId());
+        }
+    }
+
+    public List<Tag> findByIdList(List<Long> tagIdList) {
+        return tagRepository.findAllById(tagIdList);
+    }
+
+    // ========== 推荐标签处理 ==========
+
+    @Transactional
+    public void addRecommendTag(Long userId, TagRecommendRequest request) {
+        List<AnalysisTag> analysisTagList = analysisTagRepository
+                .findByAnalysisResultId(request.getAnalysisId());
+
+        if (analysisTagList.isEmpty()) {
+            // 创建新的关联
+            AnalysisTag newTag = new AnalysisTag();
+            newTag.setAnalysisResultId(request.getAnalysisId());
+            newTag.setIsPrimary(true);
+            newTag.setConfidence(100);
+            analysisTagList = Collections.singletonList(newTag);
+        }
+
+        AnalysisTag analysisTag = analysisTagList.get(0);
+        String name = request.getName();
+
+        // 查找或创建标签
+        TagDimension techDomain = tagDimensionRepository.findByCode("TECH_DOMAIN")
+                .orElseThrow(() -> new IllegalStateException("技术领域维度不存在"));
+
+        Tag tag = tagRepository.findByNameAndDimensionId(name, techDomain.getId())
+                .orElseGet(() -> {
+                    // 创建新标签
+                    Tag newTag = new Tag();
+                    newTag.setName(name);
+                    newTag.setDimensionId(techDomain.getId());
+                    newTag.setLevel(1);
+                    newTag.setPath("/" + name);
+                    newTag.setUserId(userId);
+                    return tagRepository.save(newTag);
+                });
+
+        analysisTag.setTagId(tag.getId());
         analysisTagRepository.save(analysisTag);
     }
 
-    // region 主标签
+    // ========== 思维范式标签 ==========
 
     /**
-     * 查询用户所有主标签（不包含子标签）
-     * @param userId 用户id
-     * @return 主标签列表
+     * 查询思维范式标签
      */
-    public List<MainTag> findMainTagList(Long userId) {
-        return mainTagRepository.findAllByUserId(userId);
-    }
-
-    /**
-     * 添加主标签
-     * @param mainTag 标签
-     */
-    public long addTag(MainTag mainTag) {
-        if (mainTag.getName() == null || mainTag.getName().isEmpty()) {
-            throw new IllegalArgumentException("mainTag name required");
-        }
-        if (mainTagRepository.existsByName(mainTag.getName())) {
-            throw new IllegalArgumentException("mainTag name exists");
-        }
-        mainTag.setId(null);
-        Date date = new Date();
-        mainTag.setCreateTime(date);
-        mainTag.setUpdateTime(date);
-        MainTag saved = mainTagRepository.save(mainTag);
-
-        return saved.getId();
-    }
-
-    @Transactional
-    public void updateMainTag(MainTag mainTag) {
-        MainTag mainTagInDb = mainTagRepository.findById(mainTag.getId()).orElse(null);
-        if (mainTagInDb == null) {
-            throw new IllegalArgumentException("mainTag not found");
-        }
-        BeanUtils.copyProperties(mainTag, mainTagInDb, ObjectTransformUtil.getNullPropertyNames(mainTag));
-        mainTagRepository.save(mainTagInDb);
-    }
-
-    @Transactional
-    public void deleteMainTag(Long userId, Long id) {
-        if (id == null) {
-            throw new IllegalArgumentException("tag id required");
-        }
-        long refCount = analysisTagRepository.countByTagId(id);
-        // TODO 后续支持删除，但是会删除相关联的所有分析记录
-        if (refCount > 0) {
-            ExceptionUtils.throwDataInUse("主标签");
-        }
-        // 删除主标签
-        mainTagRepository.deleteById(id);
-
-        // 删除标签关联关系
-        List<TagRelation> tagRelationList = tagRelationRepository.findByUserId(userId);
-        tagRelationRepository.deleteAll(tagRelationList);
-    }
-
-    public List<MainTag> findByIdList(List<Long> tagIdList) {
-        return mainTagRepository.findAllById(tagIdList);
-    }
-
-
-    // endregion 主标签
-    // region 子标签
-
-    /**
-     * 查询用户所有子标签（不包含主标签）
-     * @param userId 用户id
-     * @return 子标签列表
-     */
-    public List<SubTag> findSubTagList(Long userId) {
-        return subTagRepository.findAllByUserId(userId);
+    public List<Tag> findThinkingParadigmTags() {
+        TagDimension paradigmDimension = tagDimensionRepository.findByCode("THINKING_PARADIGM")
+                .orElseThrow(() -> new IllegalStateException("思维范式维度不存在"));
+        return tagRepository.findByDimensionIdAndLevel(paradigmDimension.getId(), 1);
     }
 
     /**
-     * 查询用户某个主标签下的子标签
-     * @param userId 用户id
-     * @param mainTagId 主标签id
-     * @return 子标签列表
+     * 根据范式编码查询标签
      */
-    public List<SubTag> findSubTagListByMainTagId(Long userId, Long mainTagId) {
-        List<TagRelation> tagRelationList = tagRelationRepository.findAllByMainTagIdAndUserId(userId, mainTagId);
-        List<Long> subTagIdList = tagRelationList.stream().map(TagRelation::getSubTagId).toList();
-        return subTagRepository.findAllById(subTagIdList);
+    public Optional<Tag> findTagByParadigmCode(String paradigmCode) {
+        return tagRepository.findByParadigmCode(paradigmCode);
+    }
+
+    // ========== 维度查询 ==========
+
+    /**
+     * 查询所有标签维度
+     */
+    public List<TagDimension> findAllDimensions() {
+        return tagDimensionRepository.findAll();
+    }
+
+    // ========== 查询方法（兼容旧接口） ==========
+
+    /**
+     * 查询用户所有标签（兼容旧接口）
+     */
+    public List<Tag> findAllTagsByUser(Long userId) {
+        return tagRepository.findByUserId(userId);
     }
 
     /**
-     * 添加子标签
-     * @param subTag 标签
+     * 获取标签树结构
      */
-    public long addSubTag(SubTag subTag) {
-        if (subTagRepository.existsByName(subTag.getName())) {
-            throw new IllegalArgumentException("subTag name exists");
+    public List<TagVO> getTagTree(Long userId, Long dimensionId) {
+        List<Tag> tags;
+        if (dimensionId != null) {
+            tags = tagRepository.findByDimensionIdAndUserId(dimensionId, userId);
+        } else {
+            tags = tagRepository.findByUserId(userId);
         }
-        subTag.setId(null);
-        Date date = new Date();
-        subTag.setCreateTime(date);
-        subTag.setUpdateTime(date);
-        SubTag saved = subTagRepository.save(subTag);
-        return saved.getId();
+
+        // 构建树形结构
+        Map<Long, TagVO> voMap = new HashMap<>();
+        List<TagVO> rootTags = new ArrayList<>();
+
+        // 先创建所有VO
+        for (Tag tag : tags) {
+            TagVO vo = convertToVO(tag);
+            voMap.put(tag.getId(), vo);
+        }
+
+        // 构建父子关系
+        for (Tag tag : tags) {
+            TagVO vo = voMap.get(tag.getId());
+            if (tag.getParentId() == null) {
+                rootTags.add(vo);
+            } else {
+                TagVO parent = voMap.get(tag.getParentId());
+                if (parent != null) {
+                    if (parent.getChildren() == null) {
+                        parent.setChildren(new ArrayList<>());
+                    }
+                    parent.getChildren().add(vo);
+                }
+            }
+        }
+
+        return rootTags;
     }
 
-    /**
-     * 更新子标签
-     * @param subTag 子标签
-     */
-    @Transactional
-    public void updateSubTag(SubTag subTag) {
-        SubTag subTagInDb = subTagRepository.findById(subTag.getId()).orElse(null);
-        if (subTagInDb == null) {
-            ExceptionUtils.throwDataNotFound("子标签" + subTag.getId() + "不存在");
-        }
-        BeanUtils.copyProperties(subTag, subTagInDb, ObjectTransformUtil.getNullPropertyNames(subTag));
-        subTagRepository.save(subTagInDb);
+    private TagVO convertToVO(Tag tag) {
+        TagVO vo = new TagVO();
+        BeanUtils.copyProperties(tag, vo);
+        vo.setIsSystemTag(tag.getUserId() == null);
+
+        tagDimensionRepository.findById(tag.getDimensionId())
+                .ifPresent(d -> vo.setDimensionName(d.getName()));
+
+        return vo;
     }
 
-    /**
-     * 删除子标签
-     * @param userId 用户id
-     * @param id 子标签id
-     */
-    @Transactional
-    public void deleteSubTag(Long userId, Long id) {
-        if (id == null) {
-            throw new IllegalArgumentException("subTag id required");
-        }
-        // 检查子标签是否被使用
-        long refCount = analysisTagRepository.countBySubTagId(id);
-        if (refCount > 0) {
-            ExceptionUtils.throwDataInUse("子标签");
-        }
-        subTagRepository.deleteById(id);
+    // 内部VO类
+    public static class TagVO {
+        private Long id;
+        private String name;
+        private Long dimensionId;
+        private String dimensionName;
+        private Long parentId;
+        private Integer level;
+        private String path;
+        private Boolean isSystemTag;
+        private LocalDateTime createdTime;
+        private List<TagVO> children;
 
-        // 删除标签关联关系
-        List<TagRelation> tagRelationList = tagRelationRepository.findByUserId(userId);
-        tagRelationRepository.deleteAll(tagRelationList);
-    }
-
-
-    // endregion 子标签
-    // region 关联关系
-//    /**
-//     * 查询用户所有主标签和关联的子标签
-//     * @param userId 用户id
-//     * @return 主标签列表
-//     */
-//    public List<TagRelationVo> findMainTagVo(Long userId) {
-//        List<TagRelationVo> resultList = new ArrayList<>();
-//        List<TagRelation> tagRelationList = tagRelationRepository.findByUserId(userId);
-//        List<MainTag> mainTagList = mainTagRepository.findAllByUserId(userId);
-//        List<SubTag> subTagList = subTagRepository.findAllByUserId(userId);
-//
-//        Map<Long, String> mainTagIdToNameMap = mainTagList.stream().collect(Collectors.toMap(MainTag::getId, MainTag::getName));
-//        Map<Long, List<TagRelation>> mainTagIdToTagRelationMap = tagRelationList.stream().collect(Collectors.groupingBy(TagRelation::getMainTagId));
-//        for (Map.Entry<Long, List<TagRelation>> entry : mainTagIdToTagRelationMap.entrySet()) {
-//            Long mainTagId = entry.getKey();
-//            // 封装子标签列表
-//            List<TagRelation> tagRelationListForMainTag = entry.getValue();
-//            List<Long> subTagIdList = tagRelationListForMainTag.stream().map(TagRelation::getSubTagId).toList();
-//            List<SubTag> subTagListForMainTag = subTagList.stream().filter(subTag -> subTagIdList.contains(subTag.getId())).toList();
-//            // 封装返回数据
-//            TagRelationVo tagRelationVo = new TagRelationVo();
-//            tagRelationVo.setMainTagId(mainTagId);
-//            tagRelationVo.setName(mainTagIdToNameMap.get(mainTagId));
-//            tagRelationVo.setSubTagList(subTagListForMainTag);
-//        }
-//        return resultList;
-//    }
-
-    /**
-     * 添加主标签关联子标签关系
-     * @param tagRelation 主标签关联子标签关系
-     */
-    @Transactional
-    public void addTagRelation(TagRelation tagRelation) {
-        TagRelation tagRelationInDb = tagRelationRepository.findRelation(tagRelation.getUserId(),tagRelation.getMainTagId(), tagRelation.getSubTagId());
-        if (tagRelationInDb != null) {
-            ExceptionUtils.throwDataAlreadyExists("关联关系");
-        }
-        tagRelation.setId(null);
-        tagRelationRepository.save(tagRelation);
-    }
-
-    /**
-     * 删除主标签关联子标签关系
-     */
-    @Transactional
-    public void deleteTagRelation(TagRelation tagRelation) {
-        TagRelation tagRelationInDb = tagRelationRepository.findRelation(tagRelation.getUserId(), tagRelation.getMainTagId(), tagRelation.getSubTagId());
-        if (tagRelationInDb == null) {
-            ExceptionUtils.throwDataAlreadyExists(tagRelation.getMainTagId() + "-" + tagRelation.getSubTagId());
-        }
-        tagRelationRepository.delete(tagRelationInDb);
+        // Getters and Setters
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public Long getDimensionId() { return dimensionId; }
+        public void setDimensionId(Long dimensionId) { this.dimensionId = dimensionId; }
+        public String getDimensionName() { return dimensionName; }
+        public void setDimensionName(String dimensionName) { this.dimensionName = dimensionName; }
+        public Long getParentId() { return parentId; }
+        public void setParentId(Long parentId) { this.parentId = parentId; }
+        public Integer getLevel() { return level; }
+        public void setLevel(Integer level) { this.level = level; }
+        public String getPath() { return path; }
+        public void setPath(String path) { this.path = path; }
+        public Boolean getIsSystemTag() { return isSystemTag; }
+        public void setIsSystemTag(Boolean isSystemTag) { this.isSystemTag = isSystemTag; }
+        public LocalDateTime getCreatedTime() { return createdTime; }
+        public void setCreatedTime(LocalDateTime createdTime) { this.createdTime = createdTime; }
+        public List<TagVO> getChildren() { return children; }
+        public void setChildren(List<TagVO> children) { this.children = children; }
     }
 }

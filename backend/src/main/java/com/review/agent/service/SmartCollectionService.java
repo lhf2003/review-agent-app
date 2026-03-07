@@ -5,7 +5,7 @@ import com.review.agent.entity.pojo.AnalysisCollection;
 import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.pojo.AnalysisTag;
 import com.review.agent.entity.pojo.CollectionRelation;
-import com.review.agent.entity.pojo.MainTag;
+import com.review.agent.entity.pojo.Tag;
 import com.review.agent.entity.request.QuickCreateRequest;
 import com.review.agent.entity.vo.QuickCreateResultVO;
 import com.review.agent.entity.vo.SmartRecommendationVO;
@@ -15,7 +15,7 @@ import com.review.agent.repository.AnalysisCollectionRepository;
 import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.AnalysisTagRepository;
 import com.review.agent.repository.CollectionRelationRepository;
-import com.review.agent.repository.MainTagRepository;
+import com.review.agent.repository.TagRepository;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -56,7 +56,10 @@ public class SmartCollectionService {
     private AnalysisTagRepository analysisTagRepository;
 
     @Resource
-    private MainTagRepository mainTagRepository;
+    private TagRepository tagRepository;
+
+    @Resource
+    private TagService tagService;
 
     @Resource
     private CollectionRelationRepository collectionRelationRepository;
@@ -180,19 +183,19 @@ public class SmartCollectionService {
             .collect(Collectors.toList());
 
         // 批量获取标签关联
-        List<AnalysisTag> tags = analysisTagRepository.findByAnalysisIdIn(resultIds);
+        List<AnalysisTag> tags = analysisTagRepository.findByAnalysisResultIdIn(resultIds);
 
         // 构建分析结果ID到结果的映射
         Map<Long, AnalysisResult> resultMap = results.stream()
             .collect(Collectors.toMap(AnalysisResult::getId, r -> r));
 
-        // 按主标签分组
+        // 按标签分组
         Map<Long, List<AnalysisResult>> grouped = new HashMap<>();
         for (AnalysisTag tag : tags) {
             if (tag.getTagId() == null) {
                 continue;
             }
-            AnalysisResult result = resultMap.get(tag.getAnalysisId());
+            AnalysisResult result = resultMap.get(tag.getAnalysisResultId());
             if (result != null) {
                 grouped.computeIfAbsent(tag.getTagId(), k -> new ArrayList<>()).add(result);
             }
@@ -217,9 +220,9 @@ public class SmartCollectionService {
         Set<Long> tagIds = groupedByTag.keySet();
         Map<Long, String> tagNameMap = new HashMap<>();
         if (!tagIds.isEmpty()) {
-            List<MainTag> tags = mainTagRepository.findAllById(tagIds);
+            List<Tag> tags = tagRepository.findAllById(tagIds);
             tagNameMap = tags.stream()
-                .collect(Collectors.toMap(MainTag::getId, MainTag::getName));
+                .collect(Collectors.toMap(Tag::getId, Tag::getName));
         }
 
         // 获取标签置信度
@@ -228,7 +231,7 @@ public class SmartCollectionService {
             .map(AnalysisResult::getId)
             .collect(Collectors.toList());
 
-        List<AnalysisTag> allTags = analysisTagRepository.findByAnalysisIdIn(allResultIds);
+        List<AnalysisTag> allTags = analysisTagRepository.findByAnalysisResultIdIn(allResultIds);
         Map<Long, Double> tagAvgConfidence = calculateAverageConfidence(allTags);
 
         for (Map.Entry<Long, List<AnalysisResult>> entry : groupedByTag.entrySet()) {
@@ -292,9 +295,9 @@ public class SmartCollectionService {
         Map<Long, List<Double>> confidenceByTag = new HashMap<>();
 
         for (AnalysisTag tag : tags) {
-            if (tag.getTagId() != null && tag.getConfidenceScore() != null) {
+            if (tag.getTagId() != null && tag.getConfidence() != null) {
                 confidenceByTag.computeIfAbsent(tag.getTagId(), k -> new ArrayList<>())
-                    .add(tag.getConfidenceScore());
+                    .add(tag.getConfidence().doubleValue());
             }
         }
 

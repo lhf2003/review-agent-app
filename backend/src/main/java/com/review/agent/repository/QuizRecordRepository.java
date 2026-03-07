@@ -12,19 +12,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface QuizRecordRepository extends JpaRepository<QuizRecord, Long> {
-    @Query("select q from QuizRecord q where q.userId = :userId and q.collectionId = :collectionId and q.deleted = 0 order by q.createdTime desc")
+    @Query("select q from QuizRecord q where q.userId = :userId and q.collectionId = :collectionId and q.deleted = false order by q.createdTime desc")
     List<QuizRecord> findByUserIdAndCollectionIdOrderByCreatedTimeDesc(Long userId, Long collectionId);
 
     /**
      * 统计用户指定状态的测验数量（只统计未删除的）
      */
-    @Query("select count(q) from QuizRecord q where q.userId = :userId and q.status = :status and q.deleted = 0")
+    @Query("select count(q) from QuizRecord q where q.userId = :userId and q.status = :status and q.deleted = false")
     long countByUserIdAndStatus(Long userId, Integer status);
 
     /**
      * 获取用户最近完成的2个测验（只包含未删除的）
      */
-    @Query("select q from QuizRecord q where q.userId = :userId and q.status = :status and q.deleted = 0 order by q.createdTime desc limit 2")
+    @Query("select q from QuizRecord q where q.userId = :userId and q.status = :status and q.deleted = false order by q.createdTime desc limit 2")
     List<QuizRecord> findTop2ByUserIdAndStatusOrderByCreatedTimeDesc(Long userId, Integer status);
 
     /**
@@ -33,7 +33,7 @@ public interface QuizRecordRepository extends JpaRepository<QuizRecord, Long> {
      * @param deletedAt 删除时间
      */
     @Modifying
-    @Query("update QuizRecord q set q.deleted = 1, q.deletedAt = :deletedAt where q.id = :id")
+    @Query("update QuizRecord q set q.deleted = true, q.deletedAt = :deletedAt where q.id = :id")
     void softDelete(@Param("id") Long id, @Param("deletedAt") LocalDateTime deletedAt);
 
     /**
@@ -47,7 +47,7 @@ public interface QuizRecordRepository extends JpaRepository<QuizRecord, Long> {
     /**
      * 获取用户所有已完成的测验（按做题时间升序，用于趋势图）
      */
-    @Query("select q from QuizRecord q where q.userId = :userId and q.status = :status and q.deleted = 0 and q.submitTime is not null order by q.submitTime asc")
+    @Query("select q from QuizRecord q where q.userId = :userId and q.status = :status and q.deleted = false and q.submitTime is not null order by q.submitTime asc")
     List<QuizRecord> findAllByUserIdAndStatusOrderBySubmitTimeAsc(Long userId, Integer status);
 
     /**
@@ -62,7 +62,7 @@ public interface QuizRecordRepository extends JpaRepository<QuizRecord, Long> {
            "WHERE qr.userId = :userId " +
            "AND (:status IS NULL OR qr.status = :status) " +
            "AND (:collectionId IS NULL OR qr.collectionId = :collectionId) " +
-           "AND qr.deleted = 0 " +
+           "AND qr.deleted = false " +
            "ORDER BY qr.createdTime DESC")
     Page<QuizRecord> findByUserIdWithFilters(
         @Param("userId") Long userId,
@@ -78,7 +78,7 @@ public interface QuizRecordRepository extends JpaRepository<QuizRecord, Long> {
      * @param endTime 结束时间
      * @return 测验记录列表
      */
-    @Query("select q from QuizRecord q where q.userId = :userId and q.status = 1 and q.deleted = 0 and q.submitTime is not null and q.submitTime >= :startTime and q.submitTime < :endTime order by q.submitTime asc")
+    @Query("select q from QuizRecord q where q.userId = :userId and q.status = 1 and q.deleted = false and q.submitTime is not null and q.submitTime >= :startTime and q.submitTime < :endTime order by q.submitTime asc")
     List<QuizRecord> findByUserIdAndSubmitTimeRange(
         @Param("userId") Long userId,
         @Param("startTime") LocalDateTime startTime,
@@ -91,7 +91,7 @@ public interface QuizRecordRepository extends JpaRepository<QuizRecord, Long> {
      * @param startTime 开始时间（12个月前）
      * @return 测验记录列表
      */
-    @Query("select q from QuizRecord q where q.userId = :userId and q.status = 1 and q.deleted = 0 and q.submitTime is not null and q.submitTime >= :startTime order by q.submitTime asc")
+    @Query("select q from QuizRecord q where q.userId = :userId and q.status = 1 and q.deleted = false and q.submitTime is not null and q.submitTime >= :startTime order by q.submitTime asc")
     List<QuizRecord> findRecentYearBySubmitTimeRecords(
         @Param("userId") Long userId,
         @Param("startTime") LocalDateTime startTime

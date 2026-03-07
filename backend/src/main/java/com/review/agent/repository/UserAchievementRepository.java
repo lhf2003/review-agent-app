@@ -30,6 +30,6 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
      * @param userId 用户ID
      * @return 已解锁成就数量
      */
-    @Query("SELECT COUNT(u) FROM UserAchievement u WHERE u.userId = :userId AND u.unlocked = 0")
+    @Query("SELECT COUNT(u) FROM UserAchievement u WHERE u.userId = :userId AND u.unlocked = true")
     long countByUserIdAndUnlockedTrue(@Param("userId") Long userId);
 }

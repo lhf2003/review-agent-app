@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.review.agent.graph.nodes.DataAnalysisNode;
 import com.review.agent.graph.nodes.SessionExtractionNode;
 import com.review.agent.graph.nodes.TagClassifyNode;
+import com.review.agent.graph.nodes.ThinkingParadigmNode;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,6 +33,9 @@ public class GraphConfig {
     private TagClassifyNode tagClassifyNode;
 
     @Resource
+    private ThinkingParadigmNode thinkingParadigmNode;
+
+    @Resource
     private SaverConfig saverConfig;
 
     @Bean
@@ -53,10 +57,12 @@ public class GraphConfig {
                 .addNode("session_extraction_agent", node_async(sessionExtractionNode))
                 .addNode("analysis_agent", node_async(dataAnalysisNode))
                 .addNode("tag_classify_agent", node_async(tagClassifyNode))
+                .addNode("thinking_paradigm_agent", node_async(thinkingParadigmNode))
                 // 定义边
                 .addEdge(START, "session_extraction_agent")
                 .addEdge("session_extraction_agent", "tag_classify_agent")
-                .addEdge("tag_classify_agent", "analysis_agent")
+                .addEdge("tag_classify_agent", "thinking_paradigm_agent")
+                .addEdge("thinking_paradigm_agent", "analysis_agent")
                 .addEdge("analysis_agent", END);
     }
 

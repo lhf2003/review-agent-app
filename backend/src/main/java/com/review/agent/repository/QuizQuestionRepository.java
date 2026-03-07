@@ -20,4 +20,21 @@ public interface QuizQuestionRepository extends JpaRepository<QuizQuestion, Long
      * @return 题目列表
      */
     List<QuizQuestion> findByQuizIdIn(List<Long> quizIds);
+
+    /**
+     * 根据题目内容模糊查询ID列表
+     *
+     * @param keyword 关键词
+     * @return 题目ID列表
+     */
+    @Query("SELECT q.id FROM QuizQuestion q WHERE q.questionText LIKE %:keyword%")
+    List<Long> findIdsByQuestionContaining(@Param("keyword") String keyword);
+
+    /**
+     * 根据标签ID统计题目数量
+     *
+     * @param tagId 标签ID
+     * @return 题目数量
+     */
+    long countByTagId(Long tagId);
 }

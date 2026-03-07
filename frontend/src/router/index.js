@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router
 import { useAuthStore } from '../stores/auth'
 
 const LoginPage = () => import('../pages/LoginPage.vue')
+const LoginPageASCII = () => import('../pages/LoginPageASCII.vue')
 const RegisterPage = () => import('../pages/RegisterPage.vue')
 const IndexPage = () => import('../pages/profile/index.vue')
 const ConfigPage = () => import('../pages/config/index.vue')
@@ -27,12 +28,14 @@ const CollectionDetailPage = () => import('../pages/collection/CollectionDetailP
 const QuizPage = () => import('../pages/collection/QuizPage.vue')
 const LearningPage = () => import('../pages/quiz/index.vue')
 const QuizDetailPage = () => import('../pages/quiz/QuizDetailPage.vue')
+const SimpleKnowledgeGraphPage = () => import('../pages/knowledge-graph/SimpleKnowledgeGraphPage.vue')
 
 const router = createRouter({
   history,
   routes: [
     { path: '/', redirect: '/login' },
     { path: '/login', component: LoginPage },
+    { path: '/login-ascii', component: LoginPageASCII },
     { path: '/register', component: RegisterPage },
     { path: '/profile', component: IndexPage },
     {
@@ -62,6 +65,7 @@ const router = createRouter({
     { path: '/quiz-history', component: LearningPage },
     { path: '/quiz-history/:quizId', component: QuizDetailPage },
     { path: '/mistake-book', component: LearningPage },
+    { path: '/knowledge-graph', component: SimpleKnowledgeGraphPage },
   ],
 })
 

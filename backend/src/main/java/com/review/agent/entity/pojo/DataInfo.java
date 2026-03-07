@@ -28,22 +28,21 @@ public class DataInfo {
     @Column(name = "file_name", nullable = false, length = 100)
     private String fileName;
 
-    @Lob
-    @Column(name = "file_content")
+    @Column(name = "file_content", columnDefinition = "LONGTEXT")
     private String fileContent;
 
     /**
      * 数据来源 (0=LOCAL, 1=GEMINI, 2=CHATGPT)
      */
     @ColumnDefault("0")
-    @Column(name = "source")
+    @Column(name = "source", columnDefinition = "TINYINT")
     private Integer source;
 
     /**
-     * 处理状态（0=未分析, 1=已分析 2=正在分析）
+     * 处理状态（0=未分析, 1=已分析 2=正在分析 3=有更新 4=分析失败）
      */
     @ColumnDefault("0")
-    @Column(name = "processed_status")
+    @Column(name = "processed_status", columnDefinition = "TINYINT")
     private Integer processedStatus;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
@@ -58,9 +57,9 @@ public class DataInfo {
      * 删除标记（软删除）
      * false-未删除，true-已删除
      */
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Column(name = "deleted")
-    private Integer deleted = 0;
+    private Boolean deleted = false;
 
     /**
      * 删除时间（软删除）

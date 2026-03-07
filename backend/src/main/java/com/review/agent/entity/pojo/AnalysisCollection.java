@@ -41,9 +41,9 @@ public class AnalysisCollection {
      * 删除标记（软删除）
      * false-未删除，true-已删除
      */
-    @ColumnDefault("0")
+    @ColumnDefault("false")
     @Column(name = "deleted")
-    private Integer deleted = 0;
+    private Boolean deleted = false;
 
     /**
      * 删除时间（软删除）

@@ -231,7 +231,7 @@ public class DataInfoService {
             ExceptionUtils.throwDataNotFound("data info not found");
         }
 
-        dataInfo.setDeleted(0);
+        dataInfo.setDeleted(false);
         dataInfo.setDeletedAt(null);
         dataInfoRepository.save(dataInfo);
     }

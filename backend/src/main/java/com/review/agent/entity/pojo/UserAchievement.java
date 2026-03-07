@@ -28,8 +28,8 @@ public class UserAchievement {
     @Column(name = "achievement_code", nullable = false, length = 50)
     private String achievementCode;
 
-    @Column(name = "unlocked")
-    private Integer unlocked;
+    @Column(name = "unlocked", columnDefinition = "TINYINT")
+    private Boolean unlocked;
 
     @Column(name = "progress")
     private Integer progress;
@@ -52,7 +52,7 @@ public class UserAchievement {
             this.updatedTime = LocalDateTime.now();
         }
         if (this.unlocked == null) {
-            this.unlocked = 0;
+            this.unlocked = false;
         }
         if (this.progress == null) {
             this.progress = 0;

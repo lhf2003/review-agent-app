@@ -55,8 +55,14 @@ public class QuizQuestion {
     /**
      * 难度等级 (1-非常简单, 2-简单, 3-中等, 4-困难, 5-非常困难)
      */
-    @Column(name = "difficulty_level")
+    @Column(name = "difficulty_level", columnDefinition = "TINYINT")
     private Integer difficultyLevel = 3;
+
+    /**
+     * 标签ID（与tag表关联）
+     */
+    @Column(name = "tag_id")
+    private Long tagId;
 
     /**
      * 知识点标签（用于掌握度分析）

@@ -1,10 +1,33 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
-import { api } from '../../api/http'
-import { useAuthStore } from '../../stores/auth'
+import { ref, computed, onMounted, watch, h } from 'vue'
+import { Plus, FolderOpened, Folder, Delete, Edit, Grid, Collection, Document, Cpu, Histogram, OfficeBuilding, TrendCharts, List, ScaleToOriginal, HelpFilled, Monitor, ArrowRight } from '@element-plus/icons-vue'
+import { tagApi } from '../../api/tag'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CustomScroll from '../CustomScroll.vue'
+import TagRelationDrawer from './TagRelationDrawer.vue'
+
+// 图标名称到组件的映射（支持数据库 icon 字段或友好别名）
+const iconMap = {
+  // Element Plus 标准图标名
+  'Document': Document,
+  'Cpu': Cpu,
+  'Histogram': Histogram,
+  'OfficeBuilding': OfficeBuilding,
+  'Grid': Grid,
+  'Folder': Folder,
+  'FolderOpened': FolderOpened,
+  'TrendCharts': TrendCharts,
+  'Monitor': Monitor,
+  'List': List,
+  'ScaleToOriginal': ScaleToOriginal,
+  'HelpFilled': HelpFilled,
+  // 友好别名（向后兼容）
+  'Code': Document,
+  'Brain': Cpu,
+  'Signal': Histogram,
+  'UseCase': OfficeBuilding,
+  'Collection': Grid
+}
 
 const props = defineProps({
   embedded: {
@@ -13,32 +36,35 @@ const props = defineProps({
   }
 })
 
-const auth = useAuthStore()
+// 维度相关
+const dimensions = ref([])
+const selectedDimensionId = ref(null)
+const loadingDimensions = ref(false)
 
-// 数据源
-const mainTags = ref([])
-const subTags = ref([])
-const relations = ref([])
+// 标签树相关
+const tagTree = ref([])
+const loadingTags = ref(false)
 
-// 选择状态
-const selectedMainId = ref(null)
+// 选择的标签
+const selectedTag = ref(null)
+const drawerVisible = ref(false)
+const expandedKeys = ref([])
 
-// 创建/重命名主标签
+// 对话框状态
 const createDialog = ref(false)
-const createForm = ref({ name: '' })
+const createForm = ref({ name: '', parentId: null, dimensionId: null })
 const renameDialog = ref(false)
 const renameForm = ref({ id: null, name: '' })
 
-// 子标签创建/重命名
-const subCreateDialog = ref(false)
-const subCreateForm = ref({ name: '' })
-const subRenameDialog = ref(false)
-const subRenameForm = ref({ id: null, name: '' })
+// 预定义维度颜色映射（只包含颜色，图标从数据库获取）
+const dimensionColors = {
+  'TECH_DOMAIN': { color: '#409EFF', bg: '#ecf5ff' },
+  'THINKING_PARADIGM': { color: '#9C27B0', bg: '#f3e5f5' },
+  'DIFFICULTY': { color: '#F56C6C', bg: '#fef0f0' },
+  'SCENARIO': { color: '#67C23A', bg: '#f0f9eb' }
+}
 
-// 过滤
-const searchSub = ref('')
-
-// 预定义一组好看的颜色用于标签左侧
+// 预定义标签颜色
 const tagColors = [
   '#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399',
   '#9C27B0', '#009688', '#3F51B5', '#FF9800', '#795548',
@@ -49,336 +75,369 @@ function getTagColor(index) {
   return tagColors[index % tagColors.length]
 }
 
-// 加载方法
-async function loadMain() {
-  const resp = await api.getMainTagList(auth.userId)
-  mainTags.value = resp?.data || resp || []
-  if (!selectedMainId.value && mainTags.value.length) selectedMainId.value = mainTags.value[0].id
+function getDimensionStyle(code) {
+  return dimensionColors[code] || { color: '#909399', bg: '#f5f5f5' }
 }
-async function loadSub() {
-  const resp = await api.getSubTagList(auth.userId)
-  subTags.value = resp?.data || resp || []
-}
-async function loadRelation() {
-  const mid = selectedMainId.value ?? undefined
-  const resp = await api.getTagRelations(mid)
-  relations.value = resp?.data || resp || []
-}
-async function loadAll() {
-  try {
-    await loadMain()
 
-    // 如果主标签为空，则不继续加载子标签和关系
-    if (!mainTags.value || mainTags.value.length === 0) {
-      return
+// 获取维度图标组件
+function getDimensionIcon(iconName) {
+  return iconMap[iconName] || Collection
+}
+
+// 加载维度列表
+async function loadDimensions() {
+  loadingDimensions.value = true
+  try {
+    const resp = await tagApi.getDimensionList()
+    dimensions.value = resp || []
+    // 默认选择第一个维度
+    if (dimensions.value.length > 0 && !selectedDimensionId.value) {
+      selectedDimensionId.value = dimensions.value[0].id
     }
-
-    await Promise.all([loadSub(), loadRelation()])
   } catch (e) {
-    ElMessage.error(`加载失败: ${e.message}`)
+    ElMessage.error(`加载维度失败: ${e.message}`)
+  } finally {
+    loadingDimensions.value = false
   }
 }
 
-// 关联数据派生
-const associatedSubTags = computed(() => {
-  const rel = relations.value || []
-  return Array.isArray(rel) ? rel : []
+// 加载标签树
+async function loadTagTree() {
+  if (!selectedDimensionId.value) {
+    tagTree.value = []
+    return
+  }
+  loadingTags.value = true
+  try {
+    const resp = await tagApi.getTagTree(selectedDimensionId.value)
+    tagTree.value = resp || []
+    // 默认展开第一级
+    if (tagTree.value.length > 0) {
+      expandedKeys.value = tagTree.value.map(t => t.id)
+    } else {
+      expandedKeys.value = []
+    }
+  } catch (e) {
+    ElMessage.error(`加载标签失败: ${e.message}`)
+  } finally {
+    loadingTags.value = false
+  }
+}
+
+// 监听维度变化，重新加载标签
+watch(selectedDimensionId, () => {
+  selectedTag.value = null
+  loadTagTree()
 })
 
-const availableSubTags = computed(() => {
-  const usedIds = new Set(associatedSubTags.value.map(t => t.id))
-  return subTags.value.filter(t => !usedIds.has(t.id) && (!searchSub.value || t.name?.toLowerCase().includes(searchSub.value.toLowerCase())))
+// 计算扁平化的标签列表（用于展示）
+const flatTags = computed(() => {
+  const result = []
+  function traverse(list, level = 0, parentColor = null) {
+    for (const node of list || []) {
+      const color = level === 0 ? getTagColor(result.filter(r => r.level === 0).length) : parentColor
+      result.push({ ...node, level, color })
+      if (node.children) {
+        traverse(node.children, level + 1, color)
+      }
+    }
+  }
+  traverse(tagTree.value)
+  return result
 })
 
-const draggingFromAvailable = ref(false)
-const draggingFromAssociated = ref(false)
-const isOverAssociated = ref(false)
-const isOverAvailable = ref(false)
-function onDragStartFromAvailable(st, e) {
-  draggingFromAvailable.value = true
-  try { e.dataTransfer.setData('application/json', JSON.stringify({ id: st.id })) } catch {}
-}
-function onDragStartFromAssociated(st, e) {
-  draggingFromAssociated.value = true
-  try { e.dataTransfer.setData('application/json', JSON.stringify({ id: st.id })) } catch {}
-}
-function onDragEndFromAvailable() { draggingFromAvailable.value = false }
-function onDragEndFromAssociated() { draggingFromAssociated.value = false }
-function onDragOverAssociated(e) { e.preventDefault(); isOverAssociated.value = true }
-function onDragLeaveAssociated() { isOverAssociated.value = false }
-function onDragEnterAssociated(e) { e.preventDefault(); isOverAssociated.value = true; try { e.dataTransfer.dropEffect = 'move' } catch {} }
-function onDropToAssociated(e) {
-  e.preventDefault(); isOverAssociated.value = false
-  draggingFromAvailable.value = false
-  try {
-    const d = JSON.parse(e.dataTransfer.getData('application/json') || '{}')
-    const tag = availableSubTags.value.find(x => x.id === d.id)
-    if (tag) attachSub(tag)
-  } catch {}
-}
-function onDragOverAvailable(e) { e.preventDefault(); isOverAvailable.value = true }
-function onDragEnterAvailable(e) { e.preventDefault(); isOverAvailable.value = true; try { e.dataTransfer.dropEffect = 'move' } catch {} }
-function onDragLeaveAvailable() { isOverAvailable.value = false }
-function onDropToAvailable(e) {
-  e.preventDefault(); isOverAvailable.value = false
-  draggingFromAssociated.value = false
-  try {
-    const d = JSON.parse(e.dataTransfer.getData('application/json') || '{}')
-    const tag = associatedSubTags.value.find(x => x.id === d.id)
-    if (tag) detachSub(tag)
-  } catch {}
+// 获取当前选中维度的信息
+const currentDimension = computed(() => {
+  return dimensions.value.find(d => d.id === selectedDimensionId.value)
+})
+
+// 获取子标签数量
+function getChildrenCount(tag) {
+  let count = 0
+  function traverse(list) {
+    for (const node of list || []) {
+      count++
+      traverse(node.children)
+    }
+  }
+  traverse(tag.children)
+  return count
 }
 
-// 主标签操作
-function openCreateMain() { createDialog.value = true }
-async function createMain() {
-  if (!createForm.value.name.trim()) { ElMessage.warning('请输入主标签名称'); return }
-  await api.addMainTag({ name: createForm.value.name.trim(), userId: auth.userId })
-  ElMessage.success('创建成功')
-  createDialog.value = false
-  createForm.value = { name: '' }
-  await loadMain(); await loadRelation()
+// ========== 维度选择 ==========
+
+function selectDimension(dimensionId) {
+  selectedDimensionId.value = dimensionId
 }
-function openRenameMain(mt) { renameForm.value = { id: mt.id, name: mt.name }; renameDialog.value = true }
-async function doRenameMain() {
-  if (!renameForm.value.name.trim()) { ElMessage.warning('请输入新名称'); return }
-  await api.updateMainTag({ id: renameForm.value.id, name: renameForm.value.name.trim(), userId: auth.userId })
-  ElMessage.success('已重命名')
-  renameDialog.value = false
-  await loadMain()
+
+// ========== 标签操作 ==========
+
+function openCreateTag(parentId = null) {
+  createForm.value = { name: '', parentId, dimensionId: selectedDimensionId.value }
+  createDialog.value = true
 }
-async function doDeleteMain(mt) {
+
+async function createTag() {
+  if (!createForm.value.name.trim()) {
+    ElMessage.warning('请输入标签名称')
+    return
+  }
   try {
-    await ElMessageBox.confirm(`确认删除主标签「${mt.name}」？`, '提示', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' })
-    await api.deleteMainTag(mt.id)
+    await tagApi.addTag({
+      name: createForm.value.name.trim(),
+      parentId: createForm.value.parentId,
+      dimensionId: createForm.value.dimensionId
+    })
+    ElMessage.success('创建成功')
+    createDialog.value = false
+    await loadTagTree()
+  } catch (e) {
+    ElMessage.error(`创建失败: ${e.message}`)
+  }
+}
+
+function openRenameTag(tag) {
+  renameForm.value = { id: tag.id, name: tag.name }
+  renameDialog.value = true
+}
+
+async function doRenameTag() {
+  if (!renameForm.value.name.trim()) {
+    ElMessage.warning('请输入新名称')
+    return
+  }
+  try {
+    await tagApi.updateTag({
+      id: renameForm.value.id,
+      name: renameForm.value.name.trim()
+    })
+    ElMessage.success('已重命名')
+    renameDialog.value = false
+    await loadTagTree()
+  } catch (e) {
+    ElMessage.error(`重命名失败: ${e.message}`)
+  }
+}
+
+async function doDeleteTag(tag) {
+  try {
+    const childCount = getChildrenCount(tag)
+    const confirmMsg = childCount > 0
+      ? `标签「${tag.name}」包含 ${childCount} 个子标签，删除将同时删除所有子标签。确认删除？`
+      : `确认删除标签「${tag.name}」？`
+
+    await ElMessageBox.confirm(confirmMsg, '提示', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消'
+    })
+
+    await tagApi.deleteTag(tag.id)
     ElMessage.success('删除成功')
-    await loadMain(); await loadRelation()
+    if (selectedTag.value?.id === tag.id) {
+      selectedTag.value = null
+    }
+    await loadTagTree()
   } catch (e) {
     if (e !== 'cancel') ElMessage.error(`删除失败: ${e.message}`)
   }
 }
 
-// 子标签操作
-function openCreateSub() { subCreateDialog.value = true }
-async function createSub() {
-  if (!subCreateForm.value.name.trim()) { ElMessage.warning('请输入子标签名称'); return }
-  await api.addSubTag({ name: subCreateForm.value.name.trim(), userId: auth.userId })
-  ElMessage.success('创建成功')
-  subCreateDialog.value = false
-  subCreateForm.value = { name: '' }
-  await loadSub()
+function onSelectTag(tag) {
+  selectedTag.value = tag
+  drawerVisible.value = true
 }
-function openRenameSub(st) {
-  subRenameForm.value = { id: st.id, name: st.name }
-  subRenameDialog.value = true
-}
-async function doRenameSub() {
-  if (!subRenameForm.value.name.trim()) { ElMessage.warning('请输入新名称'); return }
-  await api.updateSubTag({ id: subRenameForm.value.id, name: subRenameForm.value.name.trim(), userId: auth.userId })
-  ElMessage.success('已重命名')
-  subRenameDialog.value = false
-  await loadSub(); await loadRelation()
-}
-async function deleteSubInDialog() {
-  const st = { id: subRenameForm.value.id, name: subRenameForm.value.name }
-  try {
-    await doDeleteSub(st)
-    subRenameDialog.value = false
-  } catch (e) {}
-}
-async function doDeleteSub(st) {
-  try {
-    await ElMessageBox.confirm(`确认删除子标签「${st.name}」？`, '提示', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' })
-    await api.deleteSubTag(st.id)
-    ElMessage.success('删除成功')
-    await loadSub(); await loadRelation()
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error(`删除失败: ${e.message}`)
+
+function toggleExpand(tag) {
+  const index = expandedKeys.value.indexOf(tag.id)
+  if (index > -1) {
+    expandedKeys.value.splice(index, 1)
+  } else {
+    expandedKeys.value.push(tag.id)
   }
 }
 
-// 关联/解除关联
-async function attachSub(st) {
-  if (!selectedMainId.value) { ElMessage.warning('请先选择主标签'); return }
-  await api.addTagRelation({ mainTagId: selectedMainId.value, subTagId: st.id, userId: auth.userId })
-  ElMessage.success('关联成功')
-  await loadRelation()
-}
-async function detachSub(st) {
-  if (!selectedMainId.value) { ElMessage.warning('请先选择主标签'); return }
-  await api.deleteTagRelation({ mainTagId: selectedMainId.value, subTagId: st.id, userId: auth.userId })
-  ElMessage.success('解除关联成功')
-  await loadRelation()
-}
-
-function onSelectMain(mt) {
-  selectedMainId.value = mt.id
-  loadRelation()
-}
-
-onMounted(loadAll)
+onMounted(async () => {
+  await loadDimensions()
+  await loadTagTree()
+})
 </script>
 
 <template>
   <div class="tag-management-pane">
-    <el-row :gutter="20" class="full-height-row">
-
-      <el-col :span="6" class="full-height-col">
-        <el-card shadow="hover" class="region-card flex-fill-card">
-          <template #header>
-            <div class="region-header">
-              <span class="region-title">🏷️ 主标签</span>
-              <el-button type="plain" link size="large" @click="openCreateMain">
-                <el-icon><Plus /></el-icon>
-              </el-button>
+    <!-- 左侧区域：维度 + 标签列表 -->
+    <div class="left-panel">
+      <!-- 维度选择区域 -->
+      <div class="dimension-section">
+        <div class="section-header">
+          <el-icon class="section-icon"><Grid /></el-icon>
+          <span class="section-title">标签维度</span>
+        </div>
+        <div v-if="loadingDimensions" class="dimension-loading">
+          <el-skeleton :rows="2" animated />
+        </div>
+        <div v-else class="dimension-list">
+          <div
+            v-for="dim in dimensions"
+            :key="dim.id"
+            class="dimension-card"
+            :class="{ 'is-active': selectedDimensionId === dim.id }"
+            :style="{
+              '--dim-color': getDimensionStyle(dim.code).color,
+              '--dim-bg': getDimensionStyle(dim.code).bg
+            }"
+            @click="selectDimension(dim.id)"
+          >
+            <div class="dimension-icon">
+              <el-icon :size="24" :color="getDimensionStyle(dim.code).color">
+                <component :is="getDimensionIcon(dim.icon)" />
+              </el-icon>
             </div>
-          </template>
+            <div class="dimension-info">
+              <div class="dimension-name">{{ dim.name }}</div>
+              <div class="dimension-desc" v-if="dim.description">{{ dim.description }}</div>
+            </div>
+            <div v-if="selectedDimensionId === dim.id" class="dimension-indicator"></div>
+          </div>
+        </div>
+      </div>
 
-          <div class="main-list-wrapper">
-            <CustomScroll>
-              <div v-if="mainTags.length" class="main-list">
-                <div v-for="(mt, index) in mainTags"
-                     :key="mt.id"
-                     :class="['main-item', { active: selectedMainId === mt.id }]"
-                     :style="{ '--tag-color': getTagColor(index) }"
-                     @click="onSelectMain(mt)">
-                  <div class="main-name">{{ mt.name }}</div>
-                  <div class="main-meta">
-                    <el-button text size="small" link @click.stop="openRenameMain(mt)">编辑</el-button>
-                    <el-button text size="small" type="danger" link @click.stop="doDeleteMain(mt)">删除</el-button>
-                  </div>
+      <!-- 标签管理区域 -->
+      <div class="tag-section">
+        <div class="section-header">
+          <el-icon class="section-icon"><Collection /></el-icon>
+          <span class="section-title">{{ currentDimension?.name || '标签' }}管理</span>
+          <el-button
+            type="primary"
+            :icon="Plus"
+            size="small"
+            @click="openCreateTag(null)"
+            :disabled="!selectedDimensionId"
+          >
+            创建标签
+          </el-button>
+        </div>
+
+        <div class="tag-tree-container">
+          <CustomScroll>
+            <div v-if="loadingTags" class="loading-wrapper">
+              <el-skeleton :rows="6" animated />
+            </div>
+
+            <div v-else-if="!selectedDimensionId" class="empty-wrapper">
+              <el-empty description="请选择标签维度" :image-size="80" />
+            </div>
+
+            <div v-else-if="tagTree.length === 0" class="empty-wrapper">
+              <el-empty description="该维度下暂无标签，点击上方按钮创建" :image-size="80" />
+            </div>
+
+            <div v-else class="tag-tree">
+              <div
+                v-for="tag in flatTags"
+                :key="tag.id"
+                class="tag-item"
+                :class="{
+                  'is-selected': selectedTag?.id === tag.id,
+                  'is-expanded': expandedKeys.includes(tag.id),
+                  [`level-${tag.level}`]: true
+                }"
+                :style="{ '--tag-color': tag.color }"
+              >
+                <!-- 缩进占位 -->
+                <div class="indent-spacer" :style="{ width: `${tag.level * 24}px` }"></div>
+
+                <!-- 展开/折叠按钮 -->
+                <div
+                  v-if="tag.children?.length"
+                  class="expand-btn"
+                  @click.stop="toggleExpand(tag)"
+                >
+                  <el-icon><FolderOpened v-if="expandedKeys.includes(tag.id)" /><Folder v-else /></el-icon>
+                </div>
+                <div v-else class="expand-placeholder"></div>
+
+                <!-- 标签内容 -->
+                <div class="tag-content" @click="onSelectTag(tag)" title="点击查看标签关系">
+                  <div class="tag-indicator" :style="{ backgroundColor: tag.color }"></div>
+                  <span class="tag-name">{{ tag.name }}</span>
+                  <span v-if="tag.children?.length" class="tag-count">
+                    ({{ tag.children.length }})
+                  </span>
+                  <el-icon class="relation-hint" :size="14"><ArrowRight /></el-icon>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="tag-actions">
+                  <el-button
+                    text
+                    size="small"
+                    :icon="Plus"
+                    @click.stop="openCreateTag(tag.id)"
+                    title="添加子标签"
+                  />
+                  <el-button
+                    text
+                    size="small"
+                    :icon="Edit"
+                    @click.stop="openRenameTag(tag)"
+                    title="重命名"
+                  />
+                  <el-button
+                    text
+                    size="small"
+                    type="danger"
+                    :icon="Delete"
+                    @click.stop="doDeleteTag(tag)"
+                    title="删除"
+                  />
                 </div>
               </div>
-              <el-empty v-else description="暂无主标签" :image-size="80" />
-            </CustomScroll>
-          </div>
-        </el-card>
-      </el-col>
-
-      <el-col :span="10" class="full-height-col">
-        <el-card shadow="hover" class="region-card flex-fill-card">
-          <template #header>
-            <div class="region-header">
-              <span class="region-title">🔗 当前主标签的子标签</span>
             </div>
-          </template>
+          </CustomScroll>
+        </div>
+      </div>
+    </div>
 
-          <div class="region-content-scroll">
-            <CustomScroll>
-              <div style="display:flex;flex-direction:column;min-height:100%">
-                <div class="region-body">
-                  <div style=" margin-bottom: 12px;">已关联 ({{ associatedSubTags.length }})</div>
-                  <div :class="['sub-list-associated','droppable', { 'droppable--over': isOverAssociated, 'drag-target': draggingFromAvailable, 'empty-container': !associatedSubTags.length }]" @dragover="onDragOverAssociated" @dragenter="onDragEnterAssociated" @dragleave="onDragLeaveAssociated" @drop="onDropToAssociated">
-                    <div v-for="st in associatedSubTags" :key="st.id" class="sub-item compact-card" :draggable="true" @dragstart="onDragStartFromAssociated(st, $event)" @dragend="onDragEndFromAssociated">
-                      <div class="sub-name">{{ st.name }}</div>
-                    </div>
-                    <div v-if="draggingFromAvailable" class="drag-hint">关联</div>
-                    <el-empty v-if="!associatedSubTags.length" description="尚未关联任何子标签" :image-size="60" class="full-size-empty" />
-                  </div>
-                </div>
+    <!-- 标签关系抽屉 -->
+    <TagRelationDrawer
+      v-model="drawerVisible"
+      :tag="selectedTag"
+      @refresh="loadTagTree"
+    />
 
-                <el-divider />
-
-                <div class="region-footer">
-                  <div style="font-weight:200;margin-bottom:12px;">可用子标签 ({{ availableSubTags.length }})
-                    <el-input v-model="searchSub" placeholder="搜索可用子标签..." prefix-icon="Search" clearable style="height:20px; width:45%; margin: 0 auto;" />
-                  </div>
-
-                  <div :class="['sub-list','droppable', { 'droppable--over': isOverAvailable, 'drag-target': draggingFromAssociated, 'empty-container': !availableSubTags.length }]" @dragover="onDragOverAvailable" @dragenter="onDragEnterAvailable" @dragleave="onDragLeaveAvailable" @drop="onDropToAvailable">
-                    <div v-for="st in availableSubTags" :key="st.id" class="sub-item compact-card" :draggable="true" @dragstart="onDragStartFromAvailable(st, $event)" @dragend="onDragEndFromAvailable">
-                      <div class="sub-name">{{ st.name }}</div>
-                    </div>
-                    <div v-if="draggingFromAssociated" class="drag-hint--cancel">取消关联</div>
-                    <el-empty v-if="!availableSubTags.length" description="暂无可用子标签" :image-size="60" class="full-size-empty" />
-                  </div>
-                </div>
-              </div>
-            </CustomScroll>
-          </div>
-        </el-card>
-      </el-col>
-
-      <el-col :span="8" class="full-height-col">
-        <el-card shadow="hover" class="region-card flex-fill-card">
-          <template #header>
-            <div class="region-header">
-              <span class="region-title">📚 通用子标签库</span>
-              <el-button type="plain" link size="large" @click="openCreateSub">
-                <el-icon><Plus /></el-icon>
-              </el-button>
-            </div>
-          </template>
-          <div class="region-content-scroll">
-            <CustomScroll>
-              <div class="sub-list library-list-wrapper">
-                <div class="two-per-row">
-                  <el-card
-                    v-for="st in subTags"
-                    :key="st.id"
-                    shadow="hover"
-                    class="sub-item"
-                  >
-                    <div class="sub-item-content">
-                      <div class="sub-name is-editable" @click="openRenameSub(st)">{{ st.name }}</div>
-                    </div>
-                  </el-card>
-                </div>
-                <el-empty v-if="!subTags.length" description="暂无子标签" :image-size="80" />
-              </div>
-            </CustomScroll>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-dialog v-model="createDialog" title="创建主标签" width="420px" align-center>
+    <!-- 创建标签对话框 -->
+    <el-dialog
+      v-model="createDialog"
+      :title="createForm.parentId ? '创建子标签' : '创建标签'"
+      width="420px"
+      align-center
+    >
       <el-form label-width="80px">
+        <el-form-item label="所属维度">
+          <el-input :model-value="currentDimension?.name" disabled />
+        </el-form-item>
         <el-form-item label="名称">
-          <el-input v-model="createForm.name" />
+          <el-input v-model="createForm.name" placeholder="请输入标签名称" />
         </el-form-item>
         <el-form-item>
           <div style="flex:1"></div>
-          <el-button type="danger" link size="large" @click="createDialog = false">取消</el-button>
-          <el-button type="primary" link size="large" @click="createMain">创建</el-button>
+          <el-button @click="createDialog = false">取消</el-button>
+          <el-button type="primary" @click="createTag">创建</el-button>
         </el-form-item>
       </el-form>
     </el-dialog>
 
-    <el-dialog v-model="renameDialog" title="重命名主标签" width="380px" align-center>
+    <!-- 重命名对话框 -->
+    <el-dialog v-model="renameDialog" title="重命名标签" width="380px" align-center>
       <el-form label-width="80px">
         <el-form-item label="新名称">
-          <el-input v-model="renameForm.name" />
+          <el-input v-model="renameForm.name" placeholder="请输入新名称" />
         </el-form-item>
         <el-form-item>
           <div style="flex:1"></div>
-          <el-button type="danger" link size="large" @click="renameDialog = false">取消</el-button>
-          <el-button type="primary" link size="large" @click="doRenameMain">保存</el-button>
-        </el-form-item>
-      </el-form>
-    </el-dialog>
-
-    <el-dialog v-model="subCreateDialog" title="创建子标签" width="420px" align-center>
-      <el-form label-width="80px">
-        <el-form-item label="名称">
-          <el-input v-model="subCreateForm.name" />
-        </el-form-item>
-        <el-form-item>
-          <div style="flex:1"></div>
-          <el-button type="danger" link size="large" @click="subCreateDialog = false">取消</el-button>
-          <el-button type="primary" link size="large" @click="createSub">创建</el-button>
-        </el-form-item>
-      </el-form>
-    </el-dialog>
-
-    <el-dialog v-model="subRenameDialog" title="编辑子标签" width="420px" align-center>
-      <el-form label-width="80px">
-        <el-form-item label="名称">
-          <div style="display:flex;align-items:center;gap:8px;width:100%;">
-            <el-input v-model="subRenameForm.name" style="max-width:240px" />
-            <el-button type="primary" link size="large" @click="doRenameSub">保存</el-button>
-            <div style="flex:1"></div>
-            <el-button type="danger" link size="large" @click="deleteSubInDialog">删除</el-button>
-          </div>
+          <el-button @click="renameDialog = false">取消</el-button>
+          <el-button type="primary" @click="doRenameTag">保存</el-button>
         </el-form-item>
       </el-form>
     </el-dialog>
@@ -390,247 +449,287 @@ onMounted(loadAll)
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.full-height-row {
-  height: 100%;
-}
-
-.full-height-col {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.region-card {
-  min-height: 0;
-}
-
-.region-header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-
-.region-title {
-  font-weight:600;
-  font-size: 18px;
-}
-
-.flex-fill-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.flex-fill-card :deep(.el-card__body) {
-  flex-grow: 1;
+  padding: 16px;
   overflow: hidden;
-  padding: 15px;
+}
+
+/* ========== 主内容面板 ========== */
+.left-panel {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
 }
 
-.region-content-scroll {
-  flex-grow: 1;
-  height: 0;
-  overflow-y: hidden;
+/* ========== 维度区域 ========== */
+.dimension-section {
+  flex-shrink: 0;
 }
 
-.region-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 200px;
-  flex-grow: 1;
-}
-
-.region-footer {
-  min-height: 200px;
-  flex-grow: 1;
-}
-
-.main-list-wrapper {
-  height: 100%;
-  overflow-y: hidden;
-}
-
-.main-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.main-item {
+.section-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.section-icon {
+  font-size: 18px;
+  color: var(--el-color-primary);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  flex: 1;
+}
+
+.dimension-loading {
+  padding: 20px;
+}
+
+.dimension-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dimension-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--dim-bg, #f5f5f5);
+  border: 2px solid transparent;
+  border-radius: 12px;
   cursor: pointer;
-  padding: 12px 16px;
-  border: 1px solid var(--el-border-color-light);
-  border-left: 7px solid var(--tag-color);
-  border-radius: var(--el-border-radius-base);
-  transition: all 0.75s cubic-bezier(0.25, 0.8, 0.25, 1);
-  background-color: var(--el-bg-color-overlay);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 160px;
+}
+
+.dimension-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: var(--dim-color, #909399);
+}
+
+.dimension-card.is-active {
+  border-color: var(--dim-color, #909399);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.dimension-indicator {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 3px;
+  background: var(--dim-color, #909399);
+  border-radius: 2px;
+}
+
+.dimension-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dimension-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dimension-name {
+  font-size: 15px;
+  font-weight: 600;
   color: var(--el-text-color-primary);
 }
 
-.main-item:hover {
-  background-color: var(--el-fill-color-light);
-  transform: translateX(6px);
-}
-
-.main-item.active {
-  border-top-color: var(--el-border-color-light);
-  border-right-color: var(--el-border-color-light);
-  border-bottom-color: var(--el-border-color-light);
-  border-left-color: var(--tag-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateX(10px);
-  z-index: 1;
-  background-color: var(--el-bg-color-overlay);
-  background-image: linear-gradient(to right, color-mix(in srgb, var(--tag-color), transparent 80%) 0%, transparent 65%);
-}
-
-.main-name {
-  font-weight: 600;
-  flex-grow: 1;
-}
-
-.main-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sub-list-associated {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 8px;
-}
-
-.sub-list-associated.empty-container,
-.sub-list.empty-container {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  min-height: 200px;
-  height: 100%;
-}
-
-.full-size-empty {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.sub-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 8px;
-}
-
-.library-list-wrapper {
-  display: flex;
-  flex-direction: column;
-}
-
-.two-per-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(80px, 1fr));
-  gap: 8px;
-}
-
-.compact-card {
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 4px;
-  background-color: var(--el-bg-color-overlay);
-  padding: 4px 8px;
-  cursor: grab;
-  transition: all 0.2s;
-  box-shadow: var(--el-box-shadow-light);
-  height: auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.compact-card:hover {
-  border-color: var(--el-color-primary-light-5);
-  background-color: var(--el-color-primary-light-9);
-  transform: translateY(-1px);
-}
-
-.compact-card:active {
-  cursor: grabbing;
-}
-
-.sub-item-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.sub-name {
-  font-weight: 500;
-  flex-grow: 1;
-  font-size: 16px;
-  white-space: nowrap;
+.dimension-desc {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: center;
+  white-space: nowrap;
 }
 
-.sub-name.is-editable {
+/* ========== 标签区域 ========== */
+.tag-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tag-tree-container {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
+  background-color: var(--el-bg-color-overlay);
+  overflow: hidden;
+}
+
+.loading-wrapper,
+.empty-wrapper {
+  padding: 40px 20px;
+}
+
+.tag-tree {
+  padding: 8px 0;
+}
+
+.tag-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
   cursor: pointer;
-  text-align: left;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
 }
 
-.sub-name.is-editable:hover {
-  color: var(--el-color-primary);
-  text-decoration: underline;
+.tag-item:hover {
+  background-color: var(--el-fill-color-light);
 }
 
-.droppable {
-  border: 2px dashed transparent;
-  border-radius: var(--el-border-radius-base);
-  transition: border-color .2s ease, background-color .2s ease;
-}
-.droppable--over {
-  border-color: var(--el-color-primary);
+.tag-item.is-selected {
   background-color: var(--el-color-primary-light-9);
+  border-left-color: var(--tag-color);
 }
-.droppable { position: relative; }
-.droppable.drag-target .sub-item { filter: blur(6px); opacity: 0.4; pointer-events: none; }
-.drag-hint {
-  position: absolute;
-  inset: 0;
+
+.indent-spacer {
+  flex-shrink: 0;
+}
+
+.expand-btn,
+.expand-placeholder {
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
-  font-weight: 100;
-  letter-spacing: 3px;
+  flex-shrink: 0;
+}
+
+.expand-btn {
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--el-text-color-secondary);
+}
+
+.expand-btn:hover {
+  background-color: var(--el-fill-color);
+  color: var(--el-text-color-primary);
+}
+
+.tag-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-left: 4px;
+}
+
+.tag-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tag-name {
+  font-weight: 500;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-count {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.relation-hint {
+  margin-left: auto;
+  color: var(--el-text-color-secondary);
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.tag-row:hover .relation-hint {
+  opacity: 1;
   color: var(--el-color-primary);
-  text-shadow: 0 3px 7px rgba(0,0,0,0.18);
-  background: rgba(255,255,255,0.68);
-  backdrop-filter: blur(3px);
-  border: 2px dashed var(--el-color-primary);
 }
-.drag-hint--cancel {
-  position: absolute;
-  inset: 0;
+
+.tag-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 40px;
-  font-weight: 100;
-  letter-spacing: 3px;
-  color: var(--el-color-danger);
-  text-shadow: 0 3px 7px rgba(0,0,0,0.18);
-  background: rgba(255,255,255,0.68);
-  backdrop-filter: blur(3px);
-  border: 2px dashed var(--el-color-danger);
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tag-item:hover .tag-actions {
+  opacity: 1;
+}
+
+/* 层级样式 */
+.level-0 .tag-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.level-1 .tag-name {
+  color: var(--el-text-color-regular);
+}
+
+.level-2 .tag-name {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+/* 暗黑模式 */
+html.dark .tag-tree-container {
+  background-color: rgba(28, 28, 30, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark .dimension-card {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .tag-management-pane {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .tag-management-pane {
+    padding: 8px;
+  }
+
+  .dimension-list {
+    gap: 8px;
+  }
+
+  .dimension-card {
+    min-width: 140px;
+    padding: 12px 14px;
+  }
+
+  .tag-actions {
+    opacity: 1;
+  }
 }
 </style>
