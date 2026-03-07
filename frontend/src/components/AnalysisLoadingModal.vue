@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import {ref, computed, watch, onMounted, onUnmounted} from 'vue'
 
 const props = defineProps({
   modelValue: {
@@ -206,19 +206,12 @@ function handleRetry() {
               </el-button>
             </div>
 
-            <!-- 教育价值说明 -->
-            <div class="value-section" v-if="!hasError">
-              <p class="value-text">
-                📖 正在分析您的对话记录
-              </p>
+            <!-- 底部装饰 -->
+            <div class="bottom-decoration">
+              <div class="dot-dot"></div>
+              <div class="dot-dot"></div>
+              <div class="dot-dot"></div>
             </div>
-          </div>
-
-          <!-- 底部装饰 -->
-          <div class="bottom-decoration">
-            <div class="dot-dot"></div>
-            <div class="dot-dot"></div>
-            <div class="dot-dot"></div>
           </div>
         </div>
       </div>
@@ -254,10 +247,9 @@ function handleRetry() {
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-radius: 24px;
   padding: 48px 40px 40px;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(255, 255, 255, 0.8),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
+  0 0 0 1px rgba(255, 255, 255, 0.8),
+  inset 0 1px 0 rgba(255, 255, 255, 0.9);
   overflow: hidden;
 }
 
@@ -270,9 +262,9 @@ function handleRetry() {
   width: 200%;
   height: 100%;
   background: radial-gradient(
-    circle at center,
-    rgba(99, 102, 241, 0.15) 0%,
-    transparent 60%
+          circle at center,
+          rgba(99, 102, 241, 0.15) 0%,
+          transparent 60%
   );
   pointer-events: none;
   animation: glow-pulse 3s ease-in-out infinite;
@@ -385,10 +377,10 @@ function handleRetry() {
       width: 50%;
       height: 100%;
       background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.4) 50%,
-        transparent 100%
+              90deg,
+              transparent 0%,
+              rgba(255, 255, 255, 0.4) 50%,
+              transparent 100%
       );
       animation: shine-move 1.5s ease-in-out infinite;
     }
@@ -436,18 +428,6 @@ function handleRetry() {
   display: flex;
   gap: 12px;
   margin-bottom: 20px;
-}
-
-// 价值说明
-.value-section {
-  width: 100%;
-
-  .value-text {
-    font-size: 13px;
-    color: var(--el-text-color-secondary);
-    margin: 0;
-    opacity: 0.7;
-  }
 }
 
 // 底部装饰
@@ -563,17 +543,16 @@ function handleRetry() {
 html.dark {
   .loading-container {
     background: rgba(40, 40, 42, 0.75);
-    box-shadow:
-      0 20px 60px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .glow-effect {
     background: radial-gradient(
-      circle at center,
-      rgba(139, 92, 246, 0.2) 0%,
-      transparent 60%
+            circle at center,
+            rgba(139, 92, 246, 0.2) 0%,
+            transparent 60%
     );
   }
 

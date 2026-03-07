@@ -28,10 +28,10 @@ public class MultiLLMConfig {
     private Integer dimensions;
 
     // 模型配置常量 - 默认使用百炼模型
-    private static final String CHAT_MODEL = "qwen3.5-plus";
-    private static final String ANALYSIS_MODEL = "qwen3.5-plus";
-    private static final String CLASSIFY_MODEL = "qwen3.5-plus";
-    private static final String EXTRACT_MODEL = "qwen3.5-plus";
+    private static final String CHAT_MODEL = "qwen-plus";
+    private static final String ANALYSIS_MODEL = "qwen-plus";
+    private static final String CLASSIFY_MODEL = "qwen-plus";
+    private static final String EXTRACT_MODEL = "qwen-plus";
 
     // 温度参数常量 - 控制模型输出的随机性
     private static final double CHAT_TEMPERATURE = 0.6;

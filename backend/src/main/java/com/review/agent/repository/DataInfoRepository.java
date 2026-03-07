@@ -15,24 +15,15 @@ import java.util.List;
 public interface DataInfoRepository extends JpaRepository<DataInfo, Long> {
     @Query(nativeQuery = true, value = """
                          select d.id, d.user_id as userId, d.file_name as fileName, d.file_content as fileContent,
-                         d.processed_status as processedStatus, d.created_time as createdTime, d.source as source, COUNT(ar.id) as sessionCount
+                         d.processed_status as processedStatus, d.created_time as createdTime, d.source as source
                          from data_info d
-                         left join analysis_result as ar on d.id = ar.file_id
                          where (d.user_id = :userId or :userId is null)
                                  and (d.file_name like concat('%', :fileName, '%') or :fileName is null)
                                  and (d.processed_status = :processedStatus or :processedStatus is null)
                                  and (d.source = :source or :source is null)
                                  and (d.created_time  between :startTime and :endTime or (:startTime is null and :endTime is null))
                                  and d.deleted = 0
-                         GROUP BY
-                                 d.id,
-                                 d.user_id,
-                                 d.file_name,
-                                 d.file_content,
-                                 d.processed_status,
-                                 d.created_time,
-                                 d.update_time,
-                                 d.source;
+                         order by d.created_time desc
              """)
     Page<DataInfoVo> findByPage(Pageable pageable, Long userId, String fileName, Integer processedStatus, Date startTime, Date endTime, Integer source);
 

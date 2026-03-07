@@ -49,8 +49,7 @@ public class ParadigmVisualizationService {
      * 在ThinkingParadigmNode分析完成后调用，提取并保存流程图
      */
     @Transactional(rollbackFor = Exception.class)
-    public void extractAndSaveVisualizations(Long analysisResultId, Long userId,
-            List<NodeExecuteDto> nodeResults) {
+    public void extractAndSaveVisualizations(Long analysisResultId, Long userId, NodeExecuteDto nodeResult,String content) {
         log.info("开始提取思维范式可视化: analysisResultId={}, userId={}", analysisResultId, userId);
 
         // 删除旧的流程图
@@ -59,42 +58,40 @@ public class ParadigmVisualizationService {
 
         int savedCount = 0;
 
-        for (NodeExecuteDto nodeResult : nodeResults) {
-            // 检查是否有范式详细信息
-            Map<String, Object> paradigmDetails = nodeResult.getParadigmDetails();
-            if (paradigmDetails == null || !paradigmDetails.containsKey("paradigms")) {
+        // 检查是否有范式详细信息
+        Map<String, Object> paradigmDetails = nodeResult.getParadigmDetails();
+//        if (paradigmDetails == null || !paradigmDetails.containsKey("paradigms")) {
+//            continue;
+//        }
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> paradigms = (List<Map<String, Object>>) paradigmDetails.get("paradigms");
+//        if (paradigms == null || paradigms.isEmpty()) {
+//            continue;
+//        }
+
+        // 为每个识别的范式提取流程图
+        for (Map<String, Object> paradigm : paradigms) {
+            String paradigmCode = (String) paradigm.get("code");
+            if (paradigmCode == null || paradigmCode.isEmpty()) {
                 continue;
             }
 
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> paradigms = (List<Map<String, Object>>) paradigmDetails.get("paradigms");
-            if (paradigms == null || paradigms.isEmpty()) {
-                continue;
-            }
+            try {
+                ParadigmFlowchart flowchart = extractFlowchartWithAI(
+                        paradigmCode, content, nodeResult);
 
-            // 为每个识别的范式提取流程图
-            for (Map<String, Object> paradigm : paradigms) {
-                String paradigmCode = (String) paradigm.get("code");
-                if (paradigmCode == null || paradigmCode.isEmpty()) {
-                    continue;
+                if (flowchart != null) {
+                    flowchart.setAnalysisResultId(analysisResultId);
+                    flowchart.setUserId(userId);
+                    flowchart.setParadigmCode(paradigmCode);
+                    flowchart.setParadigmName((String) paradigm.get("name"));
+
+                    flowchartRepository.save(flowchart);
+                    savedCount++;
                 }
-
-                try {
-                    ParadigmFlowchart flowchart = extractFlowchartWithAI(
-                            paradigmCode, nodeResult.getSessionContent(), nodeResult);
-
-                    if (flowchart != null) {
-                        flowchart.setAnalysisResultId(analysisResultId);
-                        flowchart.setUserId(userId);
-                        flowchart.setParadigmCode(paradigmCode);
-                        flowchart.setParadigmName((String) paradigm.get("name"));
-
-                        flowchartRepository.save(flowchart);
-                        savedCount++;
-                    }
-                } catch (Exception e) {
-                    log.error("提取流程图失败: paradigmCode={}, error={}", paradigmCode, e.getMessage());
-                }
+            } catch (Exception e) {
+                log.error("提取流程图失败: paradigmCode={}, error={}", paradigmCode, e.getMessage());
             }
         }
 
@@ -105,7 +102,7 @@ public class ParadigmVisualizationService {
      * 使用AI从对话内容中提取流程图结构
      */
     private ParadigmFlowchart extractFlowchartWithAI(String paradigmCode,
-            String sessionContent, NodeExecuteDto nodeResult) {
+                                                     String sessionContent, NodeExecuteDto nodeResult) {
 
         // 获取范式定义
         Tag paradigmTag = tagRepository.findByParadigmCode(paradigmCode).orElse(null);
@@ -175,48 +172,48 @@ public class ParadigmVisualizationService {
      * 构建流程图提取提示词
      */
     private String buildFlowchartExtractionPrompt(String paradigmCode, String paradigmName,
-            String paradigmDefinition, String sessionContent) {
+                                                  String paradigmDefinition, String sessionContent) {
         return String.format("""
-                请从以下对话中提取"%s"思维范式的流程图结构。
-
-                范式定义：%s
-
-                对话内容：
-                %s
-
-                请提取流程图结构，返回JSON格式：
-                {
-                  "title": "流程图标题",
-                  "description": "流程图描述",
-                  "paradigmType": "FLOW_CHART",
-                  "nodes": [
-                    {
-                      "id": "node1",
-                      "label": "节点标签",
-                      "type": "START|PROCESS|DECISION|END",
-                      "description": "节点详细描述",
-                      "codeSnippet": "相关代码片段（如有）"
-                    }
-                  ],
-                  "edges": [
-                    {
-                      "source": "node1",
-                      "target": "node2",
-                      "label": "边标签（如有）"
-                    }
-                  ],
-                  "layout": {
-                    "type": "dagre|mindmap|indented",
-                    "direction": "TB|LR"
-                  }
-                }
-
-                注意：
-                1. 节点类型必须是 START、PROCESS、DECISION、END 之一
-                2. 必须包含至少一个 START 和一个 END 节点
-                3. 节点ID必须唯一
-                4. 边必须连接存在的节点ID
-                """,
+                        请从以下对话中提取"%s"思维范式的流程图结构。
+                        
+                        范式定义：%s
+                        
+                        对话内容：
+                        %s
+                        
+                        请提取流程图结构，返回JSON格式：
+                        {
+                          "title": "流程图标题",
+                          "description": "流程图描述",
+                          "paradigmType": "FLOW_CHART",
+                          "nodes": [
+                            {
+                              "id": "node1",
+                              "label": "节点标签",
+                              "type": "START|PROCESS|DECISION|END",
+                              "description": "节点详细描述",
+                              "codeSnippet": "相关代码片段（如有）"
+                            }
+                          ],
+                          "edges": [
+                            {
+                              "source": "node1",
+                              "target": "node2",
+                              "label": "边标签（如有）"
+                            }
+                          ],
+                          "layout": {
+                            "type": "dagre|mindmap|indented",
+                            "direction": "TB|LR"
+                          }
+                        }
+                        
+                        注意：
+                        1. 节点类型必须是 START、PROCESS、DECISION、END 之一
+                        2. 必须包含至少一个 START 和一个 END 节点
+                        3. 节点ID必须唯一
+                        4. 边必须连接存在的节点ID
+                        """,
                 paradigmName, paradigmDefinition, sessionContent);
     }
 
@@ -305,7 +302,7 @@ public class ParadigmVisualizationService {
         }
 
         int colorIndex = 0;
-        String[] colors = { "#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272" };
+        String[] colors = {"#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272"};
 
         for (ParadigmFlowchart flowchart : flowcharts) {
             String color = colors[colorIndex % colors.length];
@@ -326,7 +323,8 @@ public class ParadigmVisualizationService {
             try {
                 if (flowchart.getNodes() != null) {
                     List<FlowNodeVO> flowNodes = objectMapper.readValue(flowchart.getNodes(),
-                            new TypeReference<List<FlowNodeVO>>() {});
+                            new TypeReference<List<FlowNodeVO>>() {
+                            });
 
                     for (FlowNodeVO flowNode : flowNodes) {
                         ParadigmNodeVO node = new ParadigmNodeVO();
@@ -351,7 +349,8 @@ public class ParadigmVisualizationService {
                 // 解析边
                 if (flowchart.getEdges() != null) {
                     List<FlowEdgeVO> flowEdges = objectMapper.readValue(flowchart.getEdges(),
-                            new TypeReference<List<FlowEdgeVO>>() {});
+                            new TypeReference<List<FlowEdgeVO>>() {
+                            });
 
                     for (FlowEdgeVO flowEdge : flowEdges) {
                         ParadigmEdgeVO edge = new ParadigmEdgeVO();
@@ -425,15 +424,18 @@ public class ParadigmVisualizationService {
         try {
             if (flowchart.getNodes() != null) {
                 vo.setNodes(objectMapper.readValue(flowchart.getNodes(),
-                        new TypeReference<List<FlowNodeVO>>() {}));
+                        new TypeReference<List<FlowNodeVO>>() {
+                        }));
             }
             if (flowchart.getEdges() != null) {
                 vo.setEdges(objectMapper.readValue(flowchart.getEdges(),
-                        new TypeReference<List<FlowEdgeVO>>() {}));
+                        new TypeReference<List<FlowEdgeVO>>() {
+                        }));
             }
             if (flowchart.getLayout() != null) {
                 vo.setLayout(objectMapper.readValue(flowchart.getLayout(),
-                        new TypeReference<Map<String, Object>>() {}));
+                        new TypeReference<Map<String, Object>>() {
+                        }));
             }
         } catch (JsonProcessingException e) {
             log.error("解析流程图JSON失败: flowchartId={}", flowchartId, e);

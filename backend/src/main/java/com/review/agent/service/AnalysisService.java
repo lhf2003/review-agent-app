@@ -3,9 +3,12 @@ package com.review.agent.service;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.review.agent.common.constant.CommonConstant;
 import com.review.agent.common.utils.ExceptionUtils;
+import com.review.agent.common.utils.JsonlUtils;
 import com.review.agent.entity.dto.MultiDimensionTagResult;
 import com.review.agent.entity.dto.NodeExecuteDto;
 import com.review.agent.entity.pojo.*;
@@ -84,7 +87,31 @@ public class AnalysisService {
                 Map<String, Object> metaMap = new HashMap<>();
                 metaMap.put("fileId", fileId);
                 metaMap.put("userId", userId);
-                metaMap.put("originalContent", dataInfo.getFileContent());
+                // 如果是 JSONL 格式，提取 request 和 reply 字段拼接成字符串
+                String fileContent = dataInfo.getFileContent();
+                if (JsonlUtils.isJsonlFormat(fileContent)) {
+                    StringBuilder conversationContent = new StringBuilder();
+                    for (String line : fileContent.split("\\r?\\n")) {
+                        if (line.trim().isEmpty()) continue;
+                        try {
+                            JSONObject record = JSON.parseObject(line);
+                            String request = record.getString("request");
+                            String reply = record.getString("reply");
+                            if (request != null && !request.isEmpty()) {
+                                conversationContent.append("用户请求：").append(request).append("\n");
+                            }
+                            if (reply != null && !reply.isEmpty()) {
+                                conversationContent.append("模型回复：").append(reply).append("\n");
+                            }
+                            conversationContent.append("\n");
+                        } catch (Exception e) {
+                            log.warn("Failed to parse JSONL line: {}", line);
+                        }
+                    }
+                    metaMap.put("originalContent", conversationContent.toString().trim());
+                } else {
+                    metaMap.put("originalContent", fileContent);
+                }
 
                 // 调用图计算引擎（内部会推送阶段2）
                 RunnableConfig config = RunnableConfig.builder()
@@ -117,28 +144,38 @@ public class AnalysisService {
     public void processAnalysisResult(OverAllState overAllState, DataInfo dataInfo) {
         Optional<Object> nodeResultObj = overAllState.value("nodeResult");
 
-        List<NodeExecuteDto> nodeExecuteDtoList = null;
-
-        List<AnalysisResult> analysisResultList = new ArrayList<>();
+        NodeExecuteDto nodeExecuteDto = null;
 
         // 安全地转换对象类型
-        if (nodeResultObj.isPresent() && nodeResultObj.get() instanceof List<?> rawList) {
+        if (nodeResultObj.isPresent() && nodeResultObj.get() instanceof NodeExecuteDto raw) {
             try {
-                nodeExecuteDtoList = rawList.stream()
-                        .map(item -> objectMapper.convertValue(item, NodeExecuteDto.class))
-                        .toList();
+                nodeExecuteDto = raw;
             } catch (Exception e) {
                 log.error("Failed to convert nodeExecuteDtoList to List<NodeExecuteDto>", e);
             }
         }
+        Long userId = dataInfo.getUserId();
+        Long fileId = dataInfo.getId();
 
         // 封装结果
-        if (!CollectionUtils.isEmpty(nodeExecuteDtoList)) {
+        if (nodeExecuteDto != null) {
             dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_PROCESSED);
-            for (NodeExecuteDto executeDto : nodeExecuteDtoList) {
-                String vectorId = addVectorToRedis(executeDto);
-                buildAnalysisResult(vectorId, executeDto, analysisResultList);
-            }
+            String vectorId = addVectorToRedis(userId, fileId, nodeExecuteDto);
+            AnalysisResult analysisResult = buildAnalysisResult(vectorId, userId, fileId, nodeExecuteDto);
+            analysisResultRepository.save(analysisResult);
+            // 保存多维度标签（新版表）
+            saveMultiDimensionTags(analysisResult.getId(), nodeExecuteDto.getMultiDimensionResult());
+
+            // 异步触发标签关系发现
+            final Long finalAnalysisResultId = analysisResult.getId();
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000); // 等待事务提交
+                    tagRelationDiscoveryService.discoverRelationsForAnalysis(finalAnalysisResultId);
+                } catch (Exception e) {
+                    log.warn("标签关系发现失败: {}", e.getMessage());
+                }
+            }).start();
         } else {
             dataInfo.setProcessedStatus(CommonConstant.FILE_PROCESS_STATUS_ERROR);
         }
@@ -146,8 +183,7 @@ public class AnalysisService {
         // 更新文件处理状态
         fileInfoService.update(dataInfo);
 
-        analysisResultRepository.saveAll(analysisResultList);
-        log.info("分析结束，共处理 {} 个结果", analysisResultList.size());
+        log.info("分析结束");
     }
 
     /**
@@ -155,12 +191,10 @@ public class AnalysisService {
      * @param executeDto 节点执行结果
      * @return 向量ID
      */
-    private String addVectorToRedis(NodeExecuteDto executeDto) {
+    private String addVectorToRedis(Long userId, Long fileId, NodeExecuteDto executeDto) {
         Map<String, Object> metaDataMap = new HashMap<>();
-        metaDataMap.put("userId", executeDto.getUserId().toString());
-        metaDataMap.put("fileId", executeDto.getFileId().toString());
-        metaDataMap.put("solution", executeDto.getSolution());
-        metaDataMap.put("sessionContent", executeDto.getSessionContent());
+        metaDataMap.put("userId", userId);
+        metaDataMap.put("fileId", fileId);
 
         String vectorId = UUID.randomUUID().toString();
         Document document = new Document(vectorId, executeDto.getProblemStatement(), metaDataMap);
@@ -168,36 +202,17 @@ public class AnalysisService {
         return vectorId;
     }
 
-    private void buildAnalysisResult(String vectorId, NodeExecuteDto executeDto, List<AnalysisResult> analysisResultList) {
+    private AnalysisResult buildAnalysisResult(String vectorId, Long userId, Long fileId, NodeExecuteDto executeDto) {
         AnalysisResult analysisResult = new AnalysisResult();
         analysisResult.setVectorId(vectorId);
-        analysisResult.setUserId(executeDto.getUserId());
-        analysisResult.setFileId(executeDto.getFileId());
+        analysisResult.setUserId(userId);
+        analysisResult.setFileId(fileId);
         analysisResult.setProblemStatement(executeDto.getProblemStatement());
         analysisResult.setSolution(executeDto.getSolution());
-        analysisResult.setSessionStart(executeDto.getSessionStart());
-        analysisResult.setSessionEnd(executeDto.getSessionEnd());
-        analysisResult.setSessionContent(executeDto.getSessionContent());
         analysisResult.setStatus(executeDto.getStatus());
         analysisResult.setCreatedTime(LocalDateTime.now());
-        analysisResultList.add(analysisResult);
 
-        // 保存多维度标签（新版表）
-        saveMultiDimensionTags(analysisResult.getId(), executeDto.getMultiDimensionResult());
-
-        // 兼容旧版本：从旧字段保存标签
-        saveLegacyTags(analysisResult.getId(), executeDto);
-
-        // 异步触发标签关系发现
-        final Long finalAnalysisResultId = analysisResult.getId();
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000); // 等待事务提交
-                tagRelationDiscoveryService.discoverRelationsForAnalysis(finalAnalysisResultId);
-            } catch (Exception e) {
-                log.warn("标签关系发现失败: {}", e.getMessage());
-            }
-        }).start();
+        return analysisResult;
     }
 
     /**
@@ -264,40 +279,6 @@ public class AnalysisService {
             scenarioTag.setConfidence(multiResult.getScenario().getConfidence() != null ?
                     multiResult.getScenario().getConfidence() : 75);
             analysisTagRepository.save(scenarioTag);
-        }
-    }
-
-    /**
-     * 兼容旧版本：从旧字段保存标签
-     */
-    private void saveLegacyTags(Long analysisResultId, NodeExecuteDto executeDto) {
-        // 旧版本思维范式标签
-        if (StringUtils.hasText(executeDto.getThinkingParadigmIds())) {
-            // 检查是否已经有保存过的标签（通过multiDimensionResult）
-            List<AnalysisTag> existingTags = analysisTagRepository.findByAnalysisResultId(analysisResultId);
-            if (!existingTags.isEmpty()) {
-                return; // 已经保存过多维度标签，跳过旧逻辑
-            }
-
-            String[] paradigmIds = executeDto.getThinkingParadigmIds().split(",");
-            for (int i = 0; i < paradigmIds.length; i++) {
-                try {
-                    Long paradigmId = Long.parseLong(paradigmIds[i].trim());
-                    // 检查是否已存在
-                    boolean exists = existingTags.stream()
-                            .anyMatch(t -> t.getTagId().equals(paradigmId));
-                    if (!exists) {
-                        AnalysisTag analysisTag = new AnalysisTag();
-                        analysisTag.setAnalysisResultId(analysisResultId);
-                        analysisTag.setTagId(paradigmId);
-                        analysisTag.setIsPrimary(i == 0);
-                        analysisTag.setConfidence(85);
-                        analysisTagRepository.save(analysisTag);
-                    }
-                } catch (NumberFormatException e) {
-                    log.warn("无效的思维范式ID: {}", paradigmIds[i]);
-                }
-            }
         }
     }
 

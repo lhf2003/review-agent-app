@@ -148,6 +148,12 @@ public class UserService {
      * @param userId 用户 id
      */
     private void initializeUserAchievements(Long userId) {
+        // 检查是否已存在该用户的成就记录，避免重复插入
+        List<UserAchievement> existingAchievements = userAchievementRepository.findByUserId(userId);
+        if (!existingAchievements.isEmpty()) {
+            return;
+        }
+
         List<AchievementDefinition> achievementDefinitions = achievementDefinitionRepository.findAll();
         List<UserAchievement> userAchievements = new ArrayList<>();
         for (AchievementDefinition ad : achievementDefinitions) {

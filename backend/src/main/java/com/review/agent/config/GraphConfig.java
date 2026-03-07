@@ -4,7 +4,6 @@ import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.review.agent.graph.nodes.DataAnalysisNode;
-import com.review.agent.graph.nodes.SessionExtractionNode;
 import com.review.agent.graph.nodes.TagClassifyNode;
 import com.review.agent.graph.nodes.ThinkingParadigmNode;
 import jakarta.annotation.Resource;
@@ -24,8 +23,6 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @Slf4j
 @Configuration
 public class GraphConfig {
-    @Resource
-    private SessionExtractionNode sessionExtractionNode;
     @Resource
     private DataAnalysisNode dataAnalysisNode;
 
@@ -54,13 +51,11 @@ public class GraphConfig {
 
         return new StateGraph("Review Agent Workflow", keyStrategyFactory)
                 // 添加节点
-                .addNode("session_extraction_agent", node_async(sessionExtractionNode))
                 .addNode("analysis_agent", node_async(dataAnalysisNode))
                 .addNode("tag_classify_agent", node_async(tagClassifyNode))
                 .addNode("thinking_paradigm_agent", node_async(thinkingParadigmNode))
                 // 定义边
-                .addEdge(START, "session_extraction_agent")
-                .addEdge("session_extraction_agent", "tag_classify_agent")
+                .addEdge(START, "tag_classify_agent")
                 .addEdge("tag_classify_agent", "thinking_paradigm_agent")
                 .addEdge("thinking_paradigm_agent", "analysis_agent")
                 .addEdge("analysis_agent", END);
@@ -74,12 +69,10 @@ public class GraphConfig {
 
         return new StateGraph("Review Agent Workflow", keyStrategyFactory)
                 // 添加节点
-                .addNode("session_extraction_agent", node_async(sessionExtractionNode))
                 .addNode("analysis_agent", node_async(dataAnalysisNode))
                 .addNode("tag_classify_agent", node_async(tagClassifyNode))
                 // 定义边
-                .addEdge(START, "session_extraction_agent")
-                .addEdge("session_extraction_agent", "analysis_agent")
+                .addEdge(START, "analysis_agent")
                 .addEdge("analysis_agent", "tag_classify_agent")
                 .addEdge("tag_classify_agent", END);
     }

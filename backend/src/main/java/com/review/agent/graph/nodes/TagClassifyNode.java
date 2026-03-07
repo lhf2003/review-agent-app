@@ -45,6 +45,7 @@ public class TagClassifyNode implements NodeAction {
 
         // 解析状态
         Object optional = state.value("userId").orElseThrow(() -> new IllegalArgumentException("userId is null"));
+        Object originalContent = state.value("originalContent").orElseThrow(() -> new IllegalArgumentException("originalContent is null"));
         Long userId = null;
         if (optional instanceof Long l) {
             userId = l;
@@ -54,91 +55,80 @@ public class TagClassifyNode implements NodeAction {
 
         sseService.sendLog(userId, "正在进行多维度标签分类...");
 
-        @SuppressWarnings("unchecked")
-        List<NodeExecuteDto> nodeDtoList = (List<NodeExecuteDto>) state.value("nodeResult")
-                .orElseThrow(() -> new IllegalArgumentException("nodeDtoList is null"));
-
         // 构建各维度的分类数据
         DimensionContext dimensionContext = buildDimensionContext(userId);
 
         int successCount = 0;
         int failureCount = 0;
+        NodeExecuteDto result = new NodeExecuteDto();
 
-        for (NodeExecuteDto result : nodeDtoList) {
-            try {
-                // 1. 技术领域分类（原有功能）
-                TechDomainResult techResult = classifyTechDomain(result, dimensionContext);
+        try {
+            // 1. 技术领域分类（原有功能）
+            TechDomainResult techResult = classifyTechDomain(originalContent.toString(), dimensionContext);
 
-                // 2. 思维范式识别（新增功能）
-                List<ThinkingParadigmResult> paradigmResults = classifyThinkingParadigms(result, dimensionContext);
+            // 2. 思维范式识别（新增功能）
+            List<ThinkingParadigmResult> paradigmResults = classifyThinkingParadigms(originalContent.toString(), dimensionContext);
 
-                // 3. 构建多维度结果
-                MultiDimensionTagResult multiResult = new MultiDimensionTagResult();
+            // 3. 构建多维度结果
+            MultiDimensionTagResult multiResult = new MultiDimensionTagResult();
 
-                // 技术领域
-                MultiDimensionTagResult.TechDomainResult techDomainResult = new MultiDimensionTagResult.TechDomainResult();
-                techDomainResult.setMainTagId(techResult.mainTagId);
-                techDomainResult.setMainTagName(techResult.mainTagName);
-                techDomainResult.setSubTagIds(techResult.subTagIds);
-                techDomainResult.setSubTagNames(techResult.subTagNames);
-                techDomainResult.setRecommends(techResult.recommends);
-                multiResult.setTechDomain(techDomainResult);
+            // 技术领域
+            MultiDimensionTagResult.TechDomainResult techDomainResult = new MultiDimensionTagResult.TechDomainResult();
+            techDomainResult.setMainTagId(techResult.mainTagId);
+            techDomainResult.setMainTagName(techResult.mainTagName);
+            techDomainResult.setSubTagIds(techResult.subTagIds);
+            techDomainResult.setSubTagNames(techResult.subTagNames);
+            techDomainResult.setRecommends(techResult.recommends);
+            multiResult.setTechDomain(techDomainResult);
 
-                // 思维范式
-                List<MultiDimensionTagResult.ThinkingParadigmResult> paradigmResultList = new ArrayList<>();
-                for (ThinkingParadigmResult pr : paradigmResults) {
-                    MultiDimensionTagResult.ThinkingParadigmResult pResult = new MultiDimensionTagResult.ThinkingParadigmResult();
-                    pResult.setParadigmCode(pr.paradigmCode);
-                    pResult.setParadigmName(pr.paradigmName);
-                    pResult.setConfidence(pr.confidence);
-                    pResult.setApplication(pr.application);
-                    pResult.setKeyInsight(pr.keyInsight);
-                    pResult.setTagId(dimensionContext.paradigmCodeToIdMap.get(pr.paradigmCode));
-                    paradigmResultList.add(pResult);
-                }
-                multiResult.setThinkingParadigms(paradigmResultList);
-
-                // 思维质量和探索路径（从思维范式识别结果中提取）
-                if (!paradigmResults.isEmpty()) {
-                    multiResult.setThinkingQuality(paradigmResults.get(0).thinkingQuality);
-                    multiResult.setExplorationPath(paradigmResults.get(0).explorationPath);
-                }
-
-                // 4. 更新结果
-                updateNodeExecuteDto(result, multiResult);
-
-                successCount++;
-                log.debug("TagClassifyNode 成功分类会话: sessionStart={}, sessionEnd={}, techDomain={}, paradigms={}",
-                        result.getSessionStart(), result.getSessionEnd(),
-                        techResult.mainTagName,
-                        paradigmResults.stream().map(p -> p.paradigmCode).toList());
-
-            } catch (Exception e) {
-                log.error("TagClassifyNode 分类失败，sessionStart={}，sessionEnd={}",
-                        result.getSessionStart(), result.getSessionEnd(), e);
-                // 设置默认值
-                setDefaultResult(result);
-                failureCount++;
+            // 思维范式
+            List<MultiDimensionTagResult.ThinkingParadigmResult> paradigmResultList = new ArrayList<>();
+            for (ThinkingParadigmResult pr : paradigmResults) {
+                MultiDimensionTagResult.ThinkingParadigmResult pResult = new MultiDimensionTagResult.ThinkingParadigmResult();
+                pResult.setParadigmCode(pr.paradigmCode);
+                pResult.setParadigmName(pr.paradigmName);
+                pResult.setConfidence(pr.confidence);
+                pResult.setApplication(pr.application);
+                pResult.setKeyInsight(pr.keyInsight);
+                pResult.setTagId(dimensionContext.paradigmCodeToIdMap.get(pr.paradigmCode));
+                paradigmResultList.add(pResult);
             }
-        }
+            multiResult.setThinkingParadigms(paradigmResultList);
 
-        log.info("TagClassifyNode 完成: userId={}, 成功={}, 失败={}", userId, successCount, failureCount);
+            // 思维质量和探索路径（从思维范式识别结果中提取）
+            if (!paradigmResults.isEmpty()) {
+                multiResult.setThinkingQuality(paradigmResults.get(0).thinkingQuality);
+                multiResult.setExplorationPath(paradigmResults.get(0).explorationPath);
+            }
+
+            // 4. 更新结果
+            updateNodeExecuteDto(result, multiResult);
+
+            successCount++;
+
+        } catch (Exception e) {
+            log.error("TagClassifyNode 分类失败", e);
+            // 设置默认值
+            setDefaultResult(result);
+            failureCount++;
+        }
         sseService.sendLog(userId, String.format("多维度标签分类完成: 成功=%d, 失败=%d", successCount, failureCount));
 
-        return Map.of("nodeResult", nodeDtoList);
+
+        return Map.of("nodeResult", result);
     }
 
     /**
      * 技术领域分类（原有功能改造）
      */
-    private TechDomainResult classifyTechDomain(NodeExecuteDto result, DimensionContext context) {
+    private TechDomainResult classifyTechDomain(String content, DimensionContext context) {
         String systemPrompt = promptService.getClassifyPrompt(context.techDomainCategories);
 
         AiTechDomainResult response = NodeRetryHelper.builder()
-                .operation("TechDomainClassify[" + result.getSessionStart() + "-" + result.getSessionEnd() + "]")
+                .operation("TechDomainClassify")
                 .chatClient(chatClient)
                 .systemPrompt(systemPrompt)
-                .userPrompt(result.getSessionContent())
+                .userPrompt(content)
                 .execute(AiTechDomainResult.class, () -> createDefaultTechResult());
 
         if (response == null) {
@@ -176,7 +166,7 @@ public class TagClassifyNode implements NodeAction {
     /**
      * 思维范式识别（新增功能）
      */
-    private List<ThinkingParadigmResult> classifyThinkingParadigms(NodeExecuteDto result, DimensionContext context) {
+    private List<ThinkingParadigmResult> classifyThinkingParadigms(String content, DimensionContext context) {
         String systemPrompt;
         try {
             systemPrompt = promptService.getParadigmRecognitionPrompt(context.paradigmDefinitions);
@@ -186,10 +176,10 @@ public class TagClassifyNode implements NodeAction {
         }
 
         AiParadigmResult response = NodeRetryHelper.builder()
-                .operation("ParadigmRecognize[" + result.getSessionStart() + "-" + result.getSessionEnd() + "]")
+                .operation("ParadigmRecognize")
                 .chatClient(paradigmChatClient)
                 .systemPrompt(systemPrompt)
-                .userPrompt(result.getSessionContent())
+                .userPrompt(content)
                 .execute(AiParadigmResult.class, () -> createDefaultParadigmResult());
 
         if (response == null || response.paradigms == null) {
@@ -287,10 +277,10 @@ public class TagClassifyNode implements NodeAction {
     private String buildDefaultParadigmPrompt(String paradigms) {
         return """
                 你是一名思维范式识别专家。请分析用户与AI的对话，识别其中使用的思维范式。
-
+                
                 可选的思维范式：
                 ${paradigms}
-
+                
                 请输出JSON格式：
                 {
                   "paradigms": [

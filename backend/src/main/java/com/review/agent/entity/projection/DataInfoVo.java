@@ -19,8 +19,6 @@ public interface DataInfoVo {
 
     Integer getProcessedStatus();
 
-    Integer getSessionCount();
-
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     Date getCreatedTime();
 

@@ -6,13 +6,8 @@ import java.util.Map;
 
 @Data
 public class NodeExecuteDto {
-    private Long userId;
-    private Long fileId;
     private String problemStatement;
     private String solution;
-    private Integer sessionStart;
-    private Integer sessionEnd;
-    private String sessionContent;
 
     // 技术标签（旧）
     private Long tagId;

@@ -18,7 +18,5 @@ public class SessionTraceVo {
         private String problemStatement;
         private String solution;
         private String originContent;
-        private Integer startIndex;
-        private Integer endIndex;
     }
 }

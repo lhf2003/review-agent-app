@@ -18,8 +18,6 @@ public class AnalysisResultDetailVO {
     private String problemStatement;
     private String solution;
     private String sessionContent;
-    private Integer sessionStart;
-    private Integer sessionEnd;
 
     // 技术标签
     private String mainTagName;

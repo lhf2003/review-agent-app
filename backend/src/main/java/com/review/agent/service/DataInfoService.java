@@ -119,6 +119,22 @@ public class DataInfoService {
     }
 
     /**
+     * 去除文件名的后缀
+     * @param filename 原始文件名
+     * @return 去除后缀的文件名
+     */
+    private String stripExtension(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return filename;
+        }
+        int lastDotIndex = filename.lastIndexOf('.');
+        if (lastDotIndex > 0) {  // 确保点号不是第一个字符
+            return filename.substring(0, lastDotIndex);
+        }
+        return filename;
+    }
+
+    /**
      * 封装数据
      * @param userId 用户ID
      * @param newFileData 文件数据
@@ -133,7 +149,7 @@ public class DataInfoService {
             throw new RuntimeException(e);
         }
         String filePath = newFileData.getPath();
-        String filename = newFileData.getName();
+        String filename = stripExtension(newFileData.getName());
 
 
         long currentModifiedTime = 0;
@@ -144,14 +160,13 @@ public class DataInfoService {
         }
         Date currentDateTime = Date.from(Instant.ofEpochMilli(currentModifiedTime));
 
-        // Look up existing file from map instead of querying database (N+1 fix)
         DataInfo existingData = existingFileMap.get(filename);
 
         // 新增文件
         if (existingData == null) {
             DataInfo dataInfo = new DataInfo();
             dataInfo.setUserId(userId);
-            dataInfo.setFileName(newFileData.getName());
+            dataInfo.setFileName(filename);
             dataInfo.setFileContent(content);
             dataInfo.setSource(DATA_SOURCE_LOCAL);
             dataInfo.setProcessedStatus(FILE_PROCESS_STATUS_NOT_PROCESSED);
@@ -178,11 +193,12 @@ public class DataInfoService {
 
     @Transactional(rollbackFor = Exception.class)
     public DataInfo importData(Long userId, String originalFilename, String content, Integer source) {
-        DataInfo existing = dataInfoRepository.findByUserIdAndFileName(userId,originalFilename);
+        String filename = stripExtension(originalFilename);
+        DataInfo existing = dataInfoRepository.findByUserIdAndFileName(userId, filename);
         if (existing == null) {
             DataInfo dataInfo = new DataInfo();
             dataInfo.setUserId(userId);
-            dataInfo.setFileName(originalFilename);
+            dataInfo.setFileName(filename);
             dataInfo.setFileContent(content);
             dataInfo.setSource(source);
             dataInfo.setProcessedStatus(FILE_PROCESS_STATUS_NOT_PROCESSED);

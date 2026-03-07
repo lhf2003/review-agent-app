@@ -5,10 +5,12 @@ import { useAuthStore } from '../stores/auth'
 import { ElMessage, ElMessageBox, ElTour } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { useRouter } from 'vue-router'
-import { Document, Select, UploadFilled, Close } from '@element-plus/icons-vue'
+import { Document, Select, UploadFilled, Close, Refresh } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 import AnalysisLoadingModal from '../components/AnalysisLoadingModal.vue'
 import CustomScroll from '../components/CustomScroll.vue'
+import DataFileGrid from '../components/DataFileGrid.vue'
+import ConversationViewer from '../components/ConversationViewer.vue'
 import GeminiIcon from '../../public/icons/gemini-color.svg'
 import OpenAIIcon from '../../public/icons/openai.svg'
 
@@ -17,7 +19,7 @@ const router = useRouter()
 const loading = ref(false)
 const tableData = ref([])
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(12) // 增加默认每页数量以适应卡片布局
 const total = ref(0)
 
 const searchName = ref('')
@@ -30,6 +32,16 @@ const importSource = ref(0)
 
 // Filter source
 const sourceFilter = ref(0) // Default to Local (0)
+
+// 状态筛选选项
+const statusOptions = [
+  { value: null, label: '全部', color: '#6B7280' },
+  { value: 0, label: '未分析', color: '#6B7280' },
+  { value: 1, label: '分析中', color: '#3B82F6' },
+  { value: 2, label: '已分析', color: '#10B981' },
+  { value: 3, label: '有更新', color: '#F59E0B' },
+  { value: 4, label: '失败', color: '#EF4444' }
+]
 
 const resultDialog = ref(false)
 const result = ref({ title: '', problemStatement: '', solution: '' })
@@ -56,9 +68,9 @@ const tourSteps = ref([
     placement: 'bottom'
   },
   {
-    target: '#data-table',
+    target: '#data-grid',
     title: '第二步：查看分析结果',
-    description: '导入的数据会自动进行分析，分析完成后可以在这里查看结构化的问题描述和解决方案。',
+    description: '导入的数据会自动进行分析，分析完成后可以在这里查看结构化的问题描述和解决方案。卡片颜色代表不同状态。',
     placement: 'top'
   },
   {
@@ -119,73 +131,95 @@ async function doImport() {
   } catch (e) { ElMessage.error(`操作失败: ${e.message}`) }
 }
 
-function onAction(row) {
-  if (row.processedStatus !== 2) {
-    // 记录当前分析的文件
-    currentAnalysisFile.value = row
-    showLogs.value = true
+// 处理分析操作（来自卡片或表格）
+function handleAnalyze(row) {
+  if (row.processedStatus === 1) return // 已在分析中
+  
+  // 记录当前分析的文件
+  currentAnalysisFile.value = row
+  showLogs.value = true
 
-    // 重置状态
-    analysisStage.value = 1
-    analysisError.value = false
+  // 重置状态
+  analysisStage.value = 1
+  analysisError.value = false
 
-    if (logStream && typeof logStream.cancel === 'function') {
-      logStream.cancel()
-    }
+  if (logStream && typeof logStream.cancel === 'function') {
+    logStream.cancel()
+  }
 
-    // SSE 接收整型阶段和错误事件
-    logStream = api.analysisLogStream({
-      onStage: (data) => {
-        // data 是整型字符串：'1', '2', '3'
-        const stage = parseInt(data)
-        if ([1, 2, 3].includes(stage)) {
-          analysisStage.value = stage
-        }
-      },
-      onErrorEvent: (errorMessage) => {
-        // 后端发送的错误事件
-        analysisError.value = true
-      },
-      onError: () => {
-        // 网络错误或连接错误
-        analysisError.value = true
-      },
-      onDone: () => {
-        // SSE 流结束
+  // SSE 接收整型阶段和错误事件
+  logStream = api.analysisLogStream({
+    onStage: (data) => {
+      const stage = parseInt(data)
+      if ([1, 2, 3].includes(stage)) {
+        analysisStage.value = stage
+      }
+    },
+    onErrorEvent: (errorMessage) => {
+      analysisError.value = true
+    },
+    onError: () => {
+      analysisError.value = true
+    },
+    onDone: () => {}
+  })
+
+  api.startAnalysis(row.id)
+    .then(() => {
+      ElMessage.success('已触发分析')
+      row.processedStatus = 1
+      load()
+    })
+    .catch(e => {
+      ElMessage.error(`触发失败: ${e.message}`)
+      analysisError.value = true
+      if (logStream && typeof logStream.cancel === 'function') {
+        logStream.cancel()
       }
     })
-
-    // Only trigger startAnalysis if it is NOT already analyzing (status != 1)
-    if (row.processedStatus !== 1) {
-        api.startAnalysis(row.id)
-          .then(() => {
-            ElMessage.success('已触发分析')
-            row.processedStatus = 1
-            load()
-          })
-          .catch(e => {
-            ElMessage.error(`触发失败: ${e.message}`)
-            analysisError.value = true
-            if (logStream && typeof logStream.cancel === 'function') {
-              logStream.cancel()
-            }
-          })
-    }
-  } else {
-    router.push({ path: '/analysis', query: { dataId: row.id } })
-  }
 }
 
-async function doDelete(row) {
+// 处理查看结果
+function handleViewResult(row) {
+  router.push({ path: '/analysis', query: { dataId: row.id } })
+}
+
+// 处理删除
+async function handleDelete(row) {
   try {
-    await ElMessageBox.confirm(`确认删除数据 ${row.fileName || `#${row.id}`}？`, '提示', { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' })
     await api.dataDelete(row.id)
     ElMessage.success('删除成功')
     await load()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error(`删除失败: ${e.message}`)
+    ElMessage.error(`删除失败: ${e.message}`)
   }
 }
+
+// 处理重试（支持从卡片或弹窗调用）
+function handleRetry(data) {
+  if (typeof data === 'number' || typeof data === 'string') {
+    // 从弹窗传递的是 fileId
+    const row = tableData.value.find(item => item.id === data)
+    if (row) {
+      handleAnalyze(row)
+    } else {
+      // 如果不在当前列表中，直接调用 API
+      api.startAnalysis(data)
+        .then(() => {
+          ElMessage.success('已重新触发分析')
+          load()
+        })
+        .catch(e => {
+          ElMessage.error(`触发失败: ${e.message}`)
+        })
+    }
+  } else {
+    // 从卡片传递的是 row 对象
+    handleAnalyze(data)
+  }
+}
+
+
 
 // Tour 超时保护
 let tourTimeout = null
@@ -197,7 +231,7 @@ onMounted(() => {
   if (!tourShown) {
     setTimeout(() => {
       // 检查所有目标元素是否存在
-      const targets = ['#import-btn', '#data-table', '#filter-group']
+      const targets = ['#import-btn', '#data-grid', '#filter-group']
       const allTargetsExist = targets.every(selector => document.querySelector(selector) !== null)
 
       if (allTargetsExist) {
@@ -245,23 +279,6 @@ function handleCloseModal() {
   // 立即刷新表格
   load()
 }
-
-// 处理分析弹窗重试
-function handleRetry(fileId) {
-  api.startAnalysis(fileId)
-    .then(() => {
-      ElMessage.success('已重新触发分析')
-      // 重置状态
-      analysisStage.value = 1
-      analysisError.value = false
-      // 刷新表格
-      load()
-    })
-    .catch(e => {
-      ElMessage.error(`触发失败: ${e.message}`)
-      analysisError.value = true
-    })
-}
 </script>
 
 <template>
@@ -281,61 +298,56 @@ function handleRetry(fileId) {
 
       <div class="spacer"></div>
 
-      <div class="filter-group" id="filter-group">
-        <el-input v-model="searchName" placeholder="输入文件名..." prefix-icon="Search" clearable @change="() => { page = 1; load() }" style="width: 160px; max-width: 100%;" />
-        <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 110px; max-width: 100%;" @change="() => { page = 1; load() } ">
-        <el-option :value="null" label="全部" />
-        <el-option :value="0" label="未分析" />
-        <el-option :value="2" label="已分析" />
-        <el-option :value="3" label="有更新" />
-        <el-option :value="4" label="失败" />
-      </el-select>
-      </div>
+       <div class="filter-group" id="filter-group">
+         <el-input 
+           v-model="searchName" 
+           placeholder="输入文件名..." 
+           prefix-icon="Search" 
+           clearable 
+           @change="() => { page = 1; load() }" 
+           style="width: 180px;" 
+         />
+         <el-select 
+           v-model="statusFilter" 
+           placeholder="状态筛选" 
+           clearable 
+           style="width: 120px;" 
+           @change="() => { page = 1; load() }"
+         >
+           <el-option 
+             v-for="opt in statusOptions" 
+             :key="opt.value ?? 'all'" 
+             :value="opt.value" 
+             :label="opt.label"
+           >
+             <span class="status-dot" :style="{ backgroundColor: opt.color }"></span>
+             {{ opt.label }}
+           </el-option>
+         </el-select>
+       </div>
 
-      <el-button type="plain" id="import-btn" @click="openImport" icon="Upload">
-        导入
-      </el-button>
-      <el-button type="plain" link size="large" @click="load">
-        <el-icon><Refresh /></el-icon>
-      </el-button>
-    </div>
+        <el-button type="plain" id="import-btn" @click="openImport" icon="Upload">
+         导入
+       </el-button>
+       <el-button type="plain" link size="large" @click="load">
+         <el-icon><Refresh /></el-icon>
+       </el-button>
+     </div>
 
-    <!-- 表格区域 -->
-    <div class="table-wrapper">
-      <div class="table-scroll-wrapper">
-        <CustomScroll>
-          <el-table id="data-table" :data="tableData" v-loading="loading" style="width: 100%; max-width: 100%;" row-key="id" size="small" class="glass-table">
-        <template #empty>
-            <el-empty description="暂无数据" :image-size="100" />
-        </template>
-        <el-table-column :resizable="false" prop="id" label="ID" width="80" align="center" />
-        <el-table-column :resizable="false" prop="fileName" label="文件名" min-width="150" align="center" show-overflow-tooltip />
-        <el-table-column :resizable="false" prop="sessionCount" label="会话数" width="100" align="center" />
-        <el-table-column :resizable="false" prop="processedStatus" label="状态" width="150" align="center">
-          <template #default="{ row }">
-            <el-tag class="status-tag" v-if="row.processedStatus===0" type="info" effect="light">未分析</el-tag>
-            <el-tag class="status-tag" type="primary" v-else-if="row.processedStatus===1" effect="light">正在分析</el-tag>
-            <el-tag class="status-tag" type="success" v-else-if="row.processedStatus===2" effect="light">已分析</el-tag>
-            <el-tag class="status-tag" type="warning" v-else-if="row.processedStatus===3" effect="light">有更新</el-tag>
-            <el-tag class="status-tag" type="danger" v-else-if="row.processedStatus===4" effect="light">失败</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column :resizable="false" prop="createdTime" label="同步时间" width="250" align="center" show-overflow-tooltip />
-        <el-table-column :resizable="false" label="文件内容" width="150" align="center">
-          <template #default="{ row }">
-            <el-button type="primary" link @click="openContent(row)">查看内容</el-button>
-          </template>
-        </el-table-column>
-        <el-table-column :resizable="false" label="操作" width="300" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button :type="row.processedStatus === 2 ? 'success' : (row.processedStatus === 1 ? 'warning' : 'primary')" @click="onAction(row)">{{ row.processedStatus === 2 ? '结果' : (row.processedStatus === 1 ? '分析中' : '分析') }}</el-button>
-            <el-button type="danger" plain @click="doDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-        </CustomScroll>
+      <!-- 数据展示区域 -->
+      <div class="content-wrapper" id="data-grid">
+        <DataFileGrid
+          :data="tableData"
+          :loading="loading"
+          empty-text="暂无数据"
+           empty-description="点击右上角「导入」按钮添加文件"
+          @view-content="openContent"
+          @analyze="handleAnalyze"
+          @view-result="handleViewResult"
+          @delete="handleDelete"
+          @retry="handleRetry"
+        />
       </div>
-    </div>
 
     <!-- 分页导航 -->
     <div class="pagination-bar">
@@ -344,7 +356,7 @@ function handleRetry(fileId) {
           small
           v-model:current-page="page"
           v-model:page-size="pageSize"
-          :page-sizes="[10,20,50,100]"
+           :page-sizes="[12, 24, 48, 96]"
           layout="total, sizes, prev, pager, next"
           :total="total"
           @current-change="load"
@@ -454,10 +466,10 @@ function handleRetry(fileId) {
       </el-card>
     </el-dialog>
 
-    <!-- 文件内容抽屉（Markdown） -->
-    <el-drawer v-model="drawerVisible" :title="drawerTitle" direction="rtl" size="50%">
+    <!-- 文件内容抽屉（对话式展示） -->
+    <el-drawer v-model="drawerVisible" :title="drawerTitle" direction="rtl" size="55%">
       <CustomScroll>
-        <MarkdownRenderer :content="drawerContent" />
+        <ConversationViewer :content="drawerContent" />
       </CustomScroll>
     </el-drawer>
 
@@ -535,7 +547,23 @@ function handleRetry(fileId) {
   flex: 1;
 }
 
-.table-wrapper {
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 状态指示点 */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+/* 内容区域 */
+.content-wrapper {
   flex: 1;
   min-height: 0;
   border-radius: 16px;
@@ -554,63 +582,13 @@ function handleRetry(fileId) {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.table-scroll-wrapper {
-  flex-grow: 1;
-  height: 0;
-  overflow-y: hidden;
-}
-
-/* Dark Mode Table Wrapper */
-html.dark .table-wrapper {
+/* Dark Mode Content Wrapper */
+html.dark .content-wrapper {
   background: rgba(28, 28, 30, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Glass Table Overrides */
-.glass-table {
-  --el-table-border-color: transparent;
-  --el-table-header-bg-color: rgba(255, 255, 255, 0.3);
-  --el-table-tr-bg-color: transparent;
-  --el-table-row-hover-bg-color: rgba(0, 0, 0, 0.02);
-  background-color: transparent !important;
-}
-
-html.dark .glass-table {
-  --el-table-header-bg-color: rgba(0, 0, 0, 0.2);
-  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.05);
-  --el-table-bg-color: transparent;
-}
-
-:deep(.el-table), :deep(.el-table__expanded-cell) {
-  background-color: transparent !important;
-}
-
-:deep(.el-table tr) {
-  background-color: transparent !important;
-}
-
-:deep(.el-table th.el-table__cell) {
-  background-color: var(--el-table-header-bg-color) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-}
-
-html.dark :deep(.el-table th.el-table__cell) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
-
-:deep(.el-table td.el-table__cell) {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.02) !important;
-}
-
-html.dark :deep(.el-table td.el-table__cell) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02) !important;
-}
-
-:deep(.el-table__inner-wrapper::before) {
-  display: none;
 }
 
 .pagination-bar {
@@ -636,25 +614,33 @@ html.dark .pagination-bar {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* 响应式表格优化 */
+/* 响应式优化 */
 @media (max-width: 768px) {
-  .table-wrapper {
+  .toolbar {
+    gap: 8px;
+  }
+  
+  .filter-group {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .toolbar .el-input {
+    width: 140px !important;
+  }
+
+  .toolbar .el-select {
+    width: 100px !important;
+  }
+
+  .spacer {
+    display: none;
+  }
+  
+  .content-wrapper {
     border-radius: 12px;
   }
-
-  :deep(.el-table) {
-    font-size: 13px;
-  }
-
-  :deep(.el-table__cell) {
-    padding: 8px 4px;
-  }
-
-  :deep(.el-table__header-wrapper),
-  :deep(.el-table__body-wrapper) {
-    overflow-x: auto;
-  }
-
+  
   .pagination-bar {
     padding: 10px 12px;
     font-size: 13px;
@@ -667,6 +653,28 @@ html.dark .pagination-bar {
 
   .pagination-bar :deep(.el-pagination__sizes) {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar {
+    padding: 4px;
+  }
+  
+  .toolbar .el-radio-group {
+    flex-wrap: wrap;
+  }
+  
+  .filter-group {
+    order: 3;
+    width: 100%;
+    margin-top: 8px;
+  }
+  
+  .toolbar .el-input,
+  .toolbar .el-select {
+    flex: 1;
+    width: auto !important;
   }
 }
 

@@ -1,7 +1,6 @@
 -- ================================================
 -- Review Agent 数据库初始迁移脚本
 -- Flyway Version: V1
--- Description: 合并所有历史 SQL 脚本为初始版本
 -- ================================================
 
 -- ================================================
@@ -16,16 +15,11 @@ CREATE TABLE IF NOT EXISTS analysis_result
     user_id           BIGINT                 NOT NULL COMMENT '用户id',
     problem_statement VARCHAR(255)           NULL COMMENT '用户的问题描述',
     solution          LONGTEXT               NULL COMMENT 'AI回复的解决方案',
-    session_start     TINYINT                NULL COMMENT '会话开始索引',
-    session_end       TINYINT                NULL COMMENT '会话结束索引',
-    session_content   TEXT               NULL COMMENT '会话内容',
     status            TINYINT                NOT NULL COMMENT '状态（0=失败 1=成功）',
     created_time      datetime DEFAULT NOW() NULL COMMENT '创建时间',
     deleted           TINYINT(1) DEFAULT 0   NOT NULL COMMENT '删除标记（0-未删除 1-已删除）',
     deleted_at        DATETIME               NULL COMMENT '删除时间',
-    CONSTRAINT `PRIMARY` PRIMARY KEY (id),
-    CONSTRAINT fk_analysis_result_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE,
-    CONSTRAINT fk_analysis_result_data FOREIGN KEY (file_id) REFERENCES data_info(id) ON DELETE CASCADE
+    CONSTRAINT `PRIMARY` PRIMARY KEY (id)
 ) COMMENT '分析结果表';
 
 CREATE TABLE IF NOT EXISTS data_info
@@ -40,8 +34,7 @@ CREATE TABLE IF NOT EXISTS data_info
     update_time      datetime               NULL COMMENT '文件上一次修改时间',
     deleted          TINYINT(1) DEFAULT 0   NOT NULL COMMENT '删除标记（0-未删除 1-已删除）',
     deleted_at       DATETIME               NULL COMMENT '删除时间',
-    CONSTRAINT `PRIMARY` PRIMARY KEY (id),
-    CONSTRAINT fk_data_info_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE
+    CONSTRAINT `PRIMARY` PRIMARY KEY (id)
 ) COMMENT ='文件信息（模型对话数据）';
 
 CREATE TABLE IF NOT EXISTS llm_provider
@@ -62,8 +55,7 @@ CREATE TABLE IF NOT EXISTS report_data
     start_date     date                  NULL COMMENT '开始时间',
     end_date       date                  NULL COMMENT '结束时间',
     create_time    datetime              NULL COMMENT '生成时间',
-    CONSTRAINT `PRIMARY` PRIMARY KEY (id),
-    CONSTRAINT fk_report_data_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE
+    CONSTRAINT `PRIMARY` PRIMARY KEY (id)
 ) COMMENT ='日/周报记录';
 
 CREATE TABLE IF NOT EXISTS sync_record
@@ -75,8 +67,7 @@ CREATE TABLE IF NOT EXISTS sync_record
     create_time datetime              NULL COMMENT '同步时间',
     status      INT      DEFAULT 0    NOT NULL COMMENT '同步状态：0=成功, 1=同步中, 2=失败',
     message     VARCHAR(500)          NULL COMMENT '同步消息或错误描述',
-    CONSTRAINT `PRIMARY` PRIMARY KEY (id),
-    CONSTRAINT fk_sync_record_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE
+    CONSTRAINT `PRIMARY` PRIMARY KEY (id)
 ) COMMENT ='文件同步记录';
 
 CREATE TABLE IF NOT EXISTS user_config
@@ -95,8 +86,9 @@ CREATE TABLE IF NOT EXISTS user_config
     daily_cron               VARCHAR(50)                  NULL COMMENT '指定日报的cron',
     weekly_enabled           TINYINT                      NULL COMMENT '是否启用周报功能',
     weekly_cron              VARCHAR(50)                  NULL COMMENT '指定周报的cron',
-    CONSTRAINT `PRIMARY` PRIMARY KEY (id),
-    CONSTRAINT fk_user_config_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE
+    auto_analysis_enabled TINYINT(1) DEFAULT 0 COMMENT '是否启用自动分析：0=否，1=是',
+    analysis_interval_minutes INT DEFAULT 10 COMMENT '自动分析间隔（分钟），默认10分钟',
+    CONSTRAINT `PRIMARY` PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS user_info
@@ -123,8 +115,7 @@ CREATE TABLE IF NOT EXISTS analysis_collection
     deleted      TINYINT(1)   DEFAULT 0 NOT NULL COMMENT '删除标记（0-未删除 1-已删除）',
     deleted_at   DATETIME     DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (`id`),
-    KEY `idx_user_id` (`user_id`),
-    CONSTRAINT fk_analysis_collection_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE
+    KEY `idx_user_id` (`user_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='分析结果合集表';
 
@@ -136,8 +127,7 @@ CREATE TABLE IF NOT EXISTS collection_relation
     created_time       datetime DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_col_res` (`collection_id`, `analysis_result_id`),
-    KEY `idx_analysis_result_id` (`analysis_result_id`),
-    CONSTRAINT fk_collection_relation_collection FOREIGN KEY (collection_id) REFERENCES analysis_collection(id) ON DELETE CASCADE
+    KEY `idx_analysis_result_id` (`analysis_result_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='合集与分析结果关联表';
 
@@ -157,9 +147,7 @@ CREATE TABLE IF NOT EXISTS quiz_record
     deleted                 TINYINT(1)   DEFAULT 0 NOT NULL COMMENT '删除标记（0-未删除 1-已删除）',
     deleted_at              DATETIME     DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (`id`),
-    KEY `idx_user_col` (`user_id`, `collection_id`),
-    CONSTRAINT fk_quiz_record_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE,
-    CONSTRAINT fk_quiz_record_collection FOREIGN KEY (collection_id) REFERENCES analysis_collection(id) ON DELETE CASCADE
+    KEY `idx_user_col` (`user_id`, `collection_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='AI测验会话记录表';
 
@@ -182,8 +170,7 @@ CREATE TABLE IF NOT EXISTS quiz_question
     answer_count        INT           DEFAULT 0 COMMENT '被回答次数（用于题目质量评估）',
     correct_count       INT           DEFAULT 0 COMMENT '正确次数（用于难度校准）',
     PRIMARY KEY (`id`),
-    KEY `idx_quiz_id` (`quiz_id`),
-    CONSTRAINT fk_quiz_question_record FOREIGN KEY (quiz_id) REFERENCES quiz_record(id) ON DELETE CASCADE
+    KEY `idx_quiz_id` (`quiz_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='AI测验题目表';
 
@@ -201,8 +188,7 @@ CREATE TABLE IF NOT EXISTS user_llm_config
     name         varchar(20)  not null,
     url          varchar(255) null,
     api_key      varchar(255) null,
-    is_connected tinyint(1)   null comment '是否已连接',
-    CONSTRAINT fk_user_llm_config_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE
+    is_connected tinyint(1)   null comment '是否已连接'
 ) comment '用户模型服务商配置';
 
 CREATE TABLE IF NOT EXISTS selected_model
@@ -211,8 +197,7 @@ CREATE TABLE IF NOT EXISTS selected_model
     provider_id    int          not null comment '绑定模型提供商id',
     user_id        bigint       not null comment '用户Id',
     model_name     varchar(100) not null comment '模型名称',
-    model_capacity int          null comment '模型能力',
-    CONSTRAINT fk_selected_model_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE
+    model_capacity int          null comment '模型能力'
 ) comment '已选择的模型';
 
 CREATE TABLE IF NOT EXISTS achievement_definition
@@ -239,8 +224,7 @@ CREATE TABLE IF NOT EXISTS user_achievement
     unlocked_time    datetime     null comment '解锁时间',
     created_time     datetime     default current_timestamp null,
     constraint uk_user_achievement
-        unique (user_id, achievement_code),
-    CONSTRAINT fk_user_achievement_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE
+        unique (user_id, achievement_code)
 ) comment '用户成就表';
 
 -- 插入成就定义数据
@@ -306,13 +290,7 @@ CREATE TABLE IF NOT EXISTS quiz_mistake (
     INDEX `idx_user_mastered` (`user_id`, `mastered`),
     INDEX `idx_question` (`question_id`),
     INDEX `idx_last_mistake` (`user_id`, `last_mistake_time`),
-    INDEX `idx_mistake_snoozed` (`user_id`, `snoozed_until`, `mastered`),
-    CONSTRAINT `fk_mistake_user`
-        FOREIGN KEY (`user_id`) REFERENCES `user_info` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_mistake_question`
-        FOREIGN KEY (`question_id`) REFERENCES `quiz_question` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_mistake_quiz`
-        FOREIGN KEY (`quiz_id`) REFERENCES `quiz_record` (`id`) ON DELETE SET NULL
+    INDEX `idx_mistake_snoozed` (`user_id`, `snoozed_until`, `mastered`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COMMENT = '错题本表（记录用户答错的题目及掌握状态）';
@@ -335,9 +313,7 @@ CREATE TABLE IF NOT EXISTS knowledge_mastery (
     INDEX `idx_mastery_score` (`user_id`, `mastery_score`),
     INDEX `idx_last_practice` (`user_id`, `last_practice_time`),
     INDEX `idx_knowledge_mastery_user_id` (`user_id`),
-    INDEX `idx_knowledge_mastery_knowledge_point` (`knowledge_point`),
-    CONSTRAINT `fk_mastery_user`
-        FOREIGN KEY (`user_id`) REFERENCES `user_info` (`id`) ON DELETE CASCADE
+    INDEX `idx_knowledge_mastery_knowledge_point` (`knowledge_point`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COMMENT = '知识点掌握度表（追踪用户对各知识点的掌握程度）';
@@ -423,8 +399,7 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     quiz_completion_enabled TINYINT(1) DEFAULT 1 COMMENT '是否启用习题完成提醒',
     created_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    INDEX idx_user_id (user_id),
-    FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE
+    INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知设置表';
 
 -- ================================================
@@ -487,8 +462,6 @@ CREATE TABLE IF NOT EXISTS tag (
     user_id BIGINT COMMENT '用户ID（系统内置时可为null）',
     created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (dimension_id) REFERENCES tag_dimension(id),
-    FOREIGN KEY (parent_id) REFERENCES tag(id),
     INDEX idx_dimension (dimension_id),
     INDEX idx_parent (parent_id),
     INDEX idx_user (user_id),
@@ -508,9 +481,6 @@ CREATE TABLE IF NOT EXISTS tag_relation (
     user_id BIGINT COMMENT '用户ID（系统预设关系可为null）',
     created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (source_tag_id) REFERENCES tag(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_tag_id) REFERENCES tag(id) ON DELETE CASCADE,
-    CONSTRAINT fk_tag_relation_user FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE,
     UNIQUE KEY uk_relation (source_tag_id, target_tag_id, relation_type),
     INDEX idx_source (source_tag_id),
     INDEX idx_target (target_tag_id),
@@ -597,8 +567,6 @@ CREATE TABLE IF NOT EXISTS analysis_tag (
     is_primary BOOLEAN DEFAULT FALSE COMMENT '是否主标签',
     confidence INT DEFAULT 100 COMMENT 'AI匹配置信度1-100',
     created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (analysis_result_id) REFERENCES analysis_result(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE CASCADE,
     UNIQUE KEY uk_analysis_tag (analysis_result_id, tag_id),
     INDEX idx_analysis (analysis_result_id),
     INDEX idx_tag (tag_id)
@@ -629,6 +597,98 @@ AND NOT EXISTS (SELECT 1 FROM tag_relation WHERE source_tag_id = (SELECT id FROM
 -- analysis_tag 索引（在表创建后添加）
 CREATE INDEX idx_analysis_tag_tag_id ON analysis_tag(tag_id);
 
--- ================================================
--- 迁移完成
--- ================================================
+-- 异步任务表
+CREATE TABLE async_task (
+                            id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                            user_id BIGINT NOT NULL COMMENT '用户ID',
+                            task_type VARCHAR(50) NOT NULL COMMENT '任务类型：RELATION_DISCOVERY等',
+                            status VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '状态：PENDING/RUNNING/COMPLETED/FAILED',
+                            progress INT DEFAULT 0 COMMENT '进度0-100',
+                            result TEXT COMMENT 'JSON格式结果',
+                            error_message VARCHAR(500) COMMENT '错误信息',
+                            created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            completed_time DATETIME COMMENT '完成时间',
+
+                            INDEX idx_user (user_id),
+                            INDEX idx_status (status),
+                            INDEX idx_user_status (user_id, status)
+) COMMENT='异步任务表';
+
+
+-- paradigm_flowchart 表（思维范式流程图存储表）
+CREATE TABLE IF NOT EXISTS paradigm_flowchart (
+                                                  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                                  paradigm_code VARCHAR(50) NOT NULL COMMENT '范式编码',
+    paradigm_name VARCHAR(100) COMMENT '范式名称',
+    analysis_result_id BIGINT NOT NULL COMMENT '关联的分析结果ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    title VARCHAR(200) COMMENT '流程图标题',
+    description TEXT COMMENT '流程图描述',
+    nodes JSON COMMENT '节点列表（JSON格式）',
+    edges JSON COMMENT '边列表（JSON格式）',
+    layout JSON COMMENT '布局配置（JSON格式）',
+    paradigm_type VARCHAR(50) NOT NULL COMMENT 'FLOW_CHART/DECISION_TREE/DECOMPOSITION_TREE/DERIVATION_CHAIN',
+    node_count INT DEFAULT 0 COMMENT '节点数量',
+    complexity_score INT COMMENT '复杂度评分(1-100)',
+    created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (analysis_result_id) REFERENCES analysis_result(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE,
+    INDEX idx_paradigm_code (paradigm_code),
+    INDEX idx_analysis_result (analysis_result_id),
+    INDEX idx_user_paradigm (user_id, paradigm_code)
+    ) COMMENT='思维范式流程图存储表';
+
+-- user_paradigm_mastery 表（用户思维范式掌握度表）
+CREATE TABLE IF NOT EXISTS user_paradigm_mastery (
+                                                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                                     user_id BIGINT NOT NULL COMMENT '用户ID',
+                                                     paradigm_code VARCHAR(50) NOT NULL COMMENT '范式编码',
+    usage_count INT DEFAULT 0 COMMENT '使用次数',
+    mastery_score DECIMAL(5,2) DEFAULT 0 COMMENT '掌握度(0-100)',
+    understanding_score INT DEFAULT 0 COMMENT '理解度(0-100)',
+    application_score INT DEFAULT 0 COMMENT '应用能力(0-100)',
+    last_used_time DATETIME COMMENT '最后使用时间',
+    created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_user_paradigm (user_id, paradigm_code)
+    ) COMMENT='用户思维范式掌握度表';-- paradigm_flowchart 表（思维范式流程图存储表）
+CREATE TABLE IF NOT EXISTS paradigm_flowchart (
+                                                  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                                  paradigm_code VARCHAR(50) NOT NULL COMMENT '范式编码',
+    paradigm_name VARCHAR(100) COMMENT '范式名称',
+    analysis_result_id BIGINT NOT NULL COMMENT '关联的分析结果ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    title VARCHAR(200) COMMENT '流程图标题',
+    description TEXT COMMENT '流程图描述',
+    nodes JSON COMMENT '节点列表（JSON格式）',
+    edges JSON COMMENT '边列表（JSON格式）',
+    layout JSON COMMENT '布局配置（JSON格式）',
+    paradigm_type VARCHAR(50) NOT NULL COMMENT 'FLOW_CHART/DECISION_TREE/DECOMPOSITION_TREE/DERIVATION_CHAIN',
+    node_count INT DEFAULT 0 COMMENT '节点数量',
+    complexity_score INT COMMENT '复杂度评分(1-100)',
+    created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (analysis_result_id) REFERENCES analysis_result(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE,
+    INDEX idx_paradigm_code (paradigm_code),
+    INDEX idx_analysis_result (analysis_result_id),
+    INDEX idx_user_paradigm (user_id, paradigm_code)
+    ) COMMENT='思维范式流程图存储表';
+
+-- user_paradigm_mastery 表（用户思维范式掌握度表）
+CREATE TABLE IF NOT EXISTS user_paradigm_mastery (
+                                                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                                                     user_id BIGINT NOT NULL COMMENT '用户ID',
+                                                     paradigm_code VARCHAR(50) NOT NULL COMMENT '范式编码',
+    usage_count INT DEFAULT 0 COMMENT '使用次数',
+    mastery_score DECIMAL(5,2) DEFAULT 0 COMMENT '掌握度(0-100)',
+    understanding_score INT DEFAULT 0 COMMENT '理解度(0-100)',
+    application_score INT DEFAULT 0 COMMENT '应用能力(0-100)',
+    last_used_time DATETIME COMMENT '最后使用时间',
+    created_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user_info(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_user_paradigm (user_id, paradigm_code)
+    ) COMMENT='用户思维范式掌握度表';

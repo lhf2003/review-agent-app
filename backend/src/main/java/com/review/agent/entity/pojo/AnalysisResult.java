@@ -2,6 +2,7 @@ package com.review.agent.entity.pojo;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -34,15 +35,6 @@ public class AnalysisResult {
 
     @Column(name = "solution", columnDefinition = "LONGTEXT")
     private String solution;
-
-    @Column(name = "session_start", columnDefinition = "TINYINT")
-    private Integer sessionStart;
-
-    @Column(name = "session_end", columnDefinition = "TINYINT")
-    private Integer sessionEnd;
-
-    @Column(name = "session_content", columnDefinition = "LONGTEXT")
-    private String sessionContent;
 
     @NotNull
     @Column(name = "status", nullable = false, columnDefinition = "TINYINT")

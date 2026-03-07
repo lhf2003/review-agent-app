@@ -36,9 +36,6 @@ public class SessionTraceService {
                 analysisResultInfo.setAnalysisResultId(analysisResult.getId());
                 analysisResultInfo.setProblemStatement(analysisResult.getProblemStatement());
                 analysisResultInfo.setSolution(analysisResult.getSolution());
-                analysisResultInfo.setOriginContent(analysisResult.getSessionContent());
-                analysisResultInfo.setStartIndex(analysisResult.getSessionStart());
-                analysisResultInfo.setEndIndex(analysisResult.getSessionEnd());
                 analysisResultInfoList.add(analysisResultInfo);
             });
         }

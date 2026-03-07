@@ -56,11 +56,12 @@ public class ThinkingParadigmNode implements NodeAction {
             userId = Long.parseLong(strings.get(1).toString());
         }
 
+        Object originalContent = state.value("originalContent").orElseThrow(() -> new IllegalArgumentException("originalContent is null"));
+
         sseService.sendLog(userId, "正在识别思维范式...");
 
         @SuppressWarnings("unchecked")
-        List<NodeExecuteDto> nodeDtoList = (List<NodeExecuteDto>) state.value("nodeResult")
-                .orElseThrow(() -> new IllegalArgumentException("nodeDtoList is null"));
+        NodeExecuteDto nodeDto = (NodeExecuteDto) state.value("nodeResult").orElseThrow(() -> new IllegalArgumentException("nodeDto is null"));
 
         // 获取思维范式标签列表
         List<Tag> paradigmTags = tagRepository.findAllThinkingParadigms();
@@ -82,23 +83,20 @@ public class ThinkingParadigmNode implements NodeAction {
 
         int successCount = 0;
         int failureCount = 0;
-
-        for (NodeExecuteDto result : nodeDtoList) {
+        
             // 使用重试机制调用AI
             ParadigmRecognitionResult response = NodeRetryHelper.builder()
-                    .operation("ThinkingParadigm[" + result.getSessionStart() + "-" + result.getSessionEnd() + "]")
+                    .operation("ThinkingParadigm")
                     .chatClient(chatClient)
                     .systemPrompt(systemPrompt)
-                    .userPrompt(result.getSessionContent())
+                    .userPrompt(originalContent.toString())
                     .execute(ParadigmRecognitionResult.class, () -> createDefaultResult());
 
             if (response == null || response.paradigms == null || response.paradigms.isEmpty()) {
-                log.warn("ThinkingParadigmNode 未识别出思维范式，sessionStart={}，sessionEnd={}",
-                        result.getSessionStart(), result.getSessionEnd());
-                result.setThinkingParadigmIds("");
-                result.setThinkingParadigms("");
-                result.setExplorationPath("");
-                result.setThinkingQuality("unknown");
+                nodeDto.setThinkingParadigmIds("");
+                nodeDto.setThinkingParadigms("");
+                nodeDto.setExplorationPath("");
+                nodeDto.setThinkingQuality("unknown");
                 failureCount++;
             } else {
                 // 构建范式ID列表
@@ -111,24 +109,21 @@ public class ThinkingParadigmNode implements NodeAction {
                         .map(ParadigmInfo::name)
                         .toList();
 
-                result.setThinkingParadigmIds(paradigmIdList.stream()
+                nodeDto.setThinkingParadigmIds(paradigmIdList.stream()
                         .map(String::valueOf)
                         .collect(Collectors.joining(",")));
-                result.setThinkingParadigms(String.join(",", paradigmNameList));
-                result.setExplorationPath(response.explorationPath);
-                result.setThinkingQuality(response.thinkingQuality);
+                nodeDto.setThinkingParadigms(String.join(",", paradigmNameList));
+                nodeDto.setExplorationPath(response.explorationPath);
+                nodeDto.setThinkingQuality(response.thinkingQuality);
 
                 // 保存详细的范式应用信息（用于后续展示）
                 Map<String, Object> paradigmDetails = new HashMap<>();
                 paradigmDetails.put("paradigms", response.paradigms);
                 paradigmDetails.put("alternativeApproaches", response.alternativeApproaches);
-                result.setParadigmDetails(paradigmDetails);
+                nodeDto.setParadigmDetails(paradigmDetails);
 
                 successCount++;
-                log.debug("ThinkingParadigmNode 成功识别范式: sessionStart={}, sessionEnd={}, paradigms={}",
-                        result.getSessionStart(), result.getSessionEnd(), paradigmNameList);
             }
-        }
 
         log.info("ThinkingParadigmNode 完成: userId={}, 成功={}, 失败={}", userId, successCount, failureCount);
 
@@ -152,7 +147,7 @@ public class ThinkingParadigmNode implements NodeAction {
 
                     if (analysisResultId != null) {
                         sseService.sendLog(userId, "正在提取思维范式可视化...");
-                        visualizationService.extractAndSaveVisualizations(analysisResultId, userId, nodeDtoList);
+                        visualizationService.extractAndSaveVisualizations(analysisResultId, userId, nodeDto,originalContent.toString());
                         log.info("思维范式可视化提取完成: analysisResultId={}", analysisResultId);
                     }
                 }
@@ -162,7 +157,7 @@ public class ThinkingParadigmNode implements NodeAction {
             }
         }
 
-        return Map.of("nodeResult", nodeDtoList);
+        return Map.of("nodeResult", nodeDto);
     }
 
     /**
