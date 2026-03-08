@@ -229,12 +229,6 @@ watch(() => auth.isAuthenticated, (val) => {
             <span class="dock-text">学习</span>
           </div>
         </router-link>
-        <router-link to="/analysis" class="dock-item">
-          <div class="dock-icon" :class="{ 'is-active': $route.path === '/analysis' }">
-            <el-icon><Folder /></el-icon>
-            <span class="dock-text">分析结果</span>
-          </div>
-        </router-link>
         <router-link to="/tags" class="dock-item">
           <div class="dock-icon" :class="{ 'is-active': $route.path === '/tags' }">
             <el-icon><PriceTag /></el-icon>
@@ -276,10 +270,6 @@ watch(() => auth.isAuthenticated, (val) => {
             <el-menu-item index="/quiz-history" @click="drawerVisible = false">
               <el-icon><Reading /></el-icon>
               <span>学习</span>
-            </el-menu-item>
-            <el-menu-item index="/analysis" @click="drawerVisible = false">
-              <el-icon><Folder /></el-icon>
-              <span>分析结果</span>
             </el-menu-item>
             <el-menu-item index="/tags" @click="drawerVisible = false">
               <el-icon><PriceTag /></el-icon>

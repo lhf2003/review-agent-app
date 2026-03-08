@@ -13,7 +13,6 @@ const ModelProviderConfig = () => import('../pages/config/ModelProviderConfig.vu
 const DefaultModelConfig = () => import('../pages/config/DefaultModelConfig.vue')
 const TagPage = () => import('../pages/TagPage.vue')
 const DataPage = () => import('../pages/DataPage.vue')
-const AnalysisResultPage = () => import('../pages/AnalysisResult.vue')
 const SyncHistoryPage = () => import('../pages/SyncHistoryPage.vue')
 const FileDetailPage = () => import('../pages/FileDetailPage.vue')
 const ReportPage = () => import('../pages/ReportPage.vue')
@@ -54,7 +53,6 @@ const router = createRouter({
     },
     { path: '/tags', component: TagPage },
     { path: '/data', component: DataPage },
-    { path: '/analysis', component: AnalysisResultPage },
     { path: '/sync', component: SyncHistoryPage },
     { path: '/analysis/:id', component: FileDetailPage },
     { path: '/report', component: ReportPage },

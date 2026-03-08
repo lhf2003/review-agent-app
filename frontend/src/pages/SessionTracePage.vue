@@ -3,7 +3,6 @@ import { ref, onMounted, computed, watch, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { api } from '../api/http'
 import { ElMessage } from 'element-plus'
-import SessionList from '../components/Trace/SessionList.vue'
 import CodeViewer from '../components/Trace/CodeViewer.vue'
 import AnalysisCard from '../components/Trace/AnalysisCard.vue'
 import SimilarityModal from '../components/Trace/SimilarityModal.vue'
@@ -96,14 +95,6 @@ onMounted(() => {
 
 <template>
   <div class="trace-page" v-loading="loading">
-    <aside class="left-panel">
-      <SessionList 
-        :sessions="sessions" 
-        :active-session-index="activeSessionIndex"
-        @select="handleSessionSelect"
-      />
-    </aside>
-    
     <main class="center-panel">
       <CodeViewer 
         :content="content"
@@ -119,6 +110,7 @@ onMounted(() => {
         :file-id="fileId"
         :similarity-count="similarIssues.length"
         @show-similarity="showSimilarity = true"
+        @trigger-analysis="router.push('/data')"
       />
     </aside>
 
@@ -151,7 +143,6 @@ onMounted(() => {
   }
 }
 
-.left-panel,
 .center-panel,
 .right-panel {
   display: flex;
@@ -164,48 +155,34 @@ onMounted(() => {
   box-shadow: var(--el-box-shadow-light);
 }
 
-:global(html.dark) .left-panel,
 :global(html.dark) .center-panel,
 :global(html.dark) .right-panel {
   border-color: var(--el-border-color-darker);
   box-shadow: none;
 }
 
-.left-panel {
-  width: 240px;
-  flex-shrink: 0;
-}
-
-@media (max-width: 1024px) {
-  .left-panel {
-    width: 100%;
-    height: 240px;
-    flex-shrink: 0;
-  }
-}
-
 .center-panel {
   flex: 1;
-  min-width: 0; /* Prevent flex overflow */
-}
-
-@media (max-width: 1024px) {
-  .center-panel {
-    height: 500px;
-    flex: none;
-  }
+  min-width: 0;
+  width: 50%;
 }
 
 .right-panel {
-  width: 440px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
+  width: 50%;
 }
 
 @media (max-width: 1024px) {
+  .center-panel,
   .right-panel {
     width: 100%;
     height: 400px;
     flex: none;
+  }
+
+  .center-panel {
+    height: 500px;
   }
 }
 </style>

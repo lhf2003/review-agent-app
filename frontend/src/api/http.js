@@ -61,7 +61,6 @@ export const api = {
   updateSubTag: tagApi.updateSubTag.bind(tagApi),
   deleteSubTag: tagApi.deleteSubTag.bind(tagApi),
   addTagRelation: tagApi.addTagRelation.bind(tagApi),
-  addRecommendTag: tagApi.addRecommendTag.bind(tagApi),
   deleteTagRelation: tagApi.deleteTagRelation.bind(tagApi),
 
   // ========== 数据和文件相关 ==========
@@ -81,8 +80,6 @@ export const api = {
   getAnalysisResult: analysisApi.getAnalysisResult.bind(analysisApi),
   getAnalysisResultByIds: analysisApi.getAnalysisResultByIds.bind(analysisApi),
   getSessionTrace: analysisApi.getSessionTrace.bind(analysisApi),
-  getFileNameList: analysisApi.getFileNameList.bind(analysisApi),
-  getTagStats: analysisApi.getTagStats.bind(analysisApi),
   getSimilarIssues: analysisApi.getSimilarIssues.bind(analysisApi),
   analysisLogStream: analysisApi.analysisLogStream.bind(analysisApi),
 

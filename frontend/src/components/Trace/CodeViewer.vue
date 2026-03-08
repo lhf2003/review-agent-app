@@ -1,5 +1,7 @@
 <script setup>
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed } from 'vue'
+import { UserFilled, Service, Clock } from '@element-plus/icons-vue'
+import MarkdownRenderer from '../MarkdownRenderer.vue'
 
 const props = defineProps({
   content: {
@@ -16,68 +18,52 @@ const props = defineProps({
   },
   fileName: {
     type: String,
-    default: 'Source Code'
+    default: '对话内容'
   }
 })
 
-const emit = defineEmits(['select-session'])
+// 解析 JSONL 格式
+const conversationData = computed(() => {
+  if (!props.content?.trim()) return []
 
-// Process content into chunks: { text, isHighlight, sessionIndex }
-const chunks = computed(() => {
-  if (!props.content) return []
-  
-  const sortedSessions = props.sessions
-    .map((s, i) => ({ ...s, originalIndex: i }))
-    .sort((a, b) => a.startIndex - b.startIndex)
+  const lines = props.content.trim().split('\n')
+  const messages = []
 
-  const result = []
-  let currentIndex = 0
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || !trimmed.startsWith('{')) continue
 
-  for (const session of sortedSessions) {
-    if (session.startIndex > currentIndex) {
-      result.push({
-        text: props.content.slice(currentIndex, session.startIndex),
-        isHighlight: false
-      })
+    try {
+      const obj = JSON.parse(trimmed)
+      // 支持多种字段格式
+      const request = obj.request || obj.user || obj.input || obj.prompt || obj.question || ''
+      const reply = obj.reply || obj.assistant || obj.output || obj.response || obj.answer || obj.content || ''
+
+      if (request || reply) {
+        messages.push({
+          request,
+          reply,
+          timestamp: obj.timestamp || obj.time || obj.date
+        })
+      }
+    } catch {
+      // 跳过无效行
     }
-    
-    result.push({
-      text: props.content.slice(session.startIndex, session.endIndex),
-      isHighlight: true,
-      sessionIndex: session.originalIndex
-    })
-    
-    currentIndex = session.endIndex
   }
 
-  if (currentIndex < props.content.length) {
-    result.push({
-      text: props.content.slice(currentIndex),
-      isHighlight: false
-    })
-  }
-
-  return result
+  return messages
 })
 
-function handleChunkClick(chunk) {
-  if (chunk.isHighlight) {
-    emit('select-session', chunk.sessionIndex)
+// 格式化时间
+function formatTime(timestamp) {
+  if (!timestamp) return ''
+  try {
+    const date = new Date(timestamp)
+    return isNaN(date.getTime()) ? timestamp : date.toLocaleString('zh-CN')
+  } catch {
+    return timestamp
   }
 }
-
-// Scroll to active session
-const viewerRef = ref(null)
-
-watch(() => props.activeSessionIndex, async (newVal) => {
-  if (newVal > -1) {
-    await nextTick()
-    const activeEl = viewerRef.value.querySelector(`.session-highlight[data-index="${newVal}"]`)
-    if (activeEl) {
-      activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }
-})
 </script>
 
 <template>
@@ -91,17 +77,52 @@ watch(() => props.activeSessionIndex, async (newVal) => {
       <div class="file-name">{{ fileName }}</div>
       <div class="header-spacer"></div>
     </div>
-    
-    <div class="code-viewer custom-scrollbar" ref="viewerRef">
-      <div class="content-wrapper">
-        <div v-if="activeSessionIndex > -1" class="mask-layer"></div>
-        <pre><code><template v-for="(chunk, idx) in chunks" :key="idx"><span 
-            v-if="chunk.isHighlight" 
-            class="session-highlight" 
-            :class="{ active: chunk.sessionIndex === activeSessionIndex }"
-            :data-index="chunk.sessionIndex"
-            @click="handleChunkClick(chunk)"
-          >{{ chunk.text }}</span><span v-else>{{ chunk.text }}</span></template></code></pre>
+
+    <!-- JSONL 对话视图 -->
+    <div class="conversation-viewer custom-scrollbar">
+      <div class="conversation-list">
+        <div
+          v-for="(msg, index) in conversationData"
+          :key="index"
+          class="conversation-item"
+        >
+          <!-- 时间戳 -->
+          <div v-if="msg.timestamp" class="timestamp-bar">
+            <el-icon><Clock /></el-icon>
+            <span class="time-text">{{ formatTime(msg.timestamp) }}</span>
+          </div>
+
+          <!-- 用户请求 -->
+          <div v-if="msg.request" class="message-group user">
+            <div class="avatar-container">
+              <el-avatar :size="32" :icon="UserFilled" class="user-avatar" />
+            </div>
+            <div class="bubble-container">
+              <div class="message-bubble user-bubble">
+                <div class="bubble-content">{{ msg.request }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI 回复 -->
+          <div v-if="msg.reply" class="message-group ai">
+            <div class="avatar-container">
+              <el-avatar :size="32" :icon="Service" class="ai-avatar" />
+            </div>
+            <div class="bubble-container">
+              <div class="message-bubble ai-bubble">
+                <div class="bubble-content">
+                  <MarkdownRenderer :content="msg.reply" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div v-if="conversationData.length === 0" class="empty-state">
+          <el-empty description="暂无对话内容" />
+        </div>
       </div>
     </div>
   </div>
@@ -171,88 +192,6 @@ watch(() => props.activeSessionIndex, async (newVal) => {
   width: 60px;
 }
 
-.code-viewer {
-  flex: 1;
-  overflow: auto;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  font-size: 14px; /* Increased for readability */
-  line-height: 1.6;
-  white-space: pre-wrap;
-  position: relative;
-  background-color: var(--cv-bg-light);
-  color: var(--cv-text-light);
-  transition: background-color 0.3s, color 0.3s;
-}
-
-:global(html.dark) .code-viewer {
-  background-color: var(--cv-bg-dark);
-  color: var(--cv-text-dark);
-}
-
-.content-wrapper {
-  position: relative;
-  min-height: 100%;
-  width: fit-content;
-  min-width: 100%;
-  padding: 20px 24px;
-  box-sizing: border-box;
-}
-
-.mask-layer {
-  position: absolute;
-  inset: 0;
-  background-color: var(--cv-bg-light);
-  opacity: 0.7; /* Increased opacity for better focus */
-  backdrop-filter: blur(1px);
-  z-index: 1;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
-
-:global(html.dark) .mask-layer {
-  background-color: var(--cv-bg-dark);
-  opacity: 0.7;
-}
-
-pre {
-  margin: 0;
-  position: relative;
-  z-index: 0;
-}
-
-.session-highlight {
-  cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 1px dashed var(--el-border-color);
-  padding: 2px 0;
-  background-color: transparent;
-}
-
-.session-highlight:hover {
-  background-color: var(--el-fill-color);
-  border-radius: 2px;
-}
-
-.session-highlight.active {
-  position: relative;
-  z-index: 2;
-  background-color: var(--cv-highlight-bg-light);
-  box-shadow: 0 0 0 2px var(--cv-highlight-bg-light); /* Softer highlight */
-  border-radius: 4px;
-  color: var(--cv-highlight-text-light);
-  border-bottom: 2px solid var(--cv-active-border-light);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  font-weight: 600;
-}
-
-:global(html.dark) .session-highlight.active {
-  background-color: var(--cv-highlight-bg-dark);
-  box-shadow: 0 0 0 2px var(--cv-highlight-bg-dark);
-  color: var(--cv-highlight-text-dark);
-  border-bottom: 2px solid var(--cv-active-border-dark);
-}
-
 /* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 10px;
@@ -281,5 +220,147 @@ pre {
 
 .custom-scrollbar::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* JSONL Conversation Viewer Styles */
+.conversation-viewer {
+  flex: 1;
+  overflow: auto;
+  background-color: var(--el-fill-color-lighter);
+  padding: 20px;
+}
+
+:global(html.dark) .conversation-viewer {
+  background-color: var(--el-bg-color);
+}
+
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.conversation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message-group {
+  display: flex;
+  gap: 12px;
+  max-width: 85%;
+}
+
+.message-group.user {
+  flex-direction: row-reverse;
+  align-self: flex-end;
+}
+
+.message-group.ai {
+  align-self: flex-start;
+}
+
+.avatar-container {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.user-avatar {
+  background-color: var(--el-color-primary);
+  color: white;
+}
+
+.ai-avatar {
+  background-color: var(--el-color-success);
+  color: white;
+}
+
+.bubble-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.message-group.user .bubble-container {
+  align-items: flex-end;
+}
+
+.message-bubble {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+  box-shadow: var(--el-box-shadow-light);
+}
+
+.user-bubble {
+  background-color: var(--el-color-primary);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.ai-bubble {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--el-border-color-light);
+}
+
+.bubble-content {
+  :deep(p) {
+    margin: 0 0 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  :deep(pre) {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+}
+
+/* Dark mode adjustments for conversation */
+:global(html.dark) .user-bubble {
+  background-color: var(--el-color-primary);
+}
+
+:global(html.dark) .ai-bubble {
+  background-color: var(--el-bg-color-overlay);
+  border-color: var(--el-border-color-darker);
+}
+
+:global(html.dark) .bubble-content :deep(pre) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* 时间戳样式 */
+.timestamp-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.timestamp-bar .time-text {
+  font-weight: 500;
+}
+
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
 }
 </style>

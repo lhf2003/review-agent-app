@@ -75,24 +75,6 @@ export const analysisApi = {
     return request('/analysis/result', { params: { dataId, analysisId } })
   },
 
-  // ========== 文件名列表 ==========
-
-  /**
-   * 获取文件名列表
-   */
-  getFileNameList() {
-    return request('/analysis/file-name/list')
-  },
-
-  // ========== 标签统计 ==========
-
-  /**
-   * 获取标签统计
-   */
-  getTagStats() {
-    return request('/analysis/tag/list')
-  },
-
   // ========== 相似问题 ==========
 
   /**

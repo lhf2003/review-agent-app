@@ -22,7 +22,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['show-similarity'])
+const emit = defineEmits(['show-similarity', 'trigger-analysis'])
 const collectionDialogRef = ref(null)
 const router = inject('router')
 const exporting = ref(false)
@@ -50,7 +50,7 @@ async function goToAnalysisResult() {
     const mainTag = data?.mainTagName
 
     router.push({
-      path: '/analysis',
+      path: '/data',
       query: {
         mainTag,
         dataId: props.fileId,
@@ -154,7 +154,11 @@ async function exportToMarkdown() {
   <div class="empty-state" v-else>
     <div class="empty-content">
       <el-icon class="empty-icon"><Service /></el-icon>
-      <div class="empty-text">选择一个会话以查看详细分析</div>
+      <div class="empty-title">暂无分析结果</div>
+      <div class="empty-desc">该文件尚未进行分析，请先触发分析流程</div>
+      <el-button type="primary" @click="$emit('trigger-analysis')">
+        开始分析
+      </el-button>
     </div>
   </div>
 </template>
@@ -337,13 +341,25 @@ async function exportToMarkdown() {
 }
 
 .empty-icon {
-  font-size: 48px;
+  font-size: 64px;
   color: var(--el-border-color);
+  margin-bottom: 8px;
 }
 
-.empty-text {
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-bottom: 8px;
+}
+
+.empty-desc {
   font-size: 14px;
-  color: var(--el-text-color-placeholder);
+  color: var(--el-text-color-secondary);
+  margin-bottom: 24px;
+  text-align: center;
+  max-width: 280px;
+  line-height: 1.5;
 }
 
 /* Custom Scrollbar */

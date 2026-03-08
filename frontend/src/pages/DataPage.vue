@@ -6,11 +6,8 @@ import { ElMessage, ElMessageBox, ElTour } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { useRouter } from 'vue-router'
 import { Document, Select, UploadFilled, Close, Refresh } from '@element-plus/icons-vue'
-import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 import AnalysisLoadingModal from '../components/AnalysisLoadingModal.vue'
-import CustomScroll from '../components/CustomScroll.vue'
 import DataFileGrid from '../components/DataFileGrid.vue'
-import ConversationViewer from '../components/ConversationViewer.vue'
 import GeminiIcon from '../../public/icons/gemini-color.svg'
 import OpenAIIcon from '../../public/icons/openai.svg'
 
@@ -46,11 +43,6 @@ const statusOptions = [
 const resultDialog = ref(false)
 const result = ref({ title: '', problemStatement: '', solution: '' })
 
-// Drawer for fileContent preview (markdown)
-const drawerVisible = ref(false)
-const drawerTitle = ref('')
-const drawerContent = ref('')
-
 // 分析状态
 const showLogs = ref(false)
 const currentAnalysisFile = ref(null)
@@ -82,13 +74,7 @@ const tourSteps = ref([
 ])
 
 function openContent(row) {
-  if (row.processedStatus === 2) {
-    router.push({ path: `/trace/${row.id}` })
-    return
-  }
-  drawerTitle.value = row.fileName ? `内容 - ${row.fileName}` : `内容 #${row.id}`
-  drawerContent.value = row.fileContent ?? ''
-  drawerVisible.value = true
+  router.push({ path: `/trace/${row.id}` })
 }
 
 async function load() {
@@ -181,7 +167,7 @@ function handleAnalyze(row) {
 
 // 处理查看结果
 function handleViewResult(row) {
-  router.push({ path: '/analysis', query: { dataId: row.id } })
+  router.push({ path: '/data', query: { dataId: row.id } })
 }
 
 // 处理删除
@@ -465,13 +451,6 @@ function handleCloseModal() {
         <div style="white-space:pre-wrap;">{{ result.solution }}</div>
       </el-card>
     </el-dialog>
-
-    <!-- 文件内容抽屉（对话式展示） -->
-    <el-drawer v-model="drawerVisible" :title="drawerTitle" direction="rtl" size="55%">
-      <CustomScroll>
-        <ConversationViewer :content="drawerContent" />
-      </CustomScroll>
-    </el-drawer>
 
     <!-- 新手引导 Tour -->
     <el-tour

@@ -143,17 +143,6 @@ export const tagApi = {
   deleteTagRelation() {
     // 新体系通过 parentId 维护关系
     return Promise.resolve()
-  },
-
-  // ========== 推荐标签 ==========
-
-  /**
-   * 添加推荐标签
-   * @param {Object} body - 请求体
-   * @returns {Promise<void>}
-   */
-  addRecommendTag(body) {
-    return request('/tag/recommand/add', { method: 'POST', body })
   }
 }
 
