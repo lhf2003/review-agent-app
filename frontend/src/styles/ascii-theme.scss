@@ -1,0 +1,261 @@
+/**
+ * ASCII Theme - Digital Retro Design System
+ * ===========================================
+ * 从AppleStyle转型为终端/ASCII艺术风格
+ */
+
+// ====================================
+// 1. 字体配置
+// ====================================
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root.ascii-theme {
+  // 主字体：等宽字体
+  --ascii-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+
+  // 基础字号（ASCII风格需要更大字号保证可读性）
+  font-size: 16px;
+
+  // ====================================
+  // 2. 颜色系统（ANSI终端风格）
+  // ====================================
+
+  // 深色模式（默认）- 经典终端黑绿
+  --ascii-bg-primary: #0a0a0a;
+  --ascii-bg-secondary: #111111;
+  --ascii-bg-card: #141414;
+  --ascii-bg-input: #0d0d0d;
+
+  // 文字颜色
+  --ascii-text-primary: #00ff41;      // 终端绿
+  --ascii-text-secondary: #00cc33;    // 暗绿
+  --ascii-text-muted: #2d5a3d;        // 深绿
+  --ascii-text-bright: #5cff7a;       // 亮绿
+
+  // ANSI颜色映射
+  --ascii-ansi-black: #0a0a0a;
+  --ascii-ansi-red: #ff5555;
+  --ascii-ansi-green: #00ff41;
+  --ascii-ansi-yellow: #ffaa00;
+  --ascii-ansi-blue: #00aaff;
+  --ascii-ansi-magenta: #ff55ff;
+  --ascii-ansi-cyan: #00ffff;
+  --ascii-ansi-white: #f0f0f0;
+
+  // 边框颜色
+  --ascii-border-color: #1a3a1a;
+  --ascii-border-bright: #00ff41;
+
+  // 光标颜色
+  --ascii-cursor: #00ff41;
+  --ascii-cursor-blink: rgba(0, 255, 65, 0.5);
+
+  // ====================================
+  // 3. ASCII边框字符
+  // ====================================
+  --ascii-char-h: '─';
+  --ascii-char-v: '│';
+  --ascii-char-tl: '┌';
+  --ascii-char-tr: '┐';
+  --ascii-char-bl: '└';
+  --ascii-char-br: '┘';
+  --ascii-char-cross: '┼';
+  --ascii-char-t: '┬';
+  --ascii-char-b: '┴';
+  --ascii-char-l: '├';
+  --ascii-char-r: '┤';
+
+  // 装饰字符
+  --ascii-char-prompt: '>';
+  --ascii-char-cursor: '█';
+  --ascii-char-arrow: '=>';
+  --ascii-char-bullet: '*';
+
+  // ====================================
+  // 4. 间距系统（保持等宽对齐）
+  // ====================================
+  --ascii-space-xs: 0.25rem;   // 4px
+  --ascii-space-sm: 0.5rem;    // 8px
+  --ascii-space-md: 1rem;      // 16px - 基础单位
+  --ascii-space-lg: 1.5rem;    // 24px
+  --ascii-space-xl: 2rem;      // 32px
+
+  // ====================================
+  // 5. 阴影与发光效果
+  // ====================================
+  --ascii-glow-green: 0 0 10px rgba(0, 255, 65, 0.3);
+  --ascii-glow-green-strong: 0 0 20px rgba(0, 255, 65, 0.5);
+  --ascii-glow-text: 0 0 5px rgba(0, 255, 65, 0.4);
+
+  // ====================================
+  // 6. 动画时间
+  // ====================================
+  --ascii-typing-speed: 50ms;     // 打字机速度
+  --ascii-cursor-blink: 1s;       // 光标闪烁
+  --ascii-scan-speed: 8s;         // 扫描线速度
+}
+
+// ====================================
+// 7. 浅色模式 - 纸张打印风格
+// ====================================
+:root.ascii-theme.light-mode {
+  --ascii-bg-primary: #f5f5f0;
+  --ascii-bg-secondary: #ebebe5;
+  --ascii-bg-card: #ffffff;
+  --ascii-bg-input: #fafaf8;
+
+  --ascii-text-primary: #1a1a1a;
+  --ascii-text-secondary: #4a4a4a;
+  --ascii-text-muted: #888888;
+  --ascii-text-bright: #000000;
+
+  --ascii-border-color: #cccccc;
+  --ascii-border-bright: #1a1a1a;
+
+  --ascii-glow-green: none;
+  --ascii-glow-text: none;
+}
+
+// ====================================
+// 8. 全局样式覆盖
+// ====================================
+.ascii-theme {
+  font-family: var(--ascii-font-mono) !important;
+  background-color: var(--ascii-bg-primary);
+  color: var(--ascii-text-primary);
+
+  // 选中文本样式
+  ::selection {
+    background: var(--ascii-text-primary);
+    color: var(--ascii-bg-primary);
+  }
+
+  // 滚动条样式
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--ascii-bg-secondary);
+    border-left: 1px solid var(--ascii-border-color);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--ascii-text-muted);
+    border: 2px solid var(--ascii-bg-secondary);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--ascii-text-secondary);
+  }
+}
+
+// ====================================
+// 9. CRT扫描线效果
+// ====================================
+.ascii-crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.15;
+
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+// 扫描线动画
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.ascii-scan-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 4px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 255, 65, 0.1),
+    rgba(0, 255, 65, 0.3),
+    rgba(0, 255, 65, 0.1),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 9998;
+  animation: scanline var(--ascii-scan-speed) linear infinite;
+}
+
+// ====================================
+// 10. 光标闪烁动画
+// ====================================
+@keyframes cursor-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+.ascii-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.2em;
+  background-color: var(--ascii-cursor);
+  animation: cursor-blink var(--ascii-cursor-blink) step-end infinite;
+  vertical-align: text-bottom;
+}
+
+.ascii-cursor::after {
+  content: '█';
+}
+
+// ====================================
+// 11. 打字机动画
+// ====================================
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.ascii-typing {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 2s steps(40, end);
+}
+
+// ====================================
+// 12. 文本发光效果
+// ====================================
+.ascii-glow-text {
+  text-shadow: var(--ascii-glow-text);
+}
+
+// ====================================
+// 13. 闪烁文本（告警效果）
+// ====================================
+@keyframes ascii-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.ascii-flash {
+  animation: ascii-flash 1s ease-in-out infinite;
+}
