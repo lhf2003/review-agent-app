@@ -4,6 +4,7 @@ import { onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api } from '../../api/http'
 import { useAuthStore } from '../../stores/auth'
+import CustomScroll from '../../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 
@@ -145,11 +146,12 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-  <div class="settings-page">
-    <div class="page-header">
-      <h2>推送配置</h2>
-      <p>定制您的学习报告推送</p>
-    </div>
+  <CustomScroll class="settings-page-scroll">
+    <div class="settings-page">
+      <div class="page-header">
+        <h2>推送配置</h2>
+        <p>定制您的学习报告推送</p>
+      </div>
 
     <el-form label-position="top" class="apple-form">
       <div class="form-card">
@@ -205,12 +207,18 @@ onBeforeRouteLeave((to, from, next) => {
         保存更改
       </el-button>
     </div>
-  </div>
+    </div>
+  </CustomScroll>
 </template>
 
 <style scoped>
+.settings-page-scroll {
+  height: 100%;
+}
+
 .settings-page {
   max-width: 800px;
+  padding-bottom: 80px;
 }
 
 .page-header {

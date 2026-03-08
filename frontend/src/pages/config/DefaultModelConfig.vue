@@ -1,5 +1,6 @@
 <template>
-  <div class="default-model-page">
+  <CustomScroll class="default-model-scroll">
+    <div class="default-model-page">
     <div class="page-header">
       <h2>默认模型配置</h2>
       <p>为不同的分析场景配置默认使用的模型</p>
@@ -113,7 +114,8 @@
         保存默认模型配置
       </el-button>
     </div>
-  </div>
+    </div>
+  </CustomScroll>
 </template>
 
 <script setup>
@@ -122,6 +124,7 @@ import { QuestionFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api/http'
 import { useAuthStore } from '../../stores/auth'
+import CustomScroll from '../../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 
@@ -284,8 +287,13 @@ async function saveDefaultModels() {
 </script>
 
 <style scoped>
+.default-model-scroll {
+  height: 100%;
+}
+
 .default-model-page {
   width: 100%;
+  padding-bottom: 40px;
 }
 
 .page-header {

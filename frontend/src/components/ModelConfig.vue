@@ -1,9 +1,9 @@
 <script setup>
-import { ref, defineProps, defineEmits, computed } from 'vue'
-import { Check, Plus, QuestionFilled, Tools } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { api } from '../api/http'
-import { useAuthStore } from '../stores/auth'
+import {computed, defineEmits, defineProps, ref, watch} from 'vue'
+import {Check, Plus, QuestionFilled, Tools} from '@element-plus/icons-vue'
+import {ElMessage} from 'element-plus'
+import {api} from '../api/http'
+import {useAuthStore} from '../stores/auth'
 
 const props = defineProps({
   modelValue: {
@@ -40,8 +40,6 @@ const defaultModels = ref({
 })
 const loadingDefaultModels = ref(false)
 const savingDefaultModels = ref(false)
-
-import { watch } from 'vue'
 
 watch(() => props.providers, (newVal) => {
   if (newVal.length > 0 && !expandedProvider.value) {

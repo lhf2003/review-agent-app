@@ -1,20 +1,15 @@
 <script setup>
 import { computed } from 'vue'
-import { UserFilled, Service, Clock } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+import { UserFilled, Service, Clock, ArrowLeft } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../MarkdownRenderer.vue'
+
+const router = useRouter()
 
 const props = defineProps({
   content: {
     type: String,
     default: ''
-  },
-  sessions: {
-    type: Array,
-    default: () => []
-  },
-  activeSessionIndex: {
-    type: Number,
-    default: -1
   },
   fileName: {
     type: String,
@@ -64,17 +59,21 @@ function formatTime(timestamp) {
     return timestamp
   }
 }
+
+function goBack() {
+  router.push('/data')
+}
 </script>
 
 <template>
   <div class="code-viewer-container">
     <div class="editor-header">
-      <div class="window-controls">
-        <span class="control red"></span>
-        <span class="control yellow"></span>
-        <span class="control green"></span>
+      <div class="header-left">
+        <div class="back-btn" @click="goBack">
+          <el-icon><ArrowLeft /></el-icon>
+        </div>
+        <div class="file-name">{{ fileName }}</div>
       </div>
-      <div class="file-name">{{ fileName }}</div>
       <div class="header-spacer"></div>
     </div>
 
@@ -165,21 +164,29 @@ function formatTime(timestamp) {
   flex-shrink: 0;
 }
 
-.window-controls {
+.header-left {
   display: flex;
-  gap: 8px;
-  width: 60px;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
 }
 
-.control {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+.back-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--el-text-color-secondary);
+  transition: all 0.2s;
 }
 
-.control.red { background-color: #FF5F56; border: 1px solid #E0443E; }
-.control.yellow { background-color: #FFBD2E; border: 1px solid #DEA123; }
-.control.green { background-color: #27C93F; border: 1px solid #1AAB29; }
+.back-btn:hover {
+  background-color: var(--el-fill-color);
+  color: var(--el-text-color-primary);
+}
 
 .file-name {
   font-family: 'JetBrains Mono', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -189,7 +196,7 @@ function formatTime(timestamp) {
 }
 
 .header-spacer {
-  width: 60px;
+  width: 28px;
 }
 
 /* Custom Scrollbar */

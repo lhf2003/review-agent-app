@@ -6,6 +6,7 @@ import com.review.agent.common.utils.SecurityUtils;
 import com.review.agent.entity.pojo.DataInfo;
 import com.review.agent.entity.request.DataInfoRequest;
 import com.review.agent.entity.projection.DataInfoVo;
+import com.review.agent.entity.vo.SessionTraceVo;
 import com.review.agent.service.DataInfoService;
 import com.review.agent.service.UserService;
 import jakarta.annotation.Resource;
@@ -43,21 +44,6 @@ public class DataInfoController {
         Page<DataInfoVo> dataInfoPage = dataInfoService.page(pageable, dataInfoRequest);
         return ResultUtil.success(dataInfoPage);
     }
-
-//    /**
-//     * 获取文件数据详情
-//     * @param userId 用户ID
-//     * @param id     数据ID
-//     * @return 文件数据详情
-//     */
-//    @GetMapping("/detail")
-//    public BaseResponse<DataInfo> detail(@RequestParam("userId") Long userId, @RequestParam("id") Long id) {
-//        DataInfo dataInfo = dataInfoService.findById(id);
-//        if (dataInfo == null) {
-//            return ResultUtil.error("数据不存在");
-//        }
-//        return ResultUtil.success(dataInfo);
-//    }
 
     /**
      * 导入文件数据
@@ -107,5 +93,17 @@ public class DataInfoController {
     public BaseResponse<DataInfo> syncData() throws IOException {
         dataInfoService.syncData(securityUtils.getCurrentUserId());
         return ResultUtil.success(null);
+    }
+
+    /**
+     * 获取文件的会话信息
+     * @param fileId 文件ID
+     * @return 会话信息
+     */
+    @GetMapping("/info")
+    public BaseResponse<SessionTraceVo> get(@RequestParam("fileId") Long fileId) {
+        Long userId = securityUtils.getCurrentUserId();
+        SessionTraceVo sessionTraceVo = dataInfoService.getInfo(userId, fileId);
+        return ResultUtil.success(sessionTraceVo);
     }
 }

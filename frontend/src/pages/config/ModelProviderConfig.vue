@@ -1,5 +1,6 @@
 <template>
-  <div class="model-config-page">
+  <CustomScroll class="model-config-scroll">
+    <div class="model-config-page">
     <div class="page-header">
       <h2>模型提供商配置</h2>
       <p>管理您的 AI 模型提供商和激活模型</p>
@@ -110,7 +111,8 @@
       <el-button :loading="loading" type="primary" size="large" @click="saveConfig"
         class="save-btn">保存更改</el-button>
     </div>
-  </div>
+    </div>
+  </CustomScroll>
 </template>
 
 <script setup>
@@ -119,6 +121,7 @@ import { Check, Plus, QuestionFilled, Tools } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api/http'
 import { useAuthStore } from '../../stores/auth'
+import CustomScroll from '../../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 const loading = ref(false)
@@ -425,8 +428,13 @@ async function saveConfig() {
 </script>
 
 <style scoped>
+.model-config-scroll {
+  height: 100%;
+}
+
 .model-config-page {
   width: 100%;
+  padding-bottom: 80px;
 }
 
 .page-header {

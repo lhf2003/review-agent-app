@@ -12,7 +12,6 @@ import ProfileEditDialog from './components/ProfileEditDialog.vue'
 import PasswordDialog from './components/PasswordDialog.vue'
 // import ProfileNav from './components/ProfileNav.vue'
 import AchievementsSection from './components/AchievementsSection.vue'
-import LearningPathRecommender from '../../components/quiz/LearningPathRecommender.vue'
 import PendingReviewReminder from './components/PendingReviewReminder.vue'
 import LearningDashboard from './components/LearningDashboard.vue'
 import KnowledgeGraphCard from './components/KnowledgeGraphCard.vue'
@@ -124,7 +123,6 @@ async function changePassword() {
         <el-radio-button value="overview">数据概览</el-radio-button>
         <el-radio-button value="learning-data">学习数据</el-radio-button>
         <el-radio-button value="achievements">学习成就</el-radio-button>
-        <el-radio-button value="learning-path">学习路径</el-radio-button>
         <el-radio-button value="knowledge-graph">知识图谱</el-radio-button>
       </el-radio-group>
 
@@ -166,11 +164,6 @@ async function changePassword() {
         :loading="loading"
         :cards-visible="achievementsVisible"
       />
-
-      <!-- Learning Path Section - 学习路径推荐 -->
-      <div v-show="activeSection === 'learning-path'" class="section-transition">
-        <LearningPathRecommender :limit="5" />
-      </div>
 
       <!-- Knowledge Graph Section - 知识图谱 -->
       <div v-show="activeSection === 'knowledge-graph'" class="section-transition">

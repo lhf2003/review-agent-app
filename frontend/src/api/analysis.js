@@ -91,7 +91,7 @@ export const analysisApi = {
    * 获取会话追踪
    */
   getSessionTrace(fileId) {
-    return request('/session-trace/get', { params: { fileId } })
+    return request('/data/info', { params: { fileId } })
   },
 
   // ========== SSE 流式分析 ==========

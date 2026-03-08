@@ -1,8 +1,8 @@
 <script setup>
-import { ref, inject } from 'vue'
-import { computed } from 'vue'
+import { ref } from 'vue'
+
 import { ElMessage } from 'element-plus'
-import { UserFilled, Service, Connection, Star, ArrowLeft, Download } from '@element-plus/icons-vue'
+import { UserFilled, Service, Connection, Star, Download } from '@element-plus/icons-vue'
 import MarkdownRenderer from '../MarkdownRenderer.vue'
 import AddToCollectionDialog from '../Collection/AddToCollectionDialog.vue'
 import { api } from '../../api/http'
@@ -24,7 +24,6 @@ const props = defineProps({
 
 const emit = defineEmits(['show-similarity', 'trigger-analysis'])
 const collectionDialogRef = ref(null)
-const router = inject('router')
 const exporting = ref(false)
 
 async function addToCollection() {
@@ -35,31 +34,6 @@ async function addToCollection() {
 
 function showSimilarity() {
   emit('show-similarity')
-}
-
-async function goToAnalysisResult() {
-  if (!props.session || !props.fileId) {
-    ElMessage.error('缺少必要信息，无法跳转')
-    return
-  }
-
-  try {
-    const resp = await api.getAnalysisResultByIds(props.fileId, props.session.analysisResultId)
-    const data = resp?.data || resp
-
-    const mainTag = data?.mainTagName
-
-    router.push({
-      path: '/data',
-      query: {
-        mainTag,
-        dataId: props.fileId,
-        highlightId: props.session.analysisResultId
-      }
-    })
-  } catch (e) {
-    ElMessage.error(`跳转失败: ${e.message}`)
-  }
 }
 
 async function exportToMarkdown() {
@@ -94,7 +68,9 @@ async function exportToMarkdown() {
         <span class="header-title">AI Analysis</span>
       </div>
       <div class="header-actions">
-        <!-- Future: Export, Share, etc. -->
+        <div class="icon-btn" :class="{ loading: exporting }" @click="exportToMarkdown" title="导出为 Markdown">
+          <el-icon><Download /></el-icon>
+        </div>
       </div>
     </div>
     
@@ -136,14 +112,6 @@ async function exportToMarkdown() {
           <el-icon><Connection /></el-icon>
           <span>相似问题 ({{ similarityCount }})</span>
         </el-button>
-        <el-button class="action-btn" @click="goToAnalysisResult">
-          <el-icon><ArrowLeft /></el-icon>
-          <span>返回结果</span>
-        </el-button>
-        <el-button class="action-btn" :loading="exporting" @click="exportToMarkdown">
-          <el-icon><Download /></el-icon>
-          <span>导出</span>
-        </el-button>
         <el-button class="action-btn primary" @click="addToCollection">
           <el-icon><Star /></el-icon>
           <span>加入合集</span>
@@ -173,13 +141,15 @@ async function exportToMarkdown() {
 }
 
 .chat-header {
-  padding: 16px 20px;
+  height: 44px;
+  padding: 0 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background-color: var(--el-bg-color-overlay);
   border-bottom: 1px solid var(--el-border-color-light);
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .header-title {
@@ -187,6 +157,39 @@ async function exportToMarkdown() {
   font-size: 15px;
   color: var(--el-text-color-primary);
   display: block;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--el-text-color-secondary);
+  transition: all 0.2s;
+  font-size: 16px;
+}
+
+.icon-btn:hover {
+  background-color: var(--el-fill-color);
+  color: var(--el-text-color-primary);
+}
+
+.icon-btn.loading {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .header-subtitle {

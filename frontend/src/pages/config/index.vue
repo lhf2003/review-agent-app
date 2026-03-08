@@ -19,9 +19,11 @@ import ConfigSidebar from './components/ConfigSidebar.vue'
   gap: 40px;
   max-width: 1600px;
   width: 100%;
+  height: 100%;
   margin: 0 auto;
   padding: 20px;
   align-items: flex-start;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
@@ -40,6 +42,7 @@ import ConfigSidebar from './components/ConfigSidebar.vue'
 .content-wrapper {
   flex: 1;
   min-width: 0;
-  padding-bottom: 80px;
+  height: 100%;
+  overflow: hidden;
 }
 </style>

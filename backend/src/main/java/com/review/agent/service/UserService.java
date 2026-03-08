@@ -160,7 +160,7 @@ public class UserService {
             UserAchievement userAchievement = new UserAchievement();
             userAchievement.setUserId(userId);
             userAchievement.setAchievementCode(ad.getCode());
-            userAchievement.setUnlocked(true);
+            userAchievement.setUnlocked(false);
             userAchievement.setProgress(0);
             userAchievements.add(userAchievement);
         }

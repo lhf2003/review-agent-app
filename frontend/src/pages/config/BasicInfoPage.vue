@@ -5,6 +5,7 @@ import { ElMessageBox } from 'element-plus'
 import { api } from '../../api/http'
 import { useAuthStore } from '../../stores/auth'
 import PasswordDialog from './components/PasswordDialog.vue'
+import CustomScroll from '../../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 
@@ -140,13 +141,14 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-  <div class="settings-page">
-    <div class="page-header">
-      <h2>基本信息</h2>
-      <p>管理您的个人账户信息</p>
-    </div>
+  <CustomScroll class="settings-page-scroll">
+    <div class="settings-page">
+      <div class="page-header">
+        <h2>基本信息</h2>
+        <p>管理您的个人账户信息</p>
+      </div>
 
-    <el-form label-position="top" class="apple-form">
+      <el-form label-position="top" class="apple-form">
       <div class="form-card">
         <el-form-item label="用户名">
           <div class="input-row">
@@ -185,12 +187,18 @@ onBeforeRouteLeave((to, from, next) => {
       :loading="loading"
       @confirm="handlePasswordConfirm"
     />
-  </div>
+    </div>
+  </CustomScroll>
 </template>
 
 <style scoped>
+.settings-page-scroll {
+  height: 100%;
+}
+
 .settings-page {
   max-width: 800px;
+  padding-bottom: 40px;
 }
 
 .page-header {

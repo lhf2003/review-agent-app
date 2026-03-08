@@ -4,6 +4,7 @@ import { onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Bell, WarningFilled, CircleCheck } from '@element-plus/icons-vue'
 import { api } from '../../api/http'
+import CustomScroll from '../../components/CustomScroll.vue'
 
 const loading = ref(false)
 const notificationPermission = ref('default')
@@ -182,7 +183,8 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-  <div class="settings-page">
+  <CustomScroll class="settings-page-scroll">
+    <div class="settings-page">
     <div class="page-header">
       <h2>通知设置</h2>
       <p>配置复习提醒和通知偏好</p>
@@ -306,12 +308,18 @@ onBeforeRouteLeave((to, from, next) => {
         保存更改
       </el-button>
     </div>
-  </div>
+    </div>
+  </CustomScroll>
 </template>
 
 <style scoped>
+.settings-page-scroll {
+  height: 100%;
+}
+
 .settings-page {
   max-width: 800px;
+  padding-bottom: 80px;
 }
 
 .page-header {

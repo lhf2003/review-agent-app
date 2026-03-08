@@ -10,13 +10,7 @@ import java.util.List;
 @Data
 public class SessionTraceVo {
     private String content;
-    private List<AnalysisResultInfo> analysisResultInfoList;
-
-    @Data
-    public static class AnalysisResultInfo {
-        private Long analysisResultId;
-        private String problemStatement;
-        private String solution;
-        private String originContent;
-    }
+    private Long analysisResultId;
+    private String problemStatement;
+    private String solution;
 }

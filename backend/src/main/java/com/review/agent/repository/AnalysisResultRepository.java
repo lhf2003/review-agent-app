@@ -75,5 +75,5 @@ public interface AnalysisResultRepository extends JpaRepository<AnalysisResult, 
      * 根据用户ID和数据ID查询分析结果（添加 deleted 过滤）
      */
     @Query("select a from AnalysisResult a where a.userId = :userId and a.fileId = :dataId and a.deleted = false")
-    List<AnalysisResult> findByUserIdAndDataId(Long userId, Long dataId);
+    AnalysisResult findByUserIdAndDataId(Long userId, Long dataId);
 }

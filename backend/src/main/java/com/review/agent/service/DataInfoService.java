@@ -1,11 +1,14 @@
 package com.review.agent.service;
 
 import com.review.agent.common.utils.ExceptionUtils;
+import com.review.agent.entity.pojo.AnalysisResult;
 import com.review.agent.entity.pojo.DataInfo;
 import com.review.agent.entity.pojo.SyncRecord;
 import com.review.agent.entity.pojo.UserConfig;
 import com.review.agent.entity.request.DataInfoRequest;
 import com.review.agent.entity.projection.DataInfoVo;
+import com.review.agent.entity.vo.SessionTraceVo;
+import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.DataInfoRepository;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -31,8 +34,10 @@ import static com.review.agent.common.constant.CommonConstant.*;
 @Slf4j
 @Service
 public class DataInfoService {
-@Resource
+    @Resource
     private DataInfoRepository dataInfoRepository;
+    @Resource
+    private AnalysisResultRepository analysisResultRepository;
     @Resource
     private SyncRecordService syncRecordService;
     @Resource
@@ -92,11 +97,11 @@ public class DataInfoService {
         // Batch query all existing files for this user to avoid N+1 queries
         List<DataInfo> existingFiles = dataInfoRepository.findByUserId(userId);
         java.util.Map<String, DataInfo> existingFileMap = existingFiles.stream()
-            .collect(java.util.stream.Collectors.toMap(
-                DataInfo::getFileName,
-                f -> f,
-                (existing, replacement) -> existing  // keep existing if duplicate filenames
-            ));
+                .collect(java.util.stream.Collectors.toMap(
+                        DataInfo::getFileName,
+                        f -> f,
+                        (existing, replacement) -> existing  // keep existing if duplicate filenames
+                ));
 
         List<DataInfo> dataList = new ArrayList<>();
         for (File newFileData : files) {
@@ -252,12 +257,19 @@ public class DataInfoService {
         dataInfoRepository.save(dataInfo);
     }
 
-    /**
-     * 获取用户的所有文件（不包括已删除的）
-     * @param userId 用户ID
-     * @return 文件列表
-     */
-    public List<DataInfo> findAll(Long userId) {
-        return dataInfoRepository.findByUserId(userId);
+    public SessionTraceVo getInfo(Long userId, Long fileId) {
+        SessionTraceVo sessionTraceVo = new SessionTraceVo();
+        // 文件内容
+        DataInfo dataInfo = findById(fileId);
+        sessionTraceVo.setContent(dataInfo.getFileContent());
+
+        // 文件分析结果
+        AnalysisResult analysisResult = analysisResultRepository.findByUserIdAndDataId(userId, fileId);
+        if (analysisResult != null) {
+            sessionTraceVo.setAnalysisResultId(analysisResult.getId());
+            sessionTraceVo.setProblemStatement(analysisResult.getProblemStatement());
+            sessionTraceVo.setSolution(analysisResult.getSolution());
+        }
+        return sessionTraceVo;
     }
 }

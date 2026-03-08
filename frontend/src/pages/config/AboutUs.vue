@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { InfoFilled, Star, Link, Document } from '@element-plus/icons-vue'
+import CustomScroll from '../../components/CustomScroll.vue'
 
 const version = ref('1.0.0')
 const features = ref([
@@ -51,8 +52,9 @@ const links = ref([
 </script>
 
 <template>
-  <div class="about-page">
-    <div class="about-container">
+  <CustomScroll class="about-page-scroll">
+    <div class="about-page">
+      <div class="about-container">
       <!-- Header Section -->
       <div class="header-section">
         <div class="logo-area">
@@ -143,17 +145,23 @@ const links = ref([
           如果你觉得这个项目对你有启发，请点个 ⭐ Star 支持一下 ❤️
         </p>
       </div>
+      </div>
     </div>
-  </div>
+  </CustomScroll>
 </template>
 
 <style scoped>
+.about-page-scroll {
+  height: 100%;
+}
+
 .about-page {
   display: flex;
   justify-content: center;
   padding: 20px; /* Reduced padding for embedded view */
   /* min-height removed to fit in config page */
   background: transparent; /* Transparent to blend with config page */
+  padding-bottom: 40px;
 }
 
 .about-container {

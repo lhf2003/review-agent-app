@@ -47,6 +47,7 @@ function closeCompare() {
     :model-value="visible"
     title="相似问题推荐"
     width="600px"
+    modal-class="blur-backdrop"
     @close="handleClose"
   >
     <div class="similarity-list">
@@ -83,6 +84,7 @@ function closeCompare() {
     title="内容对比"
     width="800px"
     append-to-body
+    modal-class="blur-backdrop"
     @close="closeCompare"
   >
     <div class="compare-container">
@@ -164,5 +166,39 @@ function closeCompare() {
 .compare-divider {
   width: 1px;
   background-color: var(--el-border-color-lighter);
+}
+
+/* 背景模糊效果 */
+:global(.el-overlay.blur-backdrop) {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* 弹窗内容样式优化 */
+:deep(.el-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+:deep(.el-dialog__header) {
+  padding: 16px 20px;
+  margin: 0;
+  border-bottom: 1px solid var(--el-border-color-light);
+}
+
+:deep(.el-dialog__title) {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+:deep(.el-dialog__body) {
+  padding: 16px 20px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--el-border-color-light);
 }
 </style>
