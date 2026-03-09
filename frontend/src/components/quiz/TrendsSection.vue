@@ -345,34 +345,4 @@ const learningProgress = computed(() => props.achievementsData?.learningProgress
   flex-direction: column;
 }
 
-/* Dark Mode */
-html.dark .glass-panel {
-  background: rgba(30, 30, 30, 0.65);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-}
-
-html.dark .glass-panel:hover {
-  background: rgba(40, 40, 40, 0.75);
-  box-shadow:
-    0 10px 20px -5px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
-}
-
-html.dark .progress-fill {
-  background: linear-gradient(90deg, var(--el-color-primary) 0%, color-mix(in srgb, var(--el-color-primary), black 10%) 100%);
-  box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.3);
-}
-
-html.dark .icon-box {
-  background: rgba(255, 165, 0, 0.15);
-  box-shadow: none;
-}
-html.dark .icon-box.blue {
-  background: rgba(0, 122, 255, 0.15);
-}
-html.dark .icon-box.purple {
-  background: rgba(88, 86, 214, 0.15);
-}
 </style>

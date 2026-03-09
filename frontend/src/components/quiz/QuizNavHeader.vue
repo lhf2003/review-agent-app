@@ -23,7 +23,7 @@ defineEmits(['back', 'reset'])
         <span class="back-text">返回合集</span>
       </el-button>
       <div class="divider"></div>
-      <h1 class="header-title">AI 学习辅导</h1>
+      <h1 class="header-title">AI 习题</h1>
       <span class="collection-name" v-if="collectionName">
         {{ collectionName }}
       </span>
@@ -46,8 +46,8 @@ defineEmits(['back', 'reset'])
 
 <style scoped lang="scss">
 .nav-header {
-  height: 64px;
-  padding: 0 24px;
+  height: 52px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;

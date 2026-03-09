@@ -58,68 +58,70 @@
 
         <!-- 右侧：预览和编辑 -->
         <div class="preview-area" v-if="selectedRecommendation">
-          <div class="preview-header">
-            <div class="header-left">
-              <el-icon class="header-icon"><View /></el-icon>
-              <h4>合集内容预览</h4>
-            </div>
-            <el-checkbox
-              v-model="previewSelectAll"
-              :indeterminate="previewIsIndeterminate"
-              @change="handlePreviewSelectAllChange"
-            >
-              全选
-            </el-checkbox>
-          </div>
-
-          <!-- 分析结果列表 -->
-          <div class="preview-list custom-scroll">
-            <el-checkbox-group v-model="previewSelectedIds">
-              <div
-                v-for="item in selectedRecommendation.analysisResults"
-                :key="item.id"
-                class="preview-item"
-                :class="{ selected: previewSelectedIds.includes(item.id) }"
-              >
-                <el-checkbox :label="item.id">
-                  <div class="item-content">
-                    <div class="item-title">{{ item.problemStatement }}</div>
-                    <div class="item-date">
-                      <el-icon><Clock /></el-icon>
-                      {{ item.createdTime }}
-                    </div>
-                  </div>
-                </el-checkbox>
+          <!-- 合集内容预览 -->
+          <div class="preview-section">
+            <div class="section-header">
+              <div class="header-title">
+                <el-icon><View /></el-icon>
+                <span>合集内容</span>
+                <span class="count">{{ previewSelectedIds.length }}/{{ selectedRecommendation.analysisResults?.length }}</span>
               </div>
-            </el-checkbox-group>
+              <el-checkbox
+                v-model="previewSelectAll"
+                :indeterminate="previewIsIndeterminate"
+                @change="handlePreviewSelectAllChange"
+                size="small"
+              >
+                全选
+              </el-checkbox>
+            </div>
+
+            <!-- 分析结果列表 -->
+            <div class="preview-list custom-scroll">
+              <el-checkbox-group v-model="previewSelectedIds">
+                <div
+                  v-for="item in selectedRecommendation.analysisResults"
+                  :key="item.id"
+                  class="preview-item"
+                  :class="{ selected: previewSelectedIds.includes(item.id) }"
+                >
+                  <el-checkbox :label="item.id">
+                    <div class="item-content">
+                      <div class="item-title">{{ item.problemStatement }}</div>
+                      <div class="item-date">{{ item.createdTime }}</div>
+                    </div>
+                  </el-checkbox>
+                </div>
+              </el-checkbox-group>
+            </div>
           </div>
 
           <!-- 编辑区域 -->
-          <div class="edit-area">
-            <div class="edit-header">
+          <div class="edit-section">
+            <div class="section-header compact">
               <el-icon><EditPen /></el-icon>
-              <span>编辑合集信息</span>
+              <span>编辑信息</span>
             </div>
-            <el-form label-position="top" size="default">
-              <el-form-item label="合集名称">
+            <div class="form-row">
+              <div class="form-field">
+                <label>名称</label>
                 <el-input
                   v-model="createForm.name"
-                  placeholder="输入合集名称"
+                  placeholder="合集名称"
                   maxlength="50"
-                  show-word-limit
+                  size="small"
                 />
-              </el-form-item>
-              <el-form-item label="描述（可选）">
+              </div>
+              <div class="form-field">
+                <label>描述 <span class="optional">可选</span></label>
                 <el-input
                   v-model="createForm.description"
-                  type="textarea"
-                  :rows="2"
-                  placeholder="输入合集描述"
+                  placeholder="描述"
                   maxlength="200"
-                  show-word-limit
+                  size="small"
                 />
-              </el-form-item>
-            </el-form>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -135,16 +137,16 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleClose" class="cancel-btn">取消</el-button>
+        <el-button @click="handleClose" size="small">取消</el-button>
         <el-button
           type="primary"
           :disabled="!canCreate"
           :loading="creating"
           @click="handleCreate"
-          class="create-btn"
+          size="small"
         >
           <el-icon v-if="!creating"><Check /></el-icon>
-          <span>创建合集</span>
+          <span>创建合集 ({{ previewSelectedIds.length }})</span>
         </el-button>
       </div>
     </template>
@@ -159,7 +161,6 @@ import {
   Collection,
   Folder,
   View,
-  Clock,
   EditPen,
   Check
 } from '@element-plus/icons-vue'
@@ -285,34 +286,66 @@ function handleClose() {
 </script>
 
 <style scoped lang="scss">
-// 动画曲线
-$ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-$ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
+@use '../../styles/nebula-theme.scss' as *;
 
+// ========================================
+// Design System: Smart Create Collection
+// Pattern: Lead Magnet + Form (≤3 fields)
+// Style: Exaggerated Minimalism + Glassmorphism
+// ========================================
+
+// 动画曲线
+$ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+$ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+// 间距系统 (8px 基数)
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-5: 20px;
+$space-6: 24px;
+
+// 对话框容器
 .quick-create-dialog {
   :deep(.el-dialog) {
-    border-radius: 24px;
+    border-radius: var(--radius-card);
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px) saturate(180%);
+    background: var(--glass-surface);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    border: 1px solid var(--glass-border);
     box-shadow:
-      0 25px 50px -12px rgba(0, 0, 0, 0.25),
-      0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+      0 25px 50px -12px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 var(--glass-highlight);
   }
 
+  // Header - 极简设计
   :deep(.el-dialog__header) {
-    padding: 20px 24px;
+    padding: $space-2 $space-4;
     margin: 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    background: linear-gradient(135deg, rgba(var(--el-color-primary-rgb), 0.05) 0%, transparent 100%);
-    border-radius: 24px 24px 0 0;
+    height: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+    background: linear-gradient(135deg, rgba(204, 102, 51, 0.08) 0%, transparent 100%);
   }
 
   :deep(.el-dialog__title) {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 600;
-    color: var(--el-text-color-primary);
-    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  :deep(.el-dialog__headerbtn) {
+    width: 28px;
+    height: 28px;
+    top: 6px;
+    right: 12px;
+
+    .el-icon { font-size: 14px; }
   }
 
   :deep(.el-dialog__body) {
@@ -320,115 +353,101 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   }
 
   :deep(.el-dialog__footer) {
-    padding: 16px 24px;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    background: rgba(var(--el-color-primary-rgb), 0.02);
-    border-radius: 0 0 24px 24px;
+    padding: $space-3 $space-4;
+    border-top: 1px solid var(--glass-border);
   }
 }
 
+// 主内容区
 .dialog-content {
-  min-height: 480px;
+  min-height: 460px;
 }
 
 .loading-area,
 .empty-area {
-  padding: 48px 32px;
+  padding: $space-6 $space-5;
 }
 
-.empty-area {
-  :deep(.el-empty__description) {
-    margin-top: 16px;
-  }
-
-  p {
-    font-size: 13px;
-    color: var(--el-text-color-secondary);
-    margin-top: 8px;
-    text-align: center;
-  }
-}
-
+// 选择区域 - 双栏布局
 .selection-area {
   display: flex;
-  height: 520px;
+  height: 480px;
 }
 
-// 左侧边栏
+// ========================================
+// 左侧边栏 - 推荐列表
+// ========================================
 .recommendation-sidebar {
-  width: 220px;
+  width: 200px;
   display: flex;
   flex-direction: column;
-  background: rgba(var(--el-color-primary-rgb), 0.03);
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 0 0 0 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-right: 1px solid var(--glass-border);
 }
 
 .sidebar-header {
-  padding: 16px 20px;
+  padding: $space-3 $space-4;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid var(--glass-border);
 
   .header-title {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
+    gap: $space-2;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
 
     .header-icon {
-      font-size: 18px;
-      color: var(--el-color-primary);
+      font-size: 16px;
+      color: var(--accent-tertiary);
     }
   }
 }
 
 .count-badge {
-  background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
+  background: var(--gradient-warm);
   color: #fff;
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(var(--el-color-primary-rgb), 0.3);
 }
 
 .sidebar-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: $space-2;
 }
 
 .sidebar-item {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 14px;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s $ease-smooth;
-  margin-bottom: 4px;
+  transition: all 0.2s $ease-out;
+  margin-bottom: $space-1;
   border: 1px solid transparent;
+  min-height: 56px; // 触摸目标尺寸
 
   .item-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    background: var(--el-fill-color);
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: var(--glass-surface);
+    border: 1px solid var(--glass-border);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--el-text-color-secondary);
-    transition: all 0.3s $ease-smooth;
+    color: var(--text-tertiary);
+    transition: all 0.2s $ease-out;
     flex-shrink: 0;
 
-    .el-icon {
-      font-size: 18px;
-    }
+    .el-icon { font-size: 16px; }
   }
 
   .item-info {
@@ -439,12 +458,11 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   .item-name {
     font-size: 13px;
     font-weight: 500;
-    color: var(--el-text-color-primary);
-    margin-bottom: 4px;
+    color: var(--text-primary);
+    margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: color 0.2s ease;
   }
 
   .item-meta {
@@ -455,224 +473,298 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
 
   .item-count {
     font-size: 11px;
-    color: var(--el-text-color-secondary);
+    color: var(--text-secondary);
   }
 
   .confidence-badge {
     font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 6px;
+    padding: 1px 5px;
+    border-radius: 4px;
     font-weight: 500;
 
     &.high {
-      background: rgba(103, 194, 58, 0.15);
-      color: #67c23a;
+      background: rgba(34, 197, 94, 0.12);
+      color: var(--mastery-high);
     }
   }
 
   &:hover {
-    background: rgba(var(--el-color-primary-rgb), 0.08);
-    transform: translateX(4px);
+    background: rgba(204, 102, 51, 0.08);
 
     .item-icon {
-      background: rgba(var(--el-color-primary-rgb), 0.15);
-      color: var(--el-color-primary);
+      background: rgba(204, 102, 51, 0.12);
+      border-color: rgba(204, 102, 51, 0.2);
+      color: var(--accent-tertiary);
     }
   }
 
   &.active {
-    background: rgba(var(--el-color-primary-rgb), 0.12);
-    border-color: rgba(var(--el-color-primary-rgb), 0.2);
-    box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.1);
+    background: rgba(204, 102, 51, 0.12);
+    border-color: rgba(204, 102, 51, 0.3);
 
     .item-icon {
-      background: var(--el-color-primary);
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
       color: #fff;
-      box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
     }
 
     .item-name {
-      color: var(--el-color-primary);
+      color: var(--accent-tertiary);
       font-weight: 600;
     }
   }
 }
 
+// ========================================
 // 右侧预览区域
+// ========================================
 .preview-area {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: $space-3;
+  gap: $space-3;
   overflow: hidden;
 }
 
-.preview-header {
+// 预览区块
+.preview-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+// 区块头部 - 统一样式
+.section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: $space-3 $space-4;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(255, 248, 245, 0.02);
 
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  &.compact {
+    padding: $space-2 $space-3;
+    gap: $space-2;
+    justify-content: flex-start;
 
-    .header-icon {
-      font-size: 18px;
-      color: var(--el-color-primary);
+    .el-icon {
+      font-size: 14px;
+      color: var(--accent-tertiary);
+    }
+
+    span {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
     }
   }
 
-  h4 {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
-    margin: 0;
-  }
-
-  :deep(.el-checkbox__label) {
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
     font-size: 13px;
-    color: var(--el-text-color-secondary);
+    font-weight: 600;
+    color: var(--text-primary);
+
+    .el-icon {
+      font-size: 16px;
+      color: var(--accent-tertiary);
+    }
+
+    .count {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--glass-surface);
+      padding: 1px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--glass-border);
+      margin-left: $space-1;
+    }
   }
 }
 
+// 预览列表
 .preview-list {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
-  background: rgba(var(--el-color-primary-rgb), 0.03);
-  border-radius: 16px;
-  margin-bottom: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  padding: $space-2 $space-3;
 }
 
 .preview-item {
-  padding: 12px;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  transition: all 0.25s $ease-smooth;
+  padding: $space-2 $space-3;
+  border-radius: 8px;
+  margin-bottom: $space-1;
+  transition: all 0.15s $ease-out;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.6);
+  background: transparent;
 
-  &:last-child {
-    margin-bottom: 0;
-  }
+  &:last-child { margin-bottom: 0; }
 
   &.selected {
-    background: rgba(var(--el-color-primary-rgb), 0.08);
-    border-color: rgba(var(--el-color-primary-rgb), 0.15);
+    background: rgba(204, 102, 51, 0.08);
+    border-color: rgba(204, 102, 51, 0.15);
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    transform: translateY(-1px);
+    background: rgba(255, 248, 245, 0.04);
   }
 
   :deep(.el-checkbox) {
     align-items: flex-start;
     width: 100%;
+    height: auto;
+    margin-right: 0;
   }
 
   :deep(.el-checkbox__label) {
-    padding-left: 10px;
+    padding-left: $space-2;
     flex: 1;
     min-width: 0;
+  }
+
+  :deep(.el-checkbox__input) {
+    margin-top: 2px;
   }
 
   .item-content {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
   }
 
   .item-title {
     font-size: 13px;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    font-weight: 500;
   }
 
   .item-date {
     font-size: 11px;
-    color: var(--el-text-color-placeholder);
+    color: var(--text-tertiary);
+  }
+}
+
+// ========================================
+// 编辑区域 - 极简表单
+// ========================================
+.edit-section {
+  flex-shrink: 0;
+  padding: $space-2 $space-3 $space-3;
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+.form-row {
+  display: flex;
+  gap: $space-3;
+}
+
+.form-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &:first-child { flex: 0.9; }
+  &:last-child { flex: 1.1; }
+
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 4px;
 
-    .el-icon {
-      font-size: 12px;
-    }
-  }
-}
-
-// 编辑区域
-.edit-area {
-  flex-shrink: 0;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-
-  .edit-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
-
-    .el-icon {
-      font-size: 16px;
-      color: var(--el-color-primary);
+    .optional {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-weight: 400;
     }
   }
 
-  :deep(.el-form-item) {
-    margin-bottom: 16px;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-  :deep(.el-form-item__label) {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--el-text-color-secondary);
-    padding-bottom: 6px;
-  }
-
-  :deep(.el-input__wrapper),
-  :deep(.el-textarea__inner) {
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    transition: all 0.2s ease;
+  :deep(.el-input__wrapper) {
+    background: rgba(255, 248, 245, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    box-shadow: none;
+    transition: all 0.15s ease;
+    padding: 0 10px;
 
     &:hover {
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      background: rgba(255, 248, 245, 0.08);
+      border-color: rgba(255, 248, 245, 0.12);
     }
 
-    &:focus {
-      box-shadow: 0 0 0 2px rgba(var(--el-color-primary-rgb), 0.15);
+    &.is-focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 2px rgba(204, 102, 51, 0.12);
     }
-  }
 
-  :deep(.el-textarea__inner) {
-    border-radius: 12px;
-    resize: none;
+    .el-input__inner {
+      height: 32px;
+      font-size: 13px;
+    }
   }
 }
 
+// ========================================
+// 底部按钮
+// ========================================
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-3;
+
+  :deep(.el-button) {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s $ease-out;
+
+    &.el-button--primary {
+      background: var(--gradient-warm);
+      border: none;
+      box-shadow: 0 2px 8px rgba(204, 102, 51, 0.3);
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(204, 102, 51, 0.4);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        box-shadow: none;
+      }
+    }
+
+    &:not(.el-button--primary) {
+      background: rgba(255, 248, 245, 0.05);
+      border: 1px solid var(--glass-border);
+      color: var(--text-secondary);
+
+      &:hover {
+        background: rgba(255, 248, 245, 0.08);
+        color: var(--text-primary);
+      }
+    }
+  }
+}
+
+// ========================================
 // 占位区域
+// ========================================
 .preview-placeholder {
   flex: 1;
   display: flex;
@@ -683,85 +775,29 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    color: var(--el-text-color-placeholder);
+    gap: $space-4;
+    color: var(--text-tertiary);
 
     .placeholder-icon {
       font-size: 48px;
-      opacity: 0.4;
+      opacity: 0.3;
     }
 
     p {
       font-size: 14px;
       margin: 0;
+      color: var(--text-secondary);
     }
   }
 }
 
-// 底部按钮
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-
-  .cancel-btn {
-    border-radius: 12px;
-    padding: 10px 20px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.05);
-      transform: translateY(-1px);
-    }
-  }
-
-  .create-btn {
-    border-radius: 12px;
-    padding: 10px 24px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.3s $ease-spring;
-    background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
-    border: none;
-    box-shadow: 0 4px 14px rgba(var(--el-color-primary-rgb), 0.35);
-    color: #ffffff !important;
-
-    &:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(var(--el-color-primary-rgb), 0.45);
-      color: #ffffff !important;
-    }
-
-    &:active:not(:disabled) {
-      transform: translateY(0);
-      color: #ffffff !important;
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      box-shadow: none;
-      color: rgba(255, 255, 255, 0.7) !important;
-    }
-
-    .el-icon {
-      font-size: 16px;
-      color: #ffffff !important;
-    }
-
-    span {
-      color: #ffffff !important;
-    }
-  }
-}
-
+// ========================================
 // 自定义滚动条
+// ========================================
 .custom-scroll {
   &::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
   }
 
   &::-webkit-scrollbar-track {
@@ -769,88 +805,11 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 3px;
+    background: rgba(255, 248, 245, 0.08);
+    border-radius: 2px;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.25);
-    }
-  }
-}
-
-// 深色模式适配
-html.dark {
-  .quick-create-dialog {
-    :deep(.el-dialog) {
-      background: rgba(30, 30, 30, 0.95);
-      box-shadow:
-        0 25px 50px -12px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-    }
-
-    :deep(.el-dialog__header) {
-      border-bottom-color: rgba(255, 255, 255, 0.08);
-      background: linear-gradient(135deg, rgba(var(--el-color-primary-rgb), 0.1) 0%, transparent 100%);
-    }
-
-    :deep(.el-dialog__footer) {
-      border-top-color: rgba(255, 255, 255, 0.08);
-      background: rgba(0, 0, 0, 0.2);
-    }
-  }
-
-  .recommendation-sidebar {
-    background: rgba(0, 0, 0, 0.2);
-    border-right-color: rgba(255, 255, 255, 0.08);
-  }
-
-  .sidebar-header {
-    background: rgba(30, 30, 30, 0.5);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-  }
-
-  .sidebar-item {
-    &:hover {
-      background: rgba(var(--el-color-primary-rgb), 0.12);
-    }
-
-    &.active {
-      background: rgba(var(--el-color-primary-rgb), 0.18);
-      border-color: rgba(var(--el-color-primary-rgb), 0.3);
-    }
-  }
-
-  .preview-list {
-    background: rgba(0, 0, 0, 0.2);
-    border-color: rgba(255, 255, 255, 0.06);
-  }
-
-  .preview-item {
-    background: rgba(30, 30, 30, 0.6);
-
-    &.selected {
-      background: rgba(var(--el-color-primary-rgb), 0.15);
-      border-color: rgba(var(--el-color-primary-rgb), 0.25);
-    }
-
-    &:hover {
-      background: rgba(30, 30, 30, 0.8);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-  }
-
-  .edit-area {
-    background: rgba(30, 30, 30, 0.6);
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-
-  .custom-scroll {
-    &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.25);
-      }
+      background: rgba(255, 248, 245, 0.15);
     }
   }
 }

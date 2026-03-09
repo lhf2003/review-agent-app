@@ -106,11 +106,6 @@ const accuracyChangeText = computed(() => {
   min-height: 100px;
 }
 
-html.dark .weekly-stats-card {
-  background: rgba(28, 28, 30, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-}
 
 .card-loading {
   width: 100%;
@@ -183,7 +178,4 @@ html.dark .weekly-stats-card {
   margin: 0 20px;
 }
 
-html.dark .stat-divider {
-  background: rgba(255, 255, 255, 0.1);
-}
 </style>

@@ -84,21 +84,21 @@ function handleConfirm() {
 <style scoped>
 :deep(.el-form-item__label) {
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: var(--text-secondary);
   padding-bottom: 8px;
 }
 
 .apple-input :deep(.el-input__wrapper) {
-  box-shadow: none;
-  background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--glass-border) inset;
+  background-color: rgba(255, 248, 245, 0.03);
+  border-radius: var(--radius-md);
   padding: 4px 12px;
   transition: all 0.2s;
 }
 
 .apple-input :deep(.el-input__wrapper.is-focus) {
-  background-color: var(--el-bg-color);
-  box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
+  background-color: rgba(255, 248, 245, 0.05);
+  box-shadow: 0 0 0 2px var(--accent-glow-soft) inset;
 }
 
 .dialog-footer {

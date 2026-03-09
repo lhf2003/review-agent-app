@@ -131,13 +131,18 @@ async function exportToMarkdown() {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
+
 .analysis-card {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--el-bg-color);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   position: relative;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -146,8 +151,8 @@ async function exportToMarkdown() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--el-bg-color-overlay);
-  border-bottom: 1px solid var(--el-border-color-light);
+  background: var(--glass-surface);
+  border-bottom: 1px solid var(--glass-border);
   z-index: 10;
   flex-shrink: 0;
 }
@@ -155,7 +160,7 @@ async function exportToMarkdown() {
 .header-title {
   font-weight: 600;
   font-size: 15px;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   display: block;
 }
 
@@ -173,14 +178,14 @@ async function exportToMarkdown() {
   justify-content: center;
   cursor: pointer;
   border-radius: 6px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   transition: all 0.2s;
   font-size: 16px;
 }
 
 .icon-btn:hover {
-  background-color: var(--el-fill-color);
-  color: var(--el-text-color-primary);
+  background-color: var(--glass-surface-hover);
+  color: var(--text-primary);
 }
 
 .icon-btn.loading {
@@ -194,7 +199,7 @@ async function exportToMarkdown() {
 
 .header-subtitle {
   font-size: 11px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   margin-top: 2px;
   display: block;
 }
@@ -266,7 +271,7 @@ async function exportToMarkdown() {
 
 .message-meta {
   font-size: 11px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
   margin-top: 6px;
   margin-left: 4px;
   margin-right: 4px;
@@ -278,8 +283,8 @@ async function exportToMarkdown() {
 
 .chat-footer {
   padding: 16px 20px;
-  background-color: var(--el-bg-color-overlay);
-  border-top: 1px solid var(--el-border-color-light);
+  background: var(--glass-surface);
+  border-top: 1px solid var(--glass-border);
   z-index: 10;
 }
 
@@ -290,49 +295,41 @@ async function exportToMarkdown() {
 
 .action-btn {
   flex: 1;
-  border-radius: 8px !important;
+  border-radius: var(--radius-md) !important;
   height: 40px !important;
   display: flex !important;
   justify-content: center;
   align-items: center;
-  border: 1px solid var(--el-border-color) !important;
-  background-color: var(--el-fill-color-light) !important;
-  color: var(--el-text-color-primary) !important;
+  border: 1px solid var(--glass-border) !important;
+  background: var(--glass-surface) !important;
+  color: var(--text-primary) !important;
   font-weight: 500 !important;
   transition: all 0.2s !important;
 }
 
 .action-btn:hover {
-  background-color: var(--el-fill-color) !important;
-  border-color: var(--el-border-color-darker) !important;
+  background: var(--glass-surface-hover) !important;
+  border-color: var(--glass-border-hover) !important;
   transform: translateY(-1px);
 }
 
 .action-btn.primary {
-  background-color: var(--el-color-primary-light-9) !important;
-  color: var(--el-color-primary) !important;
-  border-color: var(--el-color-primary-light-5) !important;
+  background: var(--accent-primary) !important;
+  color: #fff !important;
+  border-color: var(--accent-primary) !important;
 }
 
 .action-btn.primary:hover {
-  background-color: var(--el-color-primary-light-8) !important;
+  background: var(--accent-secondary) !important;
 }
 
-:global(html.dark) .action-btn.primary {
-  background-color: rgba(var(--el-color-primary-rgb), 0.1) !important;
-  border-color: rgba(var(--el-color-primary-rgb), 0.2) !important;
-}
-
-:global(html.dark) .action-btn.primary:hover {
-  background-color: rgba(var(--el-color-primary-rgb), 0.2) !important;
-}
 
 .empty-state {
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
 }
 
 .empty-content {
@@ -345,20 +342,20 @@ async function exportToMarkdown() {
 
 .empty-icon {
   font-size: 64px;
-  color: var(--el-border-color);
+  color: var(--glass-border);
   margin-bottom: 8px;
 }
 
 .empty-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .empty-desc {
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   margin-bottom: 24px;
   text-align: center;
   max-width: 280px;
@@ -373,11 +370,11 @@ async function exportToMarkdown() {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--el-border-color);
+  background-color: var(--glass-border);
   border-radius: 3px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--el-text-color-secondary);
+  background-color: var(--glass-border-hover);
 }
 </style>
 

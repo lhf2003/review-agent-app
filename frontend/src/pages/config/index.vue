@@ -3,14 +3,17 @@
     <div class="sidebar-wrapper">
       <ConfigSidebar />
     </div>
-    <div class="content-wrapper">
-      <router-view />
-    </div>
+    <CustomScroll class="content-scroll">
+      <div class="content-inner">
+        <router-view />
+      </div>
+    </CustomScroll>
   </div>
 </template>
 
 <script setup>
 import ConfigSidebar from './components/ConfigSidebar.vue'
+import CustomScroll from '../../components/CustomScroll.vue'
 </script>
 
 <style scoped>
@@ -23,7 +26,6 @@ import ConfigSidebar from './components/ConfigSidebar.vue'
   margin: 0 auto;
   padding: 20px;
   align-items: flex-start;
-  overflow: hidden;
 }
 
 @media (max-width: 768px) {
@@ -39,10 +41,13 @@ import ConfigSidebar from './components/ConfigSidebar.vue'
   top: 20px;
 }
 
-.content-wrapper {
+.content-scroll {
   flex: 1;
-  min-width: 0;
   height: 100%;
-  overflow: hidden;
+  min-width: 0;
+}
+
+.content-inner {
+  padding: 0 20px 80px 0;
 }
 </style>

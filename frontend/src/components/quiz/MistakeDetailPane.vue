@@ -326,17 +326,13 @@ watch(() => props.questionId, (newId) => {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
   transition: background 0.3s ease;
 
-  html.dark & {
-    background: rgba(30, 41, 59, 0.85);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .header-title {
@@ -358,9 +354,6 @@ watch(() => props.questionId, (newId) => {
   /* Remove transition: all to prevent scale effect on theme switch */
   transition: transform 0.2s ease !important;
 
-  html.dark & {
-    background: rgba(64, 158, 255, 0.15);
-  }
 }
 
 .header-actions {
@@ -373,26 +366,17 @@ watch(() => props.questionId, (newId) => {
 .history-section {
   padding: 20px;
   margin-bottom: 16px;
-  background: var(--el-bg-color);
+  background: var(--glass-surface);
   border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   /* Remove transition: all to prevent scale effect on theme switch */
   transition: box-shadow 0.3s ease, transform 0.3s ease !important;
 
   &:hover {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
 
-  html.dark & {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-
-    &:hover {
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-  }
 
   &:last-child {
     margin-bottom: 0;
@@ -425,10 +409,11 @@ watch(() => props.questionId, (newId) => {
 
 // 知识点掌握度 - 增强渐变效果
 .mastery-card {
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.1) 0%, rgba(64, 158, 255, 0.03) 100%);
+  background: var(--glass-surface);
   border-radius: 14px;
   padding: 18px;
-  border: 1px solid rgba(64, 158, 255, 0.15);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   position: relative;
   overflow: hidden;
   /* Remove transition: all to prevent scale effect on theme switch */
@@ -443,20 +428,16 @@ watch(() => props.questionId, (newId) => {
     height: 1px;
     background: linear-gradient(90deg,
       transparent,
-      rgba(64, 158, 255, 0.3),
+      var(--accent-primary),
       transparent
     );
   }
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(64, 158, 255, 0.15);
+    box-shadow: 0 8px 24px var(--accent-glow-soft);
   }
 
-  html.dark & {
-    background: linear-gradient(135deg, rgba(64, 158, 255, 0.15) 0%, rgba(64, 158, 255, 0.05) 100%);
-    border-color: rgba(64, 158, 255, 0.2);
-  }
 }
 
 .mastery-header {
@@ -500,13 +481,10 @@ watch(() => props.questionId, (newId) => {
 
 .progress-bar {
   height: 6px;
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--glass-border);
   border-radius: 3px;
   overflow: hidden;
 
-  html.dark & {
-    background: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .progress-fill {
@@ -527,25 +505,17 @@ watch(() => props.questionId, (newId) => {
   align-items: flex-start;
   gap: 12px;
   padding: 14px;
-  background: rgba(245, 108, 108, 0.04);
+  background: var(--glass-surface);
   border-radius: 12px;
-  border: 1px solid rgba(245, 108, 108, 0.1);
+  border: 1px solid var(--glass-border);
   /* Remove transition: all to prevent scale effect on theme switch */
   transition: background-color 0.2s ease, transform 0.2s ease !important;
 
   &:hover {
-    background: rgba(245, 108, 108, 0.08);
+    background: var(--glass-surface-hover);
     transform: translateX(4px);
   }
 
-  html.dark & {
-    background: rgba(245, 108, 108, 0.08);
-    border-color: rgba(245, 108, 108, 0.15);
-
-    &:hover {
-      background: rgba(245, 108, 108, 0.12);
-    }
-  }
 }
 
 .history-icon {
@@ -553,14 +523,12 @@ watch(() => props.questionId, (newId) => {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(245, 108, 108, 0.1);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   display: flex;
   align-items: center;
   justify-content: center;
 
-  html.dark & {
-    background: rgba(245, 108, 108, 0.2);
-  }
 }
 
 .history-content {

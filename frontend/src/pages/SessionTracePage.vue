@@ -128,12 +128,6 @@ onMounted(() => {
   box-shadow: var(--el-box-shadow-light);
 }
 
-:global(html.dark) .center-panel,
-:global(html.dark) .right-panel {
-  border-color: var(--el-border-color-darker);
-  box-shadow: none;
-}
-
 .center-panel {
   flex: 1;
   min-width: 0;

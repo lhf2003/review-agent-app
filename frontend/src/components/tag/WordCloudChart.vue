@@ -1,7 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, ref, nextTick, watch } from 'vue'
 import { FullScreen, Close } from '@element-plus/icons-vue'
-import { useThemeStore } from '../../stores/theme'
 import { api } from '../../api/http'
 import * as echarts from 'echarts'
 import 'echarts-wordcloud'
@@ -23,8 +22,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['fullscreenToggle'])
-
-const themeStore = useThemeStore()
 
 // Word Cloud State
 const wordCloudSource = ref({})
@@ -96,19 +93,12 @@ function updateWordCloudChart() {
         fontFamily: 'sans-serif',
         fontWeight: 'bold',
         color: function () {
-          if (themeStore.isDark) {
-            return 'rgb(' + [
-              Math.round(100 + Math.random() * 155),
-              Math.round(100 + Math.random() * 155),
-              Math.round(100 + Math.random() * 155)
-            ].join(',') + ')'
-          } else {
-            return 'rgb(' + [
-              Math.round(Math.random() * 160),
-              Math.round(Math.random() * 160),
-              Math.round(Math.random() * 160)
-            ].join(',') + ')'
-          }
+          // 暖色调配色方案，与主题协调
+          const warmColors = [
+            '#CC6633', '#E07B47', '#F09562', '#F5B085',
+            '#E6A23C', '#F0C674', '#22c55e', '#67C23A'
+          ]
+          return warmColors[Math.floor(Math.random() * warmColors.length)]
         }
       },
       emphasis: {
@@ -122,9 +112,8 @@ function updateWordCloudChart() {
 }
 
 function initChart() {
-  const theme = themeStore.isDark ? 'dark' : undefined
   if (wordCloudChartRef.value) {
-    wordCloudChartInstance = echarts.init(wordCloudChartRef.value, theme, { backgroundColor: 'transparent' })
+    wordCloudChartInstance = echarts.init(wordCloudChartRef.value, 'dark', { backgroundColor: 'transparent' })
   }
 }
 
@@ -144,13 +133,6 @@ function toggleFullscreen() {
 watch(() => props.dateRange, () => {
   loadWordCloud()
 }, { deep: true })
-
-// Watch theme changes
-watch(() => themeStore.isDark, () => {
-  wordCloudChartInstance?.dispose()
-  initChart()
-  updateWordCloudChart()
-})
 
 onMounted(() => {
   initChart()
@@ -172,7 +154,7 @@ onUnmounted(() => {
         <el-icon><FullScreen /></el-icon>
       </el-button>
     </div>
-    
+
     <!-- Fullscreen Exit Button -->
     <div v-if="isFullscreen" class="fullscreen-exit-btn">
       <el-button circle @click="toggleFullscreen">
@@ -207,7 +189,7 @@ onUnmounted(() => {
   height: 100vh;
   z-index: 2000;
   border-radius: 0;
-  background: var(--el-bg-color-page);
+  background: var(--bg-deep);
 }
 
 .chart-header {
@@ -215,7 +197,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
@@ -223,7 +205,7 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .chart-container {
@@ -249,16 +231,10 @@ onUnmounted(() => {
 }
 
 .fullscreen-exit-btn .el-button {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: var(--el-text-color-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-html.dark .fullscreen-exit-btn .el-button {
   background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 </style>

@@ -8,6 +8,7 @@ import com.review.agent.entity.pojo.CollectionRelation;
 import com.review.agent.common.enums.QuestionType;
 import com.review.agent.entity.pojo.QuizQuestion;
 import com.review.agent.entity.pojo.QuizRecord;
+import com.review.agent.entity.pojo.Tag;
 import com.review.agent.entity.request.BatchSubmitRequest;
 import com.review.agent.entity.vo.*;
 import com.review.agent.repository.AnalysisCollectionRepository;
@@ -15,6 +16,9 @@ import com.review.agent.repository.AnalysisResultRepository;
 import com.review.agent.repository.CollectionRelationRepository;
 import com.review.agent.repository.QuizQuestionRepository;
 import com.review.agent.repository.QuizRecordRepository;
+import com.review.agent.repository.TagDimensionRepository;
+import com.review.agent.repository.TagRepository;
+import com.review.agent.common.utils.SecurityUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -68,149 +72,376 @@ public class QuizService {
     private MistakeBookService mistakeBookService;
 
     @Resource
+    private TagService tagService;
+
+    @Resource
+    private TagDimensionRepository tagDimensionRepository;
+
+    @Resource
+    private TagRepository tagRepository;
+
+    @Resource
     private KnowledgeMasteryService knowledgeMasteryService;
+
+    @Resource
+    private SecurityUtils securityUtils;
 
     @Transactional(rollbackFor = Exception.class)
     public QuizRecord generateQuiz(Long userId, Long collectionId) {
         // 0. Check if quiz already exists
-        List<QuizRecord> existingRecords = quizRecordRepository.findByUserIdAndCollectionIdOrderByCreatedTimeDesc(userId, collectionId);
-        if (!CollectionUtils.isEmpty(existingRecords)) {
-            // Return the latest one
-            return existingRecords.get(0);
+        QuizRecord existingQuiz = findExistingQuiz(userId, collectionId);
+        if (existingQuiz != null) {
+            return existingQuiz;
         }
 
         // 1. Get analysis results from collection
+        List<AnalysisResult> analysisResults = fetchAnalysisResults(collectionId);
+
+        // 2. Generate questions via LLM
+        String context = buildAnalysisContext(analysisResults);
+        String jsonResponse = callLLMForQuestions(context);
+
+        // 3. Save Quiz Record
+        QuizRecord record = createQuizRecord(userId, collectionId);
+
+        // 4. Parse and save questions
+        parseAndSaveQuestions(jsonResponse, record, analysisResults);
+
+        return record;
+    }
+
+    /**
+     * 查找用户已有的测验记录
+     *
+     * @param userId 用户ID
+     * @param collectionId 合集ID
+     * @return 最新的测验记录，如果没有则返回null
+     */
+    private QuizRecord findExistingQuiz(Long userId, Long collectionId) {
+        List<QuizRecord> existingRecords = quizRecordRepository.findByUserIdAndCollectionIdOrderByCreatedTimeDesc(userId, collectionId);
+        if (!CollectionUtils.isEmpty(existingRecords)) {
+            return existingRecords.get(0);
+        }
+        return null;
+    }
+
+    /**
+     * 获取合集关联的分析结果
+     *
+     * @param collectionId 合集ID
+     * @return 分析结果列表
+     */
+    private List<AnalysisResult> fetchAnalysisResults(Long collectionId) {
         List<CollectionRelation> relations = collectionRelationRepository.findByCollectionId(collectionId);
         if (CollectionUtils.isEmpty(relations)) {
             throw new RuntimeException("Collection is empty");
         }
 
-        List<Long> analysisIds = relations.stream().map(CollectionRelation::getAnalysisResultId).collect(Collectors.toList());
+        List<Long> analysisIds = relations.stream()
+            .map(CollectionRelation::getAnalysisResultId)
+            .collect(Collectors.toList());
         List<AnalysisResult> analysisResults = analysisResultRepository.findAllById(analysisIds);
 
         if (CollectionUtils.isEmpty(analysisResults)) {
             throw new RuntimeException("No analysis results found");
         }
 
-        // 2. Generate questions via LLM
-        // Prepare context for LLM
+        return analysisResults;
+    }
+
+    /**
+     * 构建LLM上下文
+     *
+     * @param analysisResults 分析结果列表
+     * @return 格式化的上下文字符串
+     */
+    private String buildAnalysisContext(List<AnalysisResult> analysisResults) {
         StringBuilder context = new StringBuilder();
         for (int i = 0; i < analysisResults.size(); i++) {
             AnalysisResult ar = analysisResults.get(i);
-            context.append(String.format("Case %d:\nProblem: %s\n",
-                    i + 1, ar.getProblemStatement()));
+            context.append(String.format("Case %d:\nProblem: %s\n", i + 1, ar.getProblemStatement()));
         }
+        return context.toString();
+    }
 
-        // Use PromptService to get the optimized prompt
-        String prompt = promptService.getQuizGenerationPrompt(context.toString());
+    /**
+     * 调用LLM生成题目
+     *
+     * @param context 上下文内容
+     * @return LLM返回的JSON字符串
+     */
+    private String callLLMForQuestions(String context) {
+        Long userId = securityUtils.getCurrentUserId();
 
+        String tagStructure = buildTagStructureForPrompt(userId);
+
+        String prompt = promptService.getQuizGenerationPrompt(context, tagStructure);
         String jsonResponse = analysisChatClient.prompt().user(prompt).call().content();
-        // Clean up markdown code blocks if present
+        return cleanJsonResponse(jsonResponse);
+    }
+
+    /**
+     * 构建标签结构字符串用于Prompt
+     */
+    private String buildTagStructureForPrompt(Long userId) {
+        try {
+            // 获取技术领域维度ID
+            var techDomain = tagDimensionRepository.findByCode("TECH_DOMAIN")
+                    .orElse(null);
+            if (techDomain == null) {
+                return "暂无标签结构";
+            }
+
+            // 获取标签树
+            List<TagService.TagVO> tagTree = tagService.getTagTree(userId, techDomain.getId());
+
+            // 格式化为文本结构
+            StringBuilder sb = new StringBuilder();
+            for (TagService.TagVO root : tagTree) {
+                appendTagTree(sb, root, 0);
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            log.warn("Failed to build tag structure for prompt", e);
+            return "暂无标签结构";
+        }
+    }
+
+    private void appendTagTree(StringBuilder sb, TagService.TagVO tag, int level) {
+        String indent = "  ".repeat(level);
+        sb.append(indent).append("- ").append(tag.getName());
+        if (tag.getPath() != null) {
+            sb.append(" (路径: ").append(tag.getPath()).append(")");
+        }
+        sb.append("\n");
+
+        if (tag.getChildren() != null) {
+            for (TagService.TagVO child : tag.getChildren()) {
+                appendTagTree(sb, child, level + 1);
+            }
+        }
+    }
+
+    /**
+     * 清理LLM返回的JSON响应（移除markdown代码块）
+     *
+     * @param jsonResponse 原始响应
+     * @return 清理后的JSON字符串
+     */
+    private String cleanJsonResponse(String jsonResponse) {
         if (jsonResponse.startsWith("```json")) {
             jsonResponse = jsonResponse.substring(7);
             if (jsonResponse.endsWith("```")) {
                 jsonResponse = jsonResponse.substring(0, jsonResponse.length() - 3);
             }
         }
-        jsonResponse = jsonResponse.trim();
+        return jsonResponse.trim();
+    }
 
-        // 3. Save Quiz Record
+    /**
+     * 创建并保存测验记录
+     *
+     * @param userId 用户ID
+     * @param collectionId 合集ID
+     * @return 保存后的测验记录
+     */
+    private QuizRecord createQuizRecord(Long userId, Long collectionId) {
         QuizRecord record = new QuizRecord();
         record.setUserId(userId);
         record.setCollectionId(collectionId);
-        record.setStatus(0); // In Progress
-        record = quizRecordRepository.save(record);
+        record.setStatus(0);
+        record.setCollectionVersionHash(generateCollectionVersionHash(collectionId));
+        return quizRecordRepository.save(record);
+    }
 
-        // 4. Save Questions
+    /**
+     * 解析LLM返回的JSON并保存题目
+     *
+     * @param jsonResponse LLM返回的JSON
+     * @param record 测验记录
+     * @param analysisResults 分析结果列表（用于关联）
+     * @return 保存的题目列表
+     */
+    private List<QuizQuestion> parseAndSaveQuestions(String jsonResponse, QuizRecord record, List<AnalysisResult> analysisResults) {
         try {
             List<Map<String, Object>> questions = objectMapper.readValue(jsonResponse, List.class);
             List<QuizQuestion> quizQuestions = new ArrayList<>();
 
             for (Map<String, Object> q : questions) {
-                QuizQuestion qq = new QuizQuestion();
+                QuizQuestion qq = parseQuestion(q, record, analysisResults);
                 quizQuestions.add(qq);
-                qq.setQuizId(record.getId());
-                qq.setQuestionText((String) q.get("question"));
-
-                // Handle answer for different question types
-                Object answerObj = q.get("answer");
-                if (answerObj instanceof String) {
-                    qq.setCorrectAnswer((String) answerObj);
-                } else if (answerObj instanceof List) {
-                    // Multiple choice: join with comma
-                    List<?> answers = (List<?>) answerObj;
-                    qq.setCorrectAnswer(answers.stream().map(Object::toString).collect(Collectors.joining(",")));
-                }
-
-                // Handle options (may be array or null for fill_blank/true_false)
-                Object optionsObj = q.get("options");
-                if (optionsObj != null) {
-                    qq.setOptionsJson(objectMapper.writeValueAsString(optionsObj));
-                } else {
-                    // For question types without options (e.g., fill_blank), set empty array
-                    qq.setOptionsJson("[]");
-                }
-
-                qq.setExplanation((String) q.get("explanation"));
-
-                // Parse question type
-                String typeStr = (String) q.getOrDefault("type", "single_choice");
-                try {
-                    qq.setQuestionType(QuestionType.fromCode(typeStr));
-                } catch (Exception e) {
-                    qq.setQuestionType(QuestionType.SINGLE_CHOICE);
-                }
-
-                // Parse difficulty level
-                Object difficultyObj = q.get("difficulty");
-                if (difficultyObj instanceof Number) {
-                    qq.setDifficultyLevel(((Number) difficultyObj).intValue());
-                }
-
-                // Parse knowledge point
-                String knowledgePoint = (String) q.get("knowledgePoint");
-                if (knowledgePoint != null && !knowledgePoint.trim().isEmpty()) {
-                    qq.setKnowledgePoint(knowledgePoint);
-                } else {
-                    // Extract from problem statement if not provided
-                    qq.setKnowledgePoint(extractKnowledgePoint((String) q.get("question")));
-                }
-
-                // Parse time limit
-                Object timeLimitObj = q.get("timeLimit");
-                if (timeLimitObj instanceof Number) {
-                    qq.setTimeLimit(((Number) timeLimitObj).intValue());
-                }
-
-                // Parse blank count (for fill_blank questions)
-                Object blankCountObj = q.get("blankCount");
-                if (blankCountObj instanceof Number) {
-                    qq.setBlankCount(((Number) blankCountObj).intValue());
-                } else if (qq.getQuestionType() == QuestionType.FILL_BLANK) {
-                    // For fill_blank questions without blankCount, calculate from question text
-                    String questionText = (String) q.get("question");
-                    if (questionText != null) {
-                        int blankCount = countBlanks(questionText);
-                        qq.setBlankCount(blankCount);
-                    }
-                }
-
-                // Try to link back to original analysis result
-                Object caseIndexObj = q.get("relatedCaseIndex");
-                if (caseIndexObj instanceof Integer) {
-                    int idx = (Integer) caseIndexObj - 1;
-                    if (idx >= 0 && idx < analysisResults.size()) {
-                        qq.setRelatedAnalysisId(analysisResults.get(idx).getId());
-                    }
-                }
             }
-            quizQuestionRepository.saveAll(quizQuestions);
+
+            return quizQuestionRepository.saveAll(quizQuestions);
         } catch (JsonProcessingException e) {
             log.error("Failed to parse LLM response for quiz", e);
             throw new RuntimeException("Failed to generate quiz");
         }
+    }
 
-        return record;
+    /**
+     * 解析单道题目
+     *
+     * @param q 题目数据Map
+     * @param record 测验记录
+     * @param analysisResults 分析结果列表
+     * @return 解析后的题目对象
+     */
+    private QuizQuestion parseQuestion(Map<String, Object> q, QuizRecord record, List<AnalysisResult> analysisResults) {
+        QuizQuestion qq = new QuizQuestion();
+        qq.setQuizId(record.getId());
+        qq.setQuestionText((String) q.get("question"));
+
+        // Handle answer for different question types
+        parseAndSetAnswer(qq, q.get("answer"));
+
+        // Handle options
+        parseAndSetOptions(qq, q.get("options"));
+
+        qq.setExplanation((String) q.get("explanation"));
+
+        // Parse question type
+        parseAndSetQuestionType(qq, (String) q.getOrDefault("type", "single_choice"));
+
+        // Parse difficulty level
+        parseAndSetDifficulty(qq, q.get("difficulty"));
+
+        // Parse knowledge point
+        parseAndSetKnowledgePoint(qq, q);
+
+        // Parse time limit
+        parseAndSetTimeLimit(qq, q.get("timeLimit"));
+
+        // Parse blank count
+        parseAndSetBlankCount(qq, q);
+
+        // Link to analysis result
+        linkToAnalysisResult(qq, q.get("relatedCaseIndex"), analysisResults);
+
+        return qq;
+    }
+
+    /**
+     * 解析并设置答案
+     */
+    private void parseAndSetAnswer(QuizQuestion qq, Object answerObj) {
+        if (answerObj instanceof String) {
+            qq.setCorrectAnswer((String) answerObj);
+        } else if (answerObj instanceof List) {
+            List<?> answers = (List<?>) answerObj;
+            qq.setCorrectAnswer(answers.stream().map(Object::toString).collect(Collectors.joining(",")));
+        }
+    }
+
+    /**
+     * 解析并设置选项
+     */
+    private void parseAndSetOptions(QuizQuestion qq, Object optionsObj) {
+        if (optionsObj != null) {
+            try {
+                qq.setOptionsJson(objectMapper.writeValueAsString(optionsObj));
+            } catch (JsonProcessingException e) {
+                log.warn("Failed to serialize options, using empty array", e);
+                qq.setOptionsJson("[]");
+            }
+        } else {
+            qq.setOptionsJson("[]");
+        }
+    }
+
+    /**
+     * 解析并设置题目类型
+     */
+    private void parseAndSetQuestionType(QuizQuestion qq, String typeStr) {
+        try {
+            qq.setQuestionType(QuestionType.fromCode(typeStr));
+        } catch (Exception e) {
+            qq.setQuestionType(QuestionType.SINGLE_CHOICE);
+        }
+    }
+
+    /**
+     * 解析并设置难度等级
+     */
+    private void parseAndSetDifficulty(QuizQuestion qq, Object difficultyObj) {
+        if (difficultyObj instanceof Number) {
+            qq.setDifficultyLevel(((Number) difficultyObj).intValue());
+        }
+    }
+
+    /**
+     * 解析并设置知识点（支持标签路径匹配）
+     */
+    private void parseAndSetKnowledgePoint(QuizQuestion qq, Map<String, Object> q) {
+        String knowledgePoint = (String) q.get("knowledgePoint");
+
+        if (knowledgePoint != null && !knowledgePoint.trim().isEmpty()) {
+            // LLM 成功匹配到标签路径
+            qq.setKnowledgePoint(knowledgePoint);
+
+            // 尝试关联到具体标签ID（根据路径查找）
+            Long tagId = findTagIdByPath(knowledgePoint);
+            if (tagId != null) {
+                qq.setTagId(tagId);
+            }
+        } else {
+            // 无法匹配，使用启发式提取作为后备
+            String extracted = extractKnowledgePoint((String) q.get("question"));
+            qq.setKnowledgePoint(extracted);
+        }
+    }
+
+    /**
+     * 根据标签路径查找标签ID
+     */
+    private Long findTagIdByPath(String path) {
+        if (path == null || path.isEmpty()) {
+            return null;
+        }
+        try {
+            return tagRepository.findByPath(path)
+                    .map(Tag::getId)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("Failed to find tag by path: {}", path, e);
+            return null;
+        }
+    }
+
+    /**
+     * 解析并设置时间限制
+     */
+    private void parseAndSetTimeLimit(QuizQuestion qq, Object timeLimitObj) {
+        if (timeLimitObj instanceof Number) {
+            qq.setTimeLimit(((Number) timeLimitObj).intValue());
+        }
+    }
+
+    /**
+     * 解析并设置填空数量
+     */
+    private void parseAndSetBlankCount(QuizQuestion qq, Map<String, Object> q) {
+        Object blankCountObj = q.get("blankCount");
+        if (blankCountObj instanceof Number) {
+            qq.setBlankCount(((Number) blankCountObj).intValue());
+        } else if (qq.getQuestionType() == QuestionType.FILL_BLANK) {
+            String questionText = (String) q.get("question");
+            if (questionText != null) {
+                qq.setBlankCount(countBlanks(questionText));
+            }
+        }
+    }
+
+    /**
+     * 关联到分析结果
+     */
+    private void linkToAnalysisResult(QuizQuestion qq, Object caseIndexObj, List<AnalysisResult> analysisResults) {
+        if (caseIndexObj instanceof Integer) {
+            int idx = (Integer) caseIndexObj - 1;
+            if (idx >= 0 && idx < analysisResults.size()) {
+                qq.setRelatedAnalysisId(analysisResults.get(idx).getId());
+            }
+        }
     }
 
     public List<QuizQuestion> getQuizQuestions(Long quizId) {
@@ -386,8 +617,7 @@ public class QuizService {
                 // Multiple choice: compare as sets (order doesn't matter)
                 List<String> userOptions = Arrays.asList(userAnswer.split(","));
                 List<String> correctOptions = Arrays.asList(correctAnswer.split(","));
-                return userOptions.size() == correctOptions.size()
-                        && userOptions.containsAll(correctOptions);
+                return userOptions.size() == correctOptions.size() && userOptions.containsAll(correctOptions);
             case TRUE_FALSE:
                 return  userAnswer.trim().equalsIgnoreCase(correctAnswer.trim());
 
@@ -495,7 +725,7 @@ public class QuizService {
         List<Long> analysisIds = relations.stream()
             .map(CollectionRelation::getAnalysisResultId)
             .sorted()  // 关键：排序确保顺序一致
-            .collect(Collectors.toList());
+            .toList();
 
         String content = analysisIds.stream()
             .map(String::valueOf)
@@ -515,8 +745,7 @@ public class QuizService {
     public QuizVersionCheckResult checkQuizVersion(Long userId, Long collectionId) {
         String currentHash = generateCollectionVersionHash(collectionId);
 
-        List<QuizRecord> existingRecords =
-            quizRecordRepository.findByUserIdAndCollectionIdOrderByCreatedTimeDesc(
+        List<QuizRecord> existingRecords = quizRecordRepository.findByUserIdAndCollectionIdOrderByCreatedTimeDesc(
                 userId, collectionId
             );
 
@@ -596,7 +825,7 @@ public class QuizService {
         for (int i = 0; i < analysisResults.size(); i++) {
             AnalysisResult ar = analysisResults.get(i);
             newCasesText.append(String.format(
-                "### Case %d:\n**问题**: %ss\n**方案**: %s\n\n",
+                "### Case %d:\n**问题**: %s\n**方案**: %s\n\n",
                 i + 1,
                 ar.getProblemStatement(),
                 ar.getSolution()
@@ -642,103 +871,6 @@ public class QuizService {
         log.info("Regenerated quiz {} for collection {} with {} questions",
             newRecord.getId(), collectionId, newQuestions.size());
         return newRecord;
-    }
-
-    /**
-     * 解析并保存题目
-     *
-     * @param jsonResponse LLM返回的JSON响应
-     * @param record QuizRecord对象
-     * @param analysisResults 分析结果列表
-     * @return 保存的题目列表
-     */
-    private List<QuizQuestion> parseAndSaveQuestions(
-        String jsonResponse, QuizRecord record, List<AnalysisResult> analysisResults
-    ) {
-        try {
-            List<Map<String, Object>> questions = objectMapper.readValue(jsonResponse, List.class);
-            List<QuizQuestion> quizQuestions = new ArrayList<>();
-
-            for (Map<String, Object> q : questions) {
-                QuizQuestion qq = new QuizQuestion();
-                quizQuestions.add(qq);
-                qq.setQuizId(record.getId());
-                qq.setQuestionText((String) q.get("question"));
-
-                // Handle answer for different question types
-                Object answerObj = q.get("answer");
-                if (answerObj instanceof String) {
-                    qq.setCorrectAnswer((String) answerObj);
-                } else if (answerObj instanceof List) {
-                    // Multiple choice: join with comma
-                    List<?> answers = (List<?>) answerObj;
-                    qq.setCorrectAnswer(answers.stream().map(Object::toString).collect(Collectors.joining(",")));
-                }
-
-                // Handle options
-                Object optionsObj = q.get("options");
-                if (optionsObj != null) {
-                    qq.setOptionsJson(objectMapper.writeValueAsString(optionsObj));
-                } else {
-                    qq.setOptionsJson("[]");
-                }
-
-                qq.setExplanation((String) q.get("explanation"));
-
-                // Parse question type
-                String typeStr = (String) q.getOrDefault("type", "single_choice");
-                try {
-                    qq.setQuestionType(QuestionType.fromCode(typeStr));
-                } catch (Exception e) {
-                    qq.setQuestionType(QuestionType.SINGLE_CHOICE);
-                }
-
-                // Parse difficulty level
-                Object difficultyObj = q.get("difficulty");
-                if (difficultyObj instanceof Number) {
-                    qq.setDifficultyLevel(((Number) difficultyObj).intValue());
-                }
-
-                // Parse knowledge point
-                String knowledgePoint = (String) q.get("knowledgePoint");
-                if (knowledgePoint != null && !knowledgePoint.trim().isEmpty()) {
-                    qq.setKnowledgePoint(knowledgePoint);
-                } else {
-                    qq.setKnowledgePoint(extractKnowledgePoint((String) q.get("question")));
-                }
-
-                // Parse time limit
-                Object timeLimitObj = q.get("timeLimit");
-                if (timeLimitObj instanceof Number) {
-                    qq.setTimeLimit(((Number) timeLimitObj).intValue());
-                }
-
-                // Parse blank count
-                Object blankCountObj = q.get("blankCount");
-                if (blankCountObj instanceof Number) {
-                    qq.setBlankCount(((Number) blankCountObj).intValue());
-                } else if (qq.getQuestionType() == QuestionType.FILL_BLANK) {
-                    String questionText = (String) q.get("question");
-                    if (questionText != null) {
-                        int blankCount = countBlanks(questionText);
-                        qq.setBlankCount(blankCount);
-                    }
-                }
-
-                // Link to analysis result
-                Object caseIndexObj = q.get("relatedCaseIndex");
-                if (caseIndexObj instanceof Integer) {
-                    int idx = (Integer) caseIndexObj - 1;
-                    if (idx >= 0 && idx < analysisResults.size()) {
-                        qq.setRelatedAnalysisId(analysisResults.get(idx).getId());
-                    }
-                }
-            }
-            return quizQuestionRepository.saveAll(quizQuestions);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to parse LLM response for quiz regeneration", e);
-            throw new RuntimeException("Failed to regenerate quiz");
-        }
     }
 
     /**

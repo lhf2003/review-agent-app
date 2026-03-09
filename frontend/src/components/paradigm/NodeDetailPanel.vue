@@ -92,10 +92,14 @@ const addToCollection = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--el-bg-color-overlay);
-  border-radius: 12px;
-  border: 1px solid var(--el-border-color-lighter);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 
   &.empty {
     align-items: center;
@@ -108,8 +112,8 @@ const addToCollection = () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  background: var(--el-fill-color-lighter);
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(255, 248, 245, 0.02);
 }
 
 .node-title {
@@ -155,23 +159,24 @@ const addToCollection = () => {
 .code-snippet {
   margin: 0;
   padding: 12px;
-  background: var(--el-fill-color);
-  border-radius: 8px;
-  font-family: 'Fira Code', 'Consolas', monospace;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.5;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-all;
+  border: 1px solid var(--glass-border);
 }
 
 .panel-footer {
   display: flex;
   gap: 8px;
   padding: 12px 16px;
-  border-top: 1px solid var(--el-border-color-lighter);
-  background: var(--el-fill-color-lighter);
+  border-top: 1px solid var(--glass-border);
+  background: rgba(255, 248, 245, 0.02);
 
   .el-button {
     flex: 1;
@@ -203,25 +208,4 @@ const addToCollection = () => {
   }
 }
 
-// 深色模式适配
-html.dark {
-  .node-detail-panel {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .panel-header {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .code-snippet {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .panel-footer {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-}
 </style>

@@ -105,7 +105,9 @@ function closeCompare() {
   </el-dialog>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
+
 .similarity-list {
   max-height: 400px;
   overflow-y: auto;
@@ -116,9 +118,16 @@ function closeCompare() {
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
   margin-bottom: 12px;
+  background: var(--glass-surface);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--glass-surface-hover);
+    border-color: var(--glass-border-hover);
+  }
 }
 
 .issue-main {
@@ -134,12 +143,15 @@ function closeCompare() {
 .issue-title {
   font-weight: 500;
   margin-bottom: 4px;
+  color: var(--text-primary);
 }
 
 .compare-container {
   display: flex;
   height: 500px;
-  border: 1px solid var(--el-border-color-lighter);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .compare-col {
@@ -151,54 +163,62 @@ function closeCompare() {
 
 .col-header {
   padding: 10px;
-  background-color: var(--el-fill-color-light);
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--glass-surface);
+  border-bottom: 1px solid var(--glass-border);
   font-weight: 600;
   text-align: center;
+  color: var(--text-primary);
 }
 
 .col-content {
   flex: 1;
   padding: 10px;
   overflow-y: auto;
+  background: var(--bg-deep);
 }
 
 .compare-divider {
   width: 1px;
-  background-color: var(--el-border-color-lighter);
+  background-color: var(--glass-border);
 }
 
 /* 背景模糊效果 */
 :global(.el-overlay.blur-backdrop) {
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  background-color: rgba(26, 15, 8, 0.7);
 }
 
 /* 弹窗内容样式优化 */
 :deep(.el-dialog) {
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg);
 }
 
 :deep(.el-dialog__header) {
   padding: 16px 20px;
   margin: 0;
-  border-bottom: 1px solid var(--el-border-color-light);
+  border-bottom: 1px solid var(--glass-border);
+  background: linear-gradient(135deg, rgba(204, 102, 51, 0.1) 0%, transparent 100%);
 }
 
 :deep(.el-dialog__title) {
   font-size: 16px;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 :deep(.el-dialog__body) {
   padding: 16px 20px;
+  color: var(--text-secondary);
 }
 
 :deep(.el-dialog__footer) {
   padding: 12px 20px 16px;
-  border-top: 1px solid var(--el-border-color-light);
+  border-top: 1px solid var(--glass-border);
 }
 </style>

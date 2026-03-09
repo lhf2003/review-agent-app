@@ -506,35 +506,6 @@ function handleChangePassword() {
   box-shadow: 0 6px 16px var(--el-color-primary-light-4);
 }
 
-/* Dark Mode Enhancements */
-html.dark .readonly-field {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-html.dark .readonly-field.clickable:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--el-color-primary-dark-7);
-}
-
-:deep(html.dark .apple-input .el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-:deep(html.dark .apple-input .el-input__wrapper:hover) {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-:deep(html.dark .apple-input .el-input__wrapper.is-focus) {
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px var(--el-color-primary-dark-9);
-}
-
-html.dark :deep(.apple-dialog .el-dialog__body) {
-  background: rgba(0, 0, 0, 0.7);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
 /* Custom Scrollbar for Dialog Content */
 .profile-edit-content::-webkit-scrollbar {
   width: 6px;

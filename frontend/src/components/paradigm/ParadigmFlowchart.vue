@@ -80,13 +80,13 @@ const getLayoutConfig = (type) => {
   return configs[type] || configs.FLOW_CHART
 }
 
-// 节点样式根据类型
+// 节点样式根据类型 - 适配深色主题的暖色调
 const getNodeStyle = (type) => {
   const styles = {
-    START: { fill: '#10B981', stroke: '#059669' },
-    PROCESS: { fill: '#3B82F6', stroke: '#2563EB' },
-    DECISION: { fill: '#F59E0B', stroke: '#D97706' },
-    END: { fill: '#EF4444', stroke: '#DC2626' }
+    START: { fill: '#22c55e', stroke: '#16a34a' },
+    PROCESS: { fill: '#CC6633', stroke: '#A8552A' },
+    DECISION: { fill: '#f59e0b', stroke: '#d97706' },
+    END: { fill: '#ef4444', stroke: '#dc2626' }
   }
   return styles[type] || styles.PROCESS
 }
@@ -132,13 +132,13 @@ const initGraph = () => {
       size: [120, 40],
       style: {
         radius: 4,
-        fill: '#3B82F6',
-        stroke: '#2563EB',
+        fill: '#CC6633',
+        stroke: '#A8552A',
         lineWidth: 1
       },
       labelCfg: {
         style: {
-          fill: '#fff',
+          fill: '#ffffff',
           fontSize: 12
         }
       }
@@ -146,13 +146,13 @@ const initGraph = () => {
     defaultEdge: {
       type: 'polyline',
       style: {
-        stroke: '#6B7280',
+        stroke: 'rgba(255, 248, 245, 0.4)',
         lineWidth: 1,
         endArrow: true
       },
       labelCfg: {
         style: {
-          fill: '#6B7280',
+          fill: 'rgba(255, 255, 255, 0.6)',
           fontSize: 11
         }
       }
@@ -187,7 +187,7 @@ const renderData = () => {
     },
     labelCfg: {
       style: {
-        fill: '#fff',
+        fill: '#ffffff',
         fontSize: 12,
         fontWeight: 500
       }
@@ -203,19 +203,19 @@ const renderData = () => {
     target: edge.target,
     label: edge.label,
     style: {
-      stroke: '#6B7280',
+      stroke: 'rgba(255, 248, 245, 0.4)',
       lineWidth: 1.5,
       endArrow: {
         path: 'M 0,0 L 8,4 L 8,-4 Z',
-        fill: '#6B7280'
+        fill: 'rgba(255, 248, 245, 0.4)'
       }
     },
     labelCfg: {
       style: {
-        fill: '#6B7280',
+        fill: 'rgba(255, 255, 255, 0.7)',
         fontSize: 11,
         background: {
-          fill: '#fff',
+          fill: 'rgba(26, 15, 8, 0.8)',
           padding: [2, 4],
           radius: 2
         }
@@ -300,8 +300,11 @@ defineExpose({
 .paradigm-flowchart {
   width: 100%;
   position: relative;
-  background: #fafafa;
-  border-radius: 8px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
+  border: 1px solid var(--glass-border);
   overflow: hidden;
 }
 
@@ -314,22 +317,12 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(26, 15, 8, 0.85);
+  backdrop-filter: blur(4px);
   gap: 8px;
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   z-index: 10;
 }
 
-// 深色模式适配
-html.dark {
-  .paradigm-flowchart {
-    background: rgba(255, 255, 255, 0.03);
-  }
-
-  .loading-overlay {
-    background: rgba(0, 0, 0, 0.5);
-    color: var(--el-text-color-regular);
-  }
-}
 </style>

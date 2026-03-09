@@ -690,20 +690,18 @@ defineExpose({
 
 /* 抽屉圆角 */
 :deep(.el-drawer) {
-  border-radius: 16px 0 0 16px;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
   overflow: hidden;
-}
-
-:deep(.el-drawer__body) {
-  padding: 0;
+  background: var(--bg-overlay);
+  border-left: 1px solid var(--glass-border);
 }
 
 /* 头部样式 */
 .drawer-header {
   padding: 16px 20px;
-  background: linear-gradient(135deg, var(--el-color-primary-light-9) 0%, var(--el-fill-color-light) 100%);
-  border-bottom: 1px solid var(--el-border-color-light);
-  border-radius: 16px 0 0 0;
+  background: var(--glass-surface);
+  border-bottom: 1px solid var(--glass-border);
+  border-radius: var(--radius-card) 0 0 0;
   flex-shrink: 0;
 }
 
@@ -726,16 +724,16 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--el-color-primary);
+  background-color: var(--accent-primary);
   color: white;
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.4);
+  box-shadow: 0 2px 8px var(--accent-glow-soft);
 }
 
 .header-brand-text {
   font-size: 16px;
   font-weight: 700;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   letter-spacing: -0.02em;
 }
 
@@ -746,17 +744,17 @@ defineExpose({
 }
 
 .header-actions :deep(.el-button) {
-  color: var(--el-text-color-secondary);
-  background-color: var(--el-bg-color);
-  border: 1px solid var(--el-border-color);
+  color: var(--text-secondary);
+  background-color: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   transition: all 0.2s ease;
 }
 
 .header-actions :deep(.el-button:hover) {
-  color: var(--el-color-primary);
-  border-color: var(--el-color-primary);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 /* 标签信息卡片 */
@@ -765,10 +763,10 @@ defineExpose({
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background-color: var(--el-bg-color);
+  background-color: var(--glass-surface);
   border-radius: 16px;
-  border: 1px solid var(--el-border-color-lighter);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .tag-color-indicator {
@@ -789,7 +787,7 @@ defineExpose({
 .tag-name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -798,9 +796,9 @@ defineExpose({
 
 .tag-dimension {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   padding: 2px 8px;
-  background-color: var(--el-fill-color-lighter);
+  background-color: rgba(255, 248, 245, 0.05);
   border-radius: 6px;
   width: fit-content;
 }
@@ -810,11 +808,11 @@ defineExpose({
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background-color: var(--el-fill-color-lighter);
+  background-color: rgba(255, 248, 245, 0.05);
   border-radius: 10px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
@@ -823,8 +821,8 @@ defineExpose({
   display: flex;
   gap: 8px;
   padding: 12px 20px;
-  border-bottom: 1px solid var(--el-border-color-light);
-  background-color: var(--el-bg-color);
+  border-bottom: 1px solid var(--glass-border);
+  background-color: var(--glass-surface);
   flex-shrink: 0;
 }
 
@@ -835,7 +833,7 @@ defineExpose({
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
   background-color: transparent;
   border-radius: 12px;
   cursor: pointer;
@@ -843,21 +841,21 @@ defineExpose({
 }
 
 .tab-item:hover {
-  background-color: var(--el-fill-color-light);
-  color: var(--el-text-color-primary);
+  background-color: var(--glass-surface-hover);
+  color: var(--text-primary);
 }
 
 .tab-item.active {
-  background-color: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
+  background-color: rgba(204, 102, 51, 0.15);
+  color: var(--accent-primary);
 }
 
 .tab-badge {
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--el-color-primary);
-  background-color: var(--el-color-primary-light-9);
+  color: var(--accent-primary);
+  background-color: rgba(204, 102, 51, 0.1);
   border-radius: 10px;
 }
 
@@ -878,7 +876,7 @@ defineExpose({
 .section-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   margin-bottom: 12px;
   display: flex;
   align-items: center;
@@ -926,7 +924,7 @@ defineExpose({
 
 .stat-label {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .stat-count {
@@ -952,8 +950,8 @@ defineExpose({
 .count-badge {
   font-size: 11px;
   padding: 2px 10px;
-  background-color: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
+  background-color: rgba(204, 102, 51, 0.1);
+  color: var(--accent-primary);
   border-radius: 10px;
   font-weight: 600;
 }
@@ -967,19 +965,19 @@ defineExpose({
 
 .relation-card {
   padding: 14px 16px;
-  background-color: var(--el-fill-color-lighter);
+  background-color: rgba(255, 248, 245, 0.03);
   border-radius: 16px;
   border-left: 3px solid var(--relation-color);
   transition: all 0.2s ease;
 }
 
 .relation-card:hover {
-  background-color: var(--el-fill-color-light);
+  background-color: rgba(255, 248, 245, 0.06);
   transform: translateX(4px);
 }
 
 .relation-card.primary {
-  background: linear-gradient(135deg, var(--el-color-primary-light-9) 0%, var(--el-fill-color-lighter) 100%);
+  background: linear-gradient(135deg, rgba(204, 102, 51, 0.1) 0%, rgba(255, 248, 245, 0.03) 100%);
 }
 
 .relation-main {
@@ -993,12 +991,12 @@ defineExpose({
 .relation-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .relation-desc {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 /* 空状态 */
@@ -1009,9 +1007,9 @@ defineExpose({
   justify-content: center;
   gap: 8px;
   padding: 32px 20px;
-  background-color: var(--el-fill-color-lighter);
+  background-color: rgba(255, 248, 245, 0.03);
   border-radius: 16px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -1040,17 +1038,17 @@ defineExpose({
   display: flex;
   gap: 12px;
   padding: 16px;
-  background-color: var(--el-fill-color-lighter);
+  background-color: rgba(255, 248, 245, 0.03);
   border-radius: 16px;
   transition: all 0.2s ease;
 }
 
 .relation-timeline-item:hover {
-  background-color: var(--el-fill-color-light);
+  background-color: rgba(255, 248, 245, 0.06);
 }
 
 .relation-timeline-item.is-auto {
-  background-image: linear-gradient(45deg, transparent 46%, var(--el-border-color-lighter) 49%, var(--el-border-color-lighter) 51%, transparent 55%);
+  background-image: linear-gradient(45deg, transparent 46%, var(--glass-border) 49%, var(--glass-border) 51%, transparent 55%);
   background-size: 8px 8px;
 }
 
@@ -1104,28 +1102,28 @@ defineExpose({
   font-size: 13px;
   font-weight: 500;
   border-radius: 8px;
-  background-color: var(--el-fill-color);
+  background-color: rgba(255, 248, 245, 0.05);
 }
 
 .tag-pill.source {
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
 }
 
 .tag-pill.target {
-  color: var(--el-color-primary);
-  background-color: var(--el-color-primary-light-9);
+  color: var(--accent-primary);
+  background-color: rgba(204, 102, 51, 0.1);
 }
 
 .path-arrow {
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
 }
 
 .relation-evidence {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   line-height: 1.5;
   padding: 8px 12px;
-  background-color: var(--el-bg-color);
+  background-color: var(--glass-surface);
   border-radius: 10px;
 }
 
@@ -1137,81 +1135,6 @@ defineExpose({
 
 .relation-timeline-item:hover .timeline-actions {
   opacity: 1;
-}
-
-/* 暗黑模式 */
-html.dark .drawer-header {
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.15) 0%, rgba(255, 255, 255, 0.03) 100%);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-html.dark .header-icon {
-  background-color: var(--el-color-primary);
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
-}
-
-html.dark .header-tag-card {
-  background-color: rgba(30, 30, 30, 0.8);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-html.dark .tag-dimension {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-html.dark .tag-stat {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-html.dark .header-actions :deep(.el-button) {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: var(--el-text-color-secondary);
-}
-
-html.dark .header-actions :deep(.el-button:hover) {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: var(--el-color-primary);
-}
-
-html.dark .drawer-tabs {
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-html.dark .tab-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-html.dark .stat-card {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-html.dark .relation-card {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-html.dark .relation-card:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-html.dark .relation-timeline-item {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-html.dark .relation-timeline-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-html.dark .tag-pill {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-html.dark .section-empty {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-html.dark .relation-evidence {
-  background-color: rgba(0, 0, 0, 0.3);
 }
 
 /* 响应式 */

@@ -324,8 +324,8 @@ const progressPercentage = computed(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--el-bg-color-page);
-  color: var(--el-text-color-primary);
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
   overflow: hidden; // Prevent page-level scroll
 }
 
@@ -335,7 +335,7 @@ const progressPercentage = computed(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 64px); // Subtract header height
+  height: calc(100vh - 52px); // Subtract header height
 }
 
 .quiz-container {
@@ -344,7 +344,7 @@ const progressPercentage = computed(() => {
   margin: 0;
   display: flex;
   flex-direction: column;
-  padding: 24px 80px 24px 48px; // Right padding accommodates progress bar
+  padding: 16px 80px 16px 48px; // Right padding accommodates progress bar
   box-sizing: border-box;
 }
 

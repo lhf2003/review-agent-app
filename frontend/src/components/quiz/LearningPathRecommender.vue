@@ -485,10 +485,11 @@ defineExpose({
 }
 
 .overview-card {
-  background: linear-gradient(135deg, rgba(24, 144, 255, 0.05), rgba(82, 196, 26, 0.02));
-  border: 1px solid rgba(24, 144, 255, 0.1);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   border-radius: 12px;
-  padding: 16px;
+  padding: 5px 10px;
 }
 
 .overview-stats {
@@ -518,7 +519,7 @@ defineExpose({
 
 .stat-divider {
   width: 1px;
-  height: 40px;
+  height: 32px;
   background-color: var(--el-border-color-light);
 }
 
@@ -552,7 +553,7 @@ defineExpose({
   background: rgba(255, 255, 255, 0.3);
   border-radius: 20px;
   border: 1px dashed rgba(0, 0, 0, 0.1);
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 .empty-icon-wrapper {
@@ -597,21 +598,22 @@ defineExpose({
 
 // 路径卡片
 .path-card {
-  background: var(--el-bg-color-overlay);
-  border: 1px solid var(--el-border-color-lighter);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   border-radius: 16px;
   padding: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: var(--el-color-primary-light-5);
+    border-color: var(--glass-border-hover);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   }
 
   &.is-expanded {
-    border-color: var(--el-color-primary);
-    box-shadow: 0 4px 20px rgba(var(--el-color-primary-rgb), 0.15);
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 20px var(--accent-glow-soft);
   }
 }
 
@@ -859,68 +861,4 @@ defineExpose({
   font-weight: 500;
 }
 
-// 深色模式适配
-html.dark {
-  .recommender-header {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .header-icon-wrapper {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  .refresh-btn {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-    }
-  }
-
-  .overview-card {
-    background: linear-gradient(135deg, rgba(24, 144, 255, 0.08), rgba(82, 196, 26, 0.04));
-    border-color: rgba(24, 144, 255, 0.2);
-  }
-
-  .skeleton-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.05);
-  }
-
-  .empty-state {
-    background: rgba(255, 255, 255, 0.02);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .empty-icon-wrapper {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .path-card {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.1);
-
-    &:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    &.is-expanded {
-      border-color: var(--el-color-primary);
-    }
-  }
-
-  .path-reason {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .step-item {
-    background: rgba(255, 255, 255, 0.05);
-
-    &.is-core {
-      background: linear-gradient(135deg, rgba(var(--el-color-primary-rgb), 0.15), rgba(255, 255, 255, 0.05));
-    }
-  }
-}
 </style>

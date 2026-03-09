@@ -291,11 +291,25 @@ public class PromptService {
     }
 
     /**
-     * 获取习题生成提示词
+     * 获取习题生成提示词（向后兼容，不带标签结构）
      */
     public String getQuizGenerationPrompt(String cases) throws PromptProcessingException {
         Map<String, Object> variables = new HashMap<>();
         variables.put("cases", cases);
+        return buildPrompt("Quiz.习题生成提示词", variables);
+    }
+
+    /**
+     * 获取习题生成提示词（带标签结构）
+     *
+     * @param cases 案例内容
+     * @param tagStructure 标签结构JSON字符串
+     * @return 构建好的提示词
+     */
+    public String getQuizGenerationPrompt(String cases, String tagStructure) throws PromptProcessingException {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("cases", cases);
+        variables.put("tagStructure", tagStructure);
         return buildPrompt("Quiz.习题生成提示词", variables);
     }
 

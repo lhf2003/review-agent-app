@@ -158,7 +158,7 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--el-bg-color-page);
+  background-color: var(--bg-deep);
   overflow: hidden;
 }
 
@@ -175,19 +175,19 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 20px;
   box-sizing: border-box;
-  background-color: var(--el-bg-color-page);
+  background-color: var(--bg-deep);
   z-index: 10;
 }
 
 .title-area h2 {
   margin: 0;
   font-size: 28px;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .subtitle {
   margin: 5px 0 0;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -212,44 +212,31 @@ onMounted(() => {
 }
 
 .stack-card {
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--glass-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); /* Softer, wider shadow */
-  border: 1px solid rgba(255, 255, 255, 0.4); /* Glass border */
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--glass-border);
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   cursor: pointer;
-  
-  /* Increased height to fill visual space and allow overlap effect */
+
   height: 70vh;
   min-height: 400px;
   display: flex;
   flex-direction: column;
 
-  /* Fix for jagged edges/white lines during rotation */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
   outline: 1px solid transparent;
 }
 
-html.dark .stack-card {
-  background: rgba(30, 30, 35, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-}
-
 .stack-card:hover {
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12); /* Increased offset for hover state too */
+  box-shadow: var(--shadow-lg);
   transform: translateY(-5px) scale(1.02);
-  border-color: rgba(255, 255, 255, 0.6);
-}
-
-html.dark .stack-card:hover {
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--glass-border-hover);
 }
 
 .card-inner {
@@ -266,12 +253,8 @@ html.dark .stack-card:hover {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
-}
-
-html.dark .report-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .date-badge {
@@ -280,8 +263,8 @@ html.dark .report-header {
   gap: 8px;
   font-size: 16px;
   font-weight: 600;
-  color: var(--el-color-primary);
-  background: rgba(var(--el-color-primary-rgb), 0.1);
+  color: var(--accent-primary);
+  background: rgba(204, 102, 51, 0.1);
   padding: 6px 12px;
   border-radius: 8px;
   backdrop-filter: blur(4px);
@@ -289,9 +272,9 @@ html.dark .report-header {
 
 .report-type-tag {
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   font-weight: 500;
-  background: rgba(128, 128, 128, 0.1);
+  background: rgba(255, 248, 245, 0.05);
   padding: 4px 10px;
   border-radius: 4px;
 }
@@ -305,7 +288,7 @@ html.dark .report-header {
 .report-content {
   font-size: 15px;
   line-height: 1.6;
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
 }
 
 /* Gradient overlay */
@@ -314,36 +297,28 @@ html.dark .report-header {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 140px; /* Taller gradient for better fade */
-  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9) 80%);
+  height: 140px;
+  background: linear-gradient(to bottom, transparent, var(--bg-deep) 80%);
   display: flex;
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 20px;
-  color: var(--el-color-primary);
+  color: var(--accent-primary);
   font-weight: 600;
   font-size: 14px;
-  pointer-events: none; /* Let click pass through to card */
+  pointer-events: none;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-}
-
-html.dark .read-more-overlay {
-  background: linear-gradient(to bottom, transparent, rgba(30, 30, 35, 0.9) 80%);
 }
 
 .card-footer {
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px dashed rgba(0, 0, 0, 0.05);
+  border-top: 1px dashed var(--glass-border);
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   text-align: right;
   flex-shrink: 0;
-}
-
-html.dark .card-footer {
-  border-top: 1px dashed rgba(255, 255, 255, 0.05);
 }
 
 /* Hints */
@@ -351,7 +326,7 @@ html.dark .card-footer {
   text-align: center;
   font-size: 14px;
   font-weight: 600;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   opacity: 0.5;
   padding: 30px 0;
   text-transform: uppercase;
@@ -371,7 +346,7 @@ html.dark .card-footer {
 .dialog-content {
   font-size: 16px;
   line-height: 1.8;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   max-height: 60vh;
   overflow-y: auto;
   padding: 0 10px;
@@ -398,14 +373,14 @@ html.dark .card-footer {
 .header-icon {
   font-size: 20px;
   cursor: pointer;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   transition: color 0.2s;
-  display: flex; 
+  display: flex;
   align-items: center;
 }
 
 .header-icon:hover {
-  color: var(--el-color-primary);
+  color: var(--accent-primary);
 }
 
 /* Markdown Override */

@@ -127,30 +127,18 @@ function goBack() {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
+
 .code-viewer-container {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--el-bg-color);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
   position: relative;
-  /* Specific Code Viewer Colors */
-  --cv-bg-light: #ffffff;
-  --cv-text-light: #24292e; /* GitHub Dark Gray */
-  --cv-bg-dark: #0d1117;   /* GitHub Dark Bg */
-  --cv-text-dark: #c9d1d9; /* GitHub Dark Text */
-  
-  --cv-highlight-bg-light: #fff8c5; /* Light Yellow */
-  --cv-highlight-text-light: #24292e;
-  
-  --cv-highlight-bg-dark: rgba(187, 128, 9, 0.15); /* Dark Gold Low Opacity */
-  --cv-highlight-text-dark: #e3b341; /* Gold Text */
-  
-  --cv-active-bg-light: #fffbdd;
-  --cv-active-border-light: #d29922;
-  
-  --cv-active-bg-dark: rgba(187, 128, 9, 0.3);
-  --cv-active-border-dark: #e3b341;
+  overflow: hidden;
 }
 
 .editor-header {
@@ -159,8 +147,8 @@ function goBack() {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  background-color: var(--el-bg-color-overlay);
-  border-bottom: 1px solid var(--el-border-color-light);
+  background: var(--glass-surface);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
@@ -179,19 +167,19 @@ function goBack() {
   justify-content: center;
   cursor: pointer;
   border-radius: 6px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   transition: all 0.2s;
 }
 
 .back-btn:hover {
-  background-color: var(--el-fill-color);
-  color: var(--el-text-color-primary);
+  background-color: var(--glass-surface-hover);
+  color: var(--text-primary);
 }
 
 .file-name {
   font-family: 'JetBrains Mono', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 13px;
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -208,22 +196,15 @@ function goBack() {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(255, 248, 245, 0.1);
   border-radius: 5px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(255, 248, 245, 0.2);
 }
 
-:global(html.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-:global(html.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.4);
-}
 
 .custom-scrollbar::-webkit-scrollbar-corner {
   background: transparent;
@@ -233,13 +214,10 @@ function goBack() {
 .conversation-viewer {
   flex: 1;
   overflow: auto;
-  background-color: var(--el-fill-color-lighter);
+  background: var(--bg-deep);
   padding: 20px;
 }
 
-:global(html.dark) .conversation-viewer {
-  background-color: var(--el-bg-color);
-}
 
 .conversation-list {
   display: flex;
@@ -276,12 +254,12 @@ function goBack() {
 }
 
 .user-avatar {
-  background-color: var(--el-color-primary);
+  background: var(--accent-primary);
   color: white;
 }
 
 .ai-avatar {
-  background-color: var(--el-color-success);
+  background: var(--mastery-high);
   color: white;
 }
 
@@ -300,20 +278,20 @@ function goBack() {
   font-size: 14px;
   line-height: 1.6;
   word-break: break-word;
-  box-shadow: var(--el-box-shadow-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .user-bubble {
-  background-color: var(--el-color-primary);
+  background: var(--accent-primary);
   color: #ffffff;
   border-bottom-right-radius: 4px;
 }
 
 .ai-bubble {
-  background-color: var(--el-bg-color);
-  color: var(--el-text-color-primary);
+  background: var(--glass-surface);
+  color: var(--text-primary);
   border-bottom-left-radius: 4px;
-  border: 1px solid var(--el-border-color-light);
+  border: 1px solid var(--glass-border);
 }
 
 .bubble-content {
@@ -326,7 +304,7 @@ function goBack() {
   }
 
   :deep(pre) {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 248, 245, 0.05);
     padding: 12px;
     border-radius: 8px;
     overflow-x: auto;
@@ -334,19 +312,6 @@ function goBack() {
   }
 }
 
-/* Dark mode adjustments for conversation */
-:global(html.dark) .user-bubble {
-  background-color: var(--el-color-primary);
-}
-
-:global(html.dark) .ai-bubble {
-  background-color: var(--el-bg-color-overlay);
-  border-color: var(--el-border-color-darker);
-}
-
-:global(html.dark) .bubble-content :deep(pre) {
-  background: rgba(255, 255, 255, 0.05);
-}
 
 /* 时间戳样式 */
 .timestamp-bar {
@@ -356,7 +321,7 @@ function goBack() {
   gap: 8px;
   padding: 8px;
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .timestamp-bar .time-text {

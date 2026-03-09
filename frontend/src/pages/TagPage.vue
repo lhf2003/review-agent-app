@@ -124,25 +124,27 @@ function toggleTrendFullscreen() {
 }
 
 .nav-radio-group {
-  --el-fill-color-light: rgba(255, 255, 255, 0.5);
   --el-border-radius-base: 8px;
 }
 
 .nav-radio-group :deep(.el-radio-button__inner) {
   border: none;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow-sm);
   border-radius: 8px;
   padding: 6px 12px;
   min-width: 90px;
   font-size: 14px;
+  color: var(--text-secondary);
 }
 
 .nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background-color: var(--el-color-primary);
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
+  box-shadow: 0 4px 12px var(--accent-glow-soft);
 }
 
 /* ============ Content Area ============ */
@@ -166,14 +168,13 @@ function toggleTrendFullscreen() {
 
 /* ============ Glassmorphism ============ */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow:
-    0 4px 24px -1px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.4) inset;
-  border-radius: 16px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-card);
   padding: 20px;
   height: 100%;
   overflow: hidden;
@@ -188,7 +189,7 @@ function toggleTrendFullscreen() {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
@@ -196,12 +197,12 @@ function toggleTrendFullscreen() {
   font-size: 20px;
   font-weight: 600;
   margin: 0 0 4px 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .header-title .subtitle {
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -212,13 +213,13 @@ function toggleTrendFullscreen() {
 }
 
 .fullscreen-btn {
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   transition: all 0.3s ease;
 }
 
 .fullscreen-btn:hover {
-  color: var(--el-color-primary);
-  background: var(--el-fill-color-light);
+  color: var(--accent-primary);
+  background: var(--glass-surface-hover);
   transform: scale(1.1);
 }
 
@@ -243,25 +244,6 @@ function toggleTrendFullscreen() {
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-10px);
-}
-
-/* ============ Dark Mode ============ */
-html.dark .glass-panel {
-  background: rgba(28, 28, 30, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-}
-
-html.dark .nav-radio-group :deep(.el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--el-text-color-regular);
-}
-
-html.dark .nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background-color: var(--el-color-primary);
-  color: white;
 }
 
 /* ============ Responsive ============ */

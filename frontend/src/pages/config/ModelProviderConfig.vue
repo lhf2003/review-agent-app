@@ -1,6 +1,5 @@
 <template>
-  <CustomScroll class="model-config-scroll">
-    <div class="model-config-page">
+  <div class="model-config-page">
     <div class="page-header">
       <h2>模型提供商配置</h2>
       <p>管理您的 AI 模型提供商和激活模型</p>
@@ -111,8 +110,7 @@
       <el-button :loading="loading" type="primary" size="large" @click="saveConfig"
         class="save-btn">保存更改</el-button>
     </div>
-    </div>
-  </CustomScroll>
+  </div>
 </template>
 
 <script setup>
@@ -121,7 +119,6 @@ import { Check, Plus, QuestionFilled, Tools } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api/http'
 import { useAuthStore } from '../../stores/auth'
-import CustomScroll from '../../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 const loading = ref(false)
@@ -428,10 +425,6 @@ async function saveConfig() {
 </script>
 
 <style scoped>
-.model-config-scroll {
-  height: 100%;
-}
-
 .model-config-page {
   width: 100%;
   padding-bottom: 80px;
@@ -446,32 +439,36 @@ async function saveConfig() {
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .page-header p {
   margin: 0;
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .provider-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: var(--bg-primary);
 }
 
 .provider-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 12px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  transition: all 0.3s;
+  transition: var(--transition-base);
 }
 
 .provider-card.active {
-  border-color: var(--el-color-primary-light-5);
-  box-shadow: 0 0 0 1px var(--el-color-primary-light-5);
+  border-color: var(--accent-glow-soft);
+  box-shadow: inset 0 0 20px var(--accent-glow-soft);
 }
 
 .provider-header {
@@ -480,11 +477,12 @@ async function saveConfig() {
   align-items: center;
   padding: 16px 20px;
   cursor: pointer;
-  background: var(--el-fill-color-lighter);
+  background: rgba(255, 248, 245, 0.02);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
 }
 
 .provider-header:hover {
-  background: var(--el-fill-color-light);
+  background: var(--glass-surface-hover);
 }
 
 .header-left {
@@ -512,7 +510,7 @@ async function saveConfig() {
 .provider-name {
   font-weight: 600;
   font-size: 16px;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .header-right {
@@ -525,27 +523,28 @@ async function saveConfig() {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid var(--el-border-color);
+  border: 2px solid var(--glass-border);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .provider-card.active .radio-indicator {
-  border-color: var(--el-color-primary);
+  border-color: var(--accent-primary);
 }
 
 .radio-inner {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--el-color-primary);
+  background: var(--accent-primary);
 }
 
 .provider-body {
   padding: 20px;
-  border-top: 1px solid var(--el-border-color-light);
-  background: var(--el-bg-color);
+  border-top: 1px solid var(--glass-border);
+  background: transparent;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
 }
 
 .config-row {
@@ -563,7 +562,7 @@ async function saveConfig() {
 
 .config-item label {
   font-size: 13px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
 }
 
 .url-item {
@@ -590,7 +589,7 @@ async function saveConfig() {
   margin-bottom: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
 }
 
 .header-title-row {
@@ -600,13 +599,13 @@ async function saveConfig() {
 }
 
 .help-icon {
-    color: var(--el-text-color-secondary);
+    color: var(--text-tertiary);
     cursor: help;
     font-size: 14px;
 }
 
 .help-icon:hover {
-    color: var(--el-color-primary);
+    color: var(--accent-primary);
 }
 
 .model-grid {
@@ -617,23 +616,24 @@ async function saveConfig() {
 
 .model-chip {
   padding: 8px 12px;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  background: var(--el-fill-color-extra-light);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 248, 245, 0.03);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
+  color: var(--text-secondary);
 }
 
 .model-chip:hover {
-    border-color: var(--el-color-primary);
-    background-color: var(--el-color-primary-light-9);
+    border-color: var(--accent-primary);
+    background-color: rgba(204, 102, 51, 0.1);
 }
 
 .model-chip.is-active {
-    background-color: var(--el-color-success-light-9);
-    border-color: var(--el-color-success);
-    color: var(--el-color-success);
+    background-color: rgba(34, 197, 94, 0.15);
+    border-color: var(--mastery-high);
+    color: var(--mastery-high);
 }
 
 .chip-content {
@@ -649,28 +649,28 @@ async function saveConfig() {
 .empty-models {
   padding: 20px;
   text-align: center;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
   font-size: 13px;
-  background: var(--el-fill-color-lighter);
-  border-radius: 8px;
-  border: 1px dashed var(--el-border-color-light);
+  background: rgba(255, 248, 245, 0.02);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--glass-border);
 }
 
 .apple-input :deep(.el-input__wrapper) {
-  box-shadow: none;
-  background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--glass-border) inset;
+  background-color: rgba(255, 248, 245, 0.03);
+  border-radius: var(--radius-md);
   padding: 4px 12px;
   transition: all 0.2s;
 }
 
 .apple-input :deep(.el-input__wrapper.is-focus) {
-  background-color: var(--el-bg-color);
-  box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
+  background-color: rgba(255, 248, 245, 0.05);
+  box-shadow: 0 0 0 2px var(--accent-glow-soft) inset;
 }
 
 .apple-dialog :deep(.el-dialog) {
-    border-radius: 12px;
+    border-radius: var(--radius-card);
 }
 
 .dialog-footer {
@@ -689,16 +689,19 @@ async function saveConfig() {
 }
 
 .save-btn {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-radius: 24px;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  border-radius: var(--radius-pill);
   padding: 12px 32px;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .save-btn:hover {
+  background: var(--accent-secondary);
+  border-color: var(--accent-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 4px 16px var(--accent-glow-soft);
 }
 
 @media (max-width: 768px) {

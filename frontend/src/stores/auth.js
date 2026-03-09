@@ -31,7 +31,7 @@ export const useAuthStore = defineStore('auth', {
       router.push('/login')
     },
     routerPushAfterLogin() {
-      router.push('/data')
+      router.push('/dashboard')
     },
     routerPushLogin() {
       router.push('/login')

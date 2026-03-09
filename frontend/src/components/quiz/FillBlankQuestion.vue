@@ -273,44 +273,33 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
 @import '../../styles/quiz-common';
-@import '../../styles/variables';
 
 .fill-blank-question {
-  // 使用共享的 CSS 变量
-  --card-radius: var(--quiz-card-radius);
-  --transition-spring: var(--quiz-transition-spring);
-  --transition-smooth: var(--quiz-transition-smooth);
-  --primary-color: var(--quiz-primary-color);
-  --success-color: var(--quiz-success-color);
-  --danger-color: var(--quiz-danger-color);
-  --warning-color: var(--quiz-warning-color);
-
-  background: var(--el-bg-color);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: var(--card-radius);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
   padding: 32px;
   margin-bottom: 24px;
-  border: 1px solid var(--el-border-color-light);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02),
-  0 10px 15px -3px rgba(0, 0, 0, 0.04),
-  0 0 0 1px rgba(0, 0, 0, 0.02);
-  transition: var(--transition-smooth);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-base);
   position: relative;
-  opacity: 0.95;
 
   &.compact-mode {
     padding: 20px;
     background: transparent;
     box-shadow: none;
-    border: 1px solid var(--el-border-color-lighter);
+    border: 1px solid var(--glass-border);
     backdrop-filter: none;
   }
 
   &.is-submitted {
     .blank-input {
-      color: var(--el-text-color-primary);
+      color: var(--text-primary);
     }
   }
 
@@ -321,7 +310,7 @@ defineExpose({
     :deep(.blank-placeholder) {
       display: inline-block;
       min-width: 60px;
-      border-bottom: 2px solid var(--el-text-color-placeholder);
+      border-bottom: 2px solid var(--text-muted);
       margin: 0 4px;
       vertical-align: bottom;
     }
@@ -338,15 +327,15 @@ defineExpose({
     align-items: center;
     gap: 16px;
     padding: 12px 16px;
-    border-radius: 16px;
-    background: var(--el-fill-color-light);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    transition: var(--transition-smooth);
+    border-radius: var(--radius-md);
+    background: rgba(255, 248, 245, 0.05);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-base);
 
     &:focus-within {
-      background: var(--el-bg-color);
-      border-color: var(--primary-color);
-      box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.15);
+      background: var(--glass-surface-hover);
+      border-color: var(--accent-primary);
+      box-shadow: 0 4px 12px rgba(204, 102, 51, 0.15);
       transform: translateY(-1px);
     }
   }
@@ -354,15 +343,15 @@ defineExpose({
   .blank-number {
     width: 32px;
     height: 32px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.05);
-    color: var(--el-text-color-secondary);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 248, 245, 0.08);
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 14px;
     font-weight: 700;
-    font-family: monospace;
+    font-family: var(--font-mono);
     flex-shrink: 0;
   }
 
@@ -370,21 +359,21 @@ defineExpose({
     flex: 1;
     padding: 8px 0;
     font-size: 18px;
-    font-family: monospace;
+    font-family: var(--font-mono);
     background: transparent;
     border: none;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
     outline: none;
-    transition: var(--transition-smooth);
+    transition: var(--transition-base);
     border-bottom: 2px solid transparent;
 
     &::placeholder {
-      color: var(--el-text-color-placeholder);
+      color: var(--text-muted);
       opacity: 0.5;
     }
 
     &:focus {
-      border-bottom-color: var(--primary-color);
+      border-bottom-color: var(--accent-primary);
     }
 
     &:disabled {
@@ -405,34 +394,34 @@ defineExpose({
   }
 
   .blank-item.is-correct {
-    background: rgba(52, 199, 89, 0.1);
-    border-color: var(--success-color);
+    background: rgba(34, 197, 94, 0.1);
+    border-color: var(--mastery-high);
 
     .blank-input {
-      color: #1a7f37;
+      color: var(--mastery-high);
     }
 
     .blank-number {
-      background: rgba(52, 199, 89, 0.2);
-      color: #1a7f37;
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--mastery-high);
     }
   }
 
   .blank-item.is-wrong {
-    background: linear-gradient(135deg, rgba(255, 59, 48, 0.12) 0%, rgba(255, 59, 48, 0.06) 100%);
-    border: 2px solid var(--danger-color);
-    box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.08);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.06) 100%);
+    border: 2px solid var(--mastery-low);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08);
     animation: shake 0.5s ease-in-out;
     z-index: 2;
 
     .blank-input {
-      color: var(--danger-color);
+      color: var(--mastery-low);
       font-weight: 600;
     }
 
     .blank-number {
-      background: rgba(255, 59, 48, 0.25);
-      color: var(--danger-color);
+      background: rgba(239, 68, 68, 0.25);
+      color: var(--mastery-low);
       font-weight: 700;
     }
 
@@ -473,86 +462,6 @@ defineExpose({
     }
     40%, 60% {
       transform: translate3d(4px, 0, 0);
-    }
-  }
-
-  // Dark Mode Adaptation
-  :global(.dark) & {
-    background: rgba(28, 28, 30, 0.65);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-
-    &.compact-mode {
-      background: transparent;
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .question-text {
-      color: #FFFFFF;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-
-      :deep(.blank-placeholder) {
-        border-bottom-color: rgba(255, 255, 255, 0.3);
-      }
-    }
-
-    .blank-item {
-      background: rgba(44, 44, 46, 0.4);
-      border-color: rgba(255, 255, 255, 0.08);
-
-      &:focus-within {
-        background: rgba(58, 58, 60, 0.8);
-        border-color: var(--primary-color);
-        box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.6);
-      }
-    }
-
-    .blank-number {
-      background: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .blank-input {
-      color: white;
-
-      &::placeholder {
-        color: rgba(255, 255, 255, 0.3);
-      }
-    }
-
-    .blank-item.is-correct {
-      background: rgba(52, 199, 89, 0.2);
-      border-color: var(--success-color);
-
-      .blank-input {
-        color: #4cd964;
-      }
-
-      .blank-number {
-        background: rgba(52, 199, 89, 0.3);
-        color: white;
-      }
-    }
-
-    .blank-item.is-wrong {
-      background: linear-gradient(135deg, rgba(255, 69, 58, 0.25) 0%, rgba(255, 69, 58, 0.15) 100%);
-      border: 2px solid #ff453a;
-      box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.1);
-
-      .blank-input {
-        color: #ff453a;
-        font-weight: 600;
-      }
-
-      .blank-number {
-        background: rgba(255, 69, 58, 0.35);
-        color: white;
-        font-weight: 700;
-      }
-
-      .blank-status-icon {
-        animation: iconPop 0.3s ease both;
-      }
     }
   }
 }

@@ -4,7 +4,6 @@ import { onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api } from '../../api/http'
 import { useAuthStore } from '../../stores/auth'
-import CustomScroll from '../../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 
@@ -146,9 +145,8 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-  <CustomScroll class="settings-page-scroll">
-    <div class="settings-page">
-      <div class="page-header">
+  <div class="settings-page">
+    <div class="page-header">
         <h2>推送配置</h2>
         <p>定制您的学习报告推送</p>
       </div>
@@ -207,15 +205,10 @@ onBeforeRouteLeave((to, from, next) => {
         保存更改
       </el-button>
     </div>
-    </div>
-  </CustomScroll>
+  </div>
 </template>
 
 <style scoped>
-.settings-page-scroll {
-  height: 100%;
-}
-
 .settings-page {
   max-width: 800px;
   padding-bottom: 80px;
@@ -229,26 +222,29 @@ onBeforeRouteLeave((to, from, next) => {
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .page-header p {
   margin: 0;
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .form-card {
-  background: var(--el-bg-color);
-  border-radius: 16px;
-  border: 1px solid var(--el-border-color-light);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   padding: 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: var(--transition-base);
 }
 
 :deep(.el-form-item__label) {
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: var(--text-secondary);
   padding-bottom: 8px;
 }
 
@@ -265,7 +261,7 @@ onBeforeRouteLeave((to, from, next) => {
 .sub-label {
   font-size: 13px;
   font-weight: normal;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 
@@ -284,14 +280,14 @@ onBeforeRouteLeave((to, from, next) => {
 
 .apple-select :deep(.el-input__wrapper),
 .apple-picker :deep(.el-input__wrapper) {
-  box-shadow: none !important;
-  background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--glass-border) inset !important;
+  background-color: rgba(255, 248, 245, 0.03);
+  border-radius: var(--radius-md);
 }
 
 :deep(.el-divider--horizontal) {
   margin: 16px 0;
-  border-top-color: var(--el-border-color-lighter);
+  border-top-color: var(--glass-border);
 }
 
 .floating-save-bar {
@@ -304,16 +300,19 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 .save-btn {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-radius: 24px;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  border-radius: var(--radius-pill);
   padding: 12px 32px;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .save-btn:hover {
+  background: var(--accent-secondary);
+  border-color: var(--accent-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 4px 16px var(--accent-glow-soft);
 }
 
 @media (max-width: 768px) {

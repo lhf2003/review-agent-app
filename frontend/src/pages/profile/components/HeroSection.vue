@@ -162,20 +162,4 @@ const emit = defineEmits(['edit'])
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-/* Dark Mode */
-html.dark .hero-section {
-  background: linear-gradient(135deg,
-    rgba(64, 158, 255, 0.2) 0%,
-    rgba(64, 158, 255, 0.1) 100%
-  );
-}
-
-html.dark .edit-profile-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-html.dark .edit-profile-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
 </style>

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Folder, Delete, Edit, MagicStick } from '@element-plus/icons-vue'
+import { Plus, Folder, Delete, Edit, MagicStick, More } from '@element-plus/icons-vue'
 import { api } from '../../api/http'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CustomScroll from '../../components/CustomScroll.vue'
@@ -45,13 +45,12 @@ async function handleCreate() {
     const result = await api.createCollection(createForm.value)
     ElMessage.success('创建成功')
     createDialogVisible.value = false
-    createForm.value = { name: '', description: '' } // Reset form
+    createForm.value = { name: '', description: '' }
     fetchList()
 
     // 检查是否有新解锁的成就
     if (result && result.newlyUnlockedAchievements && result.newlyUnlockedAchievements.length > 0) {
       newlyUnlockedAchievements.value = result.newlyUnlockedAchievements
-      // 延迟显示成就弹窗，让用户先看到创建成功的提示
       setTimeout(() => {
         achievementDialogVisible.value = true
       }, 500)
@@ -88,7 +87,7 @@ async function handleEdit() {
 }
 
 function confirmDelete(e, id) {
-  e.stopPropagation() // 防止触发卡片点击
+  e.stopPropagation()
   ElMessageBox.confirm('确定要删除这个合集吗？',
     '提示',
     {
@@ -98,14 +97,13 @@ function confirmDelete(e, id) {
     }).then(async () => {
       await api.deleteCollection(id)
       ElMessage.success('已删除')
-      fetchList() // 刷新
+      fetchList()
     })
 }
 
 // 处理智能创建成功
 function handleQuickCreateSuccess(result) {
-  fetchList() // 刷新列表
-  // 检查是否有新解锁的成就
+  fetchList()
   if (result && result.newlyUnlockedAchievements && result.newlyUnlockedAchievements.length > 0) {
     newlyUnlockedAchievements.value = result.newlyUnlockedAchievements
     setTimeout(() => {
@@ -113,66 +111,151 @@ function handleQuickCreateSuccess(result) {
     }, 500)
   }
 }
+
+// 获取掌握度等级样式
+function getMasteryClass(mastery) {
+  if (mastery >= 80) return 'high'
+  if (mastery >= 50) return 'medium'
+  return 'low'
+}
+
+// 模拟获取合集的掌握度（实际应从API获取）
+function getCollectionMastery(item) {
+  // 这里使用模拟数据，实际应根据item数据计算
+  return Math.floor(Math.random() * 100)
+}
+
+// 获取合集标签（模拟）
+function getCollectionTags(item) {
+  const tags = ['React', 'Vue', 'TypeScript', 'Node.js', 'Docker', 'K8s', 'GraphQL', 'Microservices']
+  return tags.slice(0, Math.floor(Math.random() * 4) + 2)
+}
+
+// 获取文件夹图标
+function getFolderIcon(name) {
+  const icons = {
+    'React': '⚛️',
+    'Vue': '💚',
+    'Docker': '🐳',
+    'K8s': '☸️',
+    'AI': '🤖',
+    'Security': '🛡️',
+    'Writing': '📝',
+    'Architecture': '🏗️',
+    'DevOps': '🚢',
+    'default': '📁'
+  }
+  
+  for (const key in icons) {
+    if (name.toLowerCase().includes(key.toLowerCase())) {
+      return icons[key]
+    }
+  }
+  return icons.default
+}
 </script>
 
 <template>
   <div class="page-container">
-    <div class="header">
-      <div class="title-area">
-        <h1>问题合集</h1>
-        <p class="subtitle">归纳整理相似问题，构建你的知识库</p>
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="title-group">
+        <h1>知识合集</h1>
+        <p>整理和掌握你在专业领域的知识</p>
       </div>
-      <div class="header-actions">
-        <el-button type="primary" plain :icon="MagicStick" @click="quickCreateDialogVisible = true">
+      <div class="actions-group">
+        <el-button class="btn-text" @click="quickCreateDialogVisible = true">
+          <el-icon><MagicStick /></el-icon>
           智能创建
-        </el-button>
-        <el-button type="primary" :icon="Plus" @click="createDialogVisible = true">
-          新建合集
         </el-button>
       </div>
     </div>
 
+    <!-- Grid Container -->
     <div v-loading="loading" class="grid-container">
       <CustomScroll>
         <div class="cards-wrapper">
-          <el-row :gutter="20">
-            <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="item in collections" :key="item.id">
-              <div class="collection-card" @click="goDetail(item.id)">
-                <div class="card-icon">
-                  <el-icon>
-                    <Folder />
-                  </el-icon>
-                </div>
-                <div class="card-info">
-                  <div class="card-title">{{ item.name }}</div>
-                  <div class="card-desc">{{ item.description || '暂无描述' }}</div>
-                  <div class="card-meta">
-                    <span>{{ item.count || 0 }} 个问题</span>
-                    <span class="date">{{ item.updatedTime ? new Date(item.updatedTime).toLocaleDateString() : '刚刚'
-                      }}</span>
-                  </div>
-                </div>
-                <div class="card-actions">
-                  <div class="action-btn edit-btn" @click="(e) => openEditDialog(e, item)">
-                    <el-icon><Edit /></el-icon>
-                  </div>
-                  <div class="action-btn delete-btn" @click="(e) => confirmDelete(e, item.id)">
-                    <el-icon><Delete /></el-icon>
-                  </div>
+          <div class="grid">
+            <!-- Create New Card -->
+            <div class="new-collection-card" @click="createDialogVisible = true">
+              <div class="plus-icon">+</div>
+              <div class="create-text">创建合集</div>
+            </div>
+
+            <!-- Collection Cards -->
+            <div 
+              v-for="item in collections" 
+              :key="item.id" 
+              class="collection-card glass"
+              @click="goDetail(item.id)"
+            >
+              <div class="card-top">
+                <div class="folder-icon">{{ getFolderIcon(item.name) }}</div>
+                <div class="options-dots" @click="(e) => { e.stopPropagation(); }">
+                  <el-dropdown trigger="click">
+                    <span class="dots">•••</span>
+                    <template #dropdown>
+                      <el-dropdown-menu>
+                        <el-dropdown-item @click="(e) => openEditDialog(e, item)">
+                          <el-icon><Edit /></el-icon> 编辑
+                        </el-dropdown-item>
+                        <el-dropdown-item @click="(e) => confirmDelete(e, item.id)" divided>
+                          <el-icon><Delete /></el-icon> 删除
+                        </el-dropdown-item>
+                      </el-dropdown-menu>
+                    </template>
+                  </el-dropdown>
                 </div>
               </div>
-            </el-col>
-          </el-row>
+              
+              <div class="card-info">
+                <div class="collection-name">{{ item.name }}</div>
+                <div class="collection-meta">
+                  <span>{{ item.count || 0 }} 个文件</span>
+                  <span>更新于 {{ item.updatedTime ? new Date(item.updatedTime).toLocaleDateString() : '刚刚' }}</span>
+                </div>
+              </div>
+
+              <!-- Topic Tags -->
+              <div class="topic-tags">
+                <span 
+                  v-for="tag in getCollectionTags(item).slice(0, 4)" 
+                  :key="tag" 
+                  class="tag-small"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+
+              <!-- Mastery Progress -->
+              <div class="mastery-progress-container">
+                <div class="progress-label">
+                  <span>掌握程度</span>
+                  <span :class="getMasteryClass(getCollectionMastery(item))">
+                    {{ getCollectionMastery(item) }}%
+                  </span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div 
+                    class="progress-bar-fill" 
+                    :class="getMasteryClass(getCollectionMastery(item))"
+                    :style="{ width: getCollectionMastery(item) + '%' }"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </CustomScroll>
 
       <el-empty v-if="!loading && collections.length === 0" description="暂无合集" />
     </div>
 
+    <!-- Create Dialog -->
     <el-dialog v-model="createDialogVisible" title="新建合集" width="400px">
       <el-form :model="createForm" label-position="top">
         <el-form-item label="名称">
-          <el-input v-model="createForm.name" placeholder="例如：Java 并发问题" />
+          <el-input v-model="createForm.name" placeholder="例如：React Hooks" />
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="createForm.description" type="textarea" :rows="3" />
@@ -184,10 +267,11 @@ function handleQuickCreateSuccess(result) {
       </template>
     </el-dialog>
 
+    <!-- Edit Dialog -->
     <el-dialog v-model="editDialogVisible" title="编辑合集" width="400px">
       <el-form :model="editForm" label-position="top">
         <el-form-item label="名称">
-          <el-input v-model="editForm.name" placeholder="例如：Java 并发问题" />
+          <el-input v-model="editForm.name" placeholder="例如：React Hooks" />
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="editForm.description" type="textarea" :rows="3" />
@@ -199,14 +283,14 @@ function handleQuickCreateSuccess(result) {
       </template>
     </el-dialog>
 
-    <!-- 成就解锁弹窗 -->
+    <!-- Achievement Notification -->
     <AchievementNotification
       v-model:visible="achievementDialogVisible"
       :achievements="newlyUnlockedAchievements"
       @close="handleAchievementClose"
     />
 
-    <!-- 智能创建弹窗 -->
+    <!-- Quick Create Dialog -->
     <QuickCreateDialog
       v-model:visible="quickCreateDialogVisible"
       @created="handleQuickCreateSuccess"
@@ -215,211 +299,314 @@ function handleQuickCreateSuccess(result) {
 </template>
 
 <style scoped lang="scss">
-@import '../../styles/variables';
+// Import nebula theme variables
+@use '../../styles/nebula-theme.scss' as *;
+// Import nebula theme variables
+@use '../../styles/nebula-theme.scss' as *;
 
 .page-container {
-  padding: 24px;
+  padding: var(--space-s) var(--space-l) var(--space-l) var(--space-l);
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 24px;
-  background-color: var(--el-bg-color-page);
-}
-
-@media (max-width: 768px) {
-  .page-container {
-    padding: 16px;
-    border-radius: 16px;
-  }
-}
-
-/* Dark Mode - 三级背景色层级 */
-html.dark .page-container {
-  background-color: #161616;
+  width: 100%;
 }
 
 .grid-container {
   flex: 1;
   overflow: hidden;
-  padding: 4px; /* 防止 box-shadow 被截断 */
+  padding: 4px;
 }
 
 .cards-wrapper {
-  padding-right: 12px; /* 预留滚动条空间，防止el-row负margin导致的横向滚动 */
+  padding-right: 12px;
   overflow-x: hidden;
 }
 
-.header {
+// Page Header
+.page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  flex-wrap: wrap; /* Wrap on mobile */
-  gap: 16px; /* Gap when wrapped */
-
-  h1 {
-    font-size: 24px;
-    margin: 0 0 8px 0;
-    font-weight: 600;
-  }
-
-  .subtitle {
-    color: var(--el-text-color-secondary);
-    margin: 0;
-    font-size: 14px;
-  }
+  align-items: flex-end;
+  margin-bottom: var(--space-m);
+  flex-wrap: wrap;
+  gap: var(--space-s);
+  padding-top: 0;
 }
 
-.header-actions {
+.title-group h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.title-group p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+.actions-group {
   display: flex;
   gap: 12px;
 }
 
-@media (max-width: 768px) {
-  .page-container {
-    border-radius: 20px;
-  }
-
-  .header-actions {
-    width: 100%;
-    flex-direction: column;
-  }
-
-  .header-actions .el-button {
-    width: 100%;
-  }
-
-  .collection-card {
-    border-radius: 16px;
-  }
+// Grid Layout
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-m);
 }
 
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 20px;
-  }
-
-  .title-area {
-    width: 100%;
-  }
-
-  .card-actions .action-btn {
-    opacity: 1;
-  }
+// Glass Effect Base
+.glass {
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
 }
 
-.collection-card {
-  background: #ffffff;
-  border: none;
-  border-radius: 18px;
-  padding: 20px;
-  margin-bottom: 20px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  position: relative;
+// New Collection Card
+.new-collection-card {
+  border-radius: var(--radius-card);
+  border: 2px dashed rgba(255, 248, 245, 0.1);
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  cursor: pointer;
+  min-height: 100px;
+  padding: var(--space-s) var(--space-m);
 }
 
-.card-icon {
-  width: 48px;
-  height: 48px;
-  background: var(--el-fill-color-light);
+.new-collection-card:hover {
+  border-color: rgba(204, 102, 51, 0.5);
+  background: rgba(204, 102, 51, 0.05);
+  color: var(--text-primary);
+}
+
+.plus-icon {
+  font-size: 32px;
+  font-weight: 300;
+}
+
+.create-text {
+  font-size: 14px;
+}
+
+// Collection Card
+.collection-card {
+  border-radius: var(--radius-card);
+  padding: var(--space-m);
+  transition: all 0.2s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100px;
+}
+
+.collection-card:hover {
+  transform: translateY(-4px);
+  background: var(--glass-surface-hover);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.folder-icon {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 248, 245, 0.05);
+  border: 1px solid rgba(255, 248, 245, 0.1);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--el-color-primary);
-  font-size: 24px;
+  font-size: 20px;
 }
 
-.card-info {
-  flex: 1;
-  overflow: hidden;
+.options-dots {
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
 }
 
-.card-title {
+.dots {
   font-size: 16px;
+  letter-spacing: 2px;
+}
+
+.collection-name {
+  font-size: 18px;
   font-weight: 600;
-  margin-bottom: 6px;
-  color: var(--el-text-color-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-bottom: 4px;
+  color: var(--text-primary);
 }
 
-.card-desc {
+.collection-meta {
   font-size: 13px;
-  color: var(--el-text-color-secondary);
-  line-height: 1.4;
-  height: 36px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-bottom: 12px;
+  color: var(--text-tertiary);
+  display: flex;
+  gap: 12px;
 }
 
-.card-meta {
+// Topic Tags
+.topic-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-small {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 248, 245, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 248, 245, 0.05);
+  transition: all 0.2s;
+}
+
+.tag-small:hover {
+  background: rgba(204, 102, 51, 0.1);
+  border-color: rgba(204, 102, 51, 0.2);
+  color: var(--accent-tertiary);
+}
+
+// Mastery Progress
+.mastery-progress-container {
+  margin-top: auto;
+}
+
+.progress-label {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-secondary);
+  margin-bottom: 8px;
 }
 
-.card-actions {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  gap: 8px;
+.progress-label .low {
+  color: var(--mastery-low);
 }
 
-.action-btn {
-  padding: 6px;
-  border-radius: 8px;
-  opacity: 0;
-  transition: opacity 0.2s;
+.progress-label .medium {
+  color: var(--mastery-med);
+}
+
+.progress-label .high {
+  color: var(--mastery-high);
+}
+
+.progress-bar-bg {
+  height: 6px;
+  background: rgba(255, 248, 245, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 3px;
+  box-shadow: 0 0 10px var(--accent-glow-soft);
+  transition: width 0.5s ease;
+}
+
+.progress-bar-fill.low {
+  background: var(--mastery-low);
+  box-shadow: 0 0 10px var(--mastery-low-glow);
+}
+
+.progress-bar-fill.medium {
+  background: var(--mastery-med);
+  box-shadow: 0 0 10px var(--mastery-med-glow);
+}
+
+.progress-bar-fill.high {
+  background: var(--mastery-high);
+  box-shadow: 0 0 10px var(--mastery-high-glow);
+}
+
+// Button Styles
+.btn-text {
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid rgba(255, 248, 245, 0.2);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+}
 
-  &:hover {
-    background: var(--el-fill-color-dark);
+.btn-text:hover {
+  background: rgba(255, 248, 245, 0.05);
+  border-color: rgba(255, 248, 245, 0.4);
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary:hover {
+  background: var(--accent-secondary);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px var(--accent-glow-soft);
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .page-container {
+    padding: var(--space-m);
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actions-group {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .collection-card {
+    min-height: 140px;
   }
 }
 
-.edit-btn {
-  color: var(--el-color-primary);
-}
-
-.delete-btn {
-  color: var(--el-color-danger);
-}
-
-.collection-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
-
-  .action-btn {
-    opacity: 1;
+@media (max-width: 480px) {
+  .title-group h1 {
+    font-size: 24px;
   }
-}
-
-/* Dark Mode Support - 三级背景色层级 */
-html.dark .collection-card {
-  background: #161616;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-html.dark .collection-card:hover {
-  background: #25252a;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
 }
 </style>

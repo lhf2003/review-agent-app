@@ -273,24 +273,23 @@ watch(() => props.estimatedSeconds, (newTime) => {
   padding: 20px;
 }
 
-// 加载容器
+// 加载容器 - Warm Amber 深色主题
 .loading-container {
   position: relative;
   width: 100%;
   max-width: 480px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-radius: 24px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  border-radius: var(--radius-card);
   padding: 48px 40px 40px;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(255, 255, 255, 0.8),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
-// 顶部光效
+// 顶部光效 - Warm Amber 主题
 .glow-effect {
   position: absolute;
   top: -50%;
@@ -300,7 +299,7 @@ watch(() => props.estimatedSeconds, (newTime) => {
   height: 100%;
   background: radial-gradient(
     circle at center,
-    rgba(99, 102, 241, 0.15) 0%,
+    rgba(204, 102, 51, 0.2) 0%,
     transparent 60%
   );
   pointer-events: none;
@@ -328,13 +327,13 @@ watch(() => props.estimatedSeconds, (newTime) => {
   justify-content: center;
 }
 
-// 脉冲环
+// 脉冲环 - Warm Amber 主题
 .pulse-ring {
   position: absolute;
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 2px solid rgba(99, 102, 241, 0.3);
+  border: 2px solid rgba(204, 102, 51, 0.3);
   animation: pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
   &.delay-1 {
@@ -350,7 +349,7 @@ watch(() => props.estimatedSeconds, (newTime) => {
 .center-icon {
   font-size: 48px;
   animation: icon-bounce 2s ease-in-out infinite;
-  filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.2));
+  filter: drop-shadow(0 4px 8px rgba(204, 102, 51, 0.3));
 }
 
 // 阶段信息
@@ -360,7 +359,7 @@ watch(() => props.estimatedSeconds, (newTime) => {
   .stage-title {
     font-size: 22px;
     font-weight: 700;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
     margin: 0 0 12px;
     letter-spacing: -0.02em;
   }
@@ -368,13 +367,13 @@ watch(() => props.estimatedSeconds, (newTime) => {
   .stage-description {
     font-size: 15px;
     font-weight: 400;
-    color: var(--el-text-color-secondary);
+    color: var(--text-secondary);
     margin: 0;
     line-height: 1.6;
   }
 }
 
-// 进度条区域
+// 进度条区域 - Warm Amber 主题
 .progress-section {
   width: 100%;
   margin-bottom: 24px;
@@ -383,7 +382,7 @@ watch(() => props.estimatedSeconds, (newTime) => {
     position: relative;
     width: 100%;
     height: 8px;
-    background: rgba(0, 0, 0, 0.06);
+    background: rgba(255, 248, 245, 0.1);
     border-radius: 999px;
     overflow: hidden;
     margin-bottom: 12px;
@@ -392,23 +391,23 @@ watch(() => props.estimatedSeconds, (newTime) => {
   .progress-fill {
     position: relative;
     height: 100%;
-    background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%);
+    background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 50%, var(--accent-primary) 100%);
     background-size: 200% 100%;
     border-radius: 999px;
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     animation: gradient-shift 2s ease-in-out infinite;
-    overflow: hidden; /* 确保光效不超出进度条 */
+    overflow: hidden;
 
     .progress-shine {
       position: absolute;
       top: 0;
       left: 0;
-      width: 50%; /* 只占父元素的一半宽度 */
+      width: 50%;
       height: 100%;
       background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0.3) 50%,
         transparent 100%
       );
       animation: shine-move 1.5s ease-in-out infinite;
@@ -419,7 +418,7 @@ watch(() => props.estimatedSeconds, (newTime) => {
     display: flex;
     justify-content: space-between;
     font-size: 13px;
-    color: var(--el-text-color-secondary);
+    color: var(--text-secondary);
 
     .time-elapsed {
       font-weight: 500;
@@ -432,7 +431,7 @@ watch(() => props.estimatedSeconds, (newTime) => {
   }
 }
 
-// 提示区域
+// 提示区域 - Warm Amber 主题
 .tip-section {
   width: 100%;
   margin-bottom: 20px;
@@ -443,12 +442,13 @@ watch(() => props.estimatedSeconds, (newTime) => {
 
   .tip-text {
     font-size: 14px;
-    color: var(--el-text-color-regular);
+    color: var(--text-secondary);
     line-height: 1.5;
     margin: 0;
     padding: 10px 16px;
-    background: rgba(99, 102, 241, 0.08);
+    background: rgba(204, 102, 51, 0.1);
     border-radius: 12px;
+    border: 1px solid rgba(204, 102, 51, 0.15);
   }
 }
 
@@ -458,13 +458,13 @@ watch(() => props.estimatedSeconds, (newTime) => {
 
   .value-text {
     font-size: 13px;
-    color: var(--el-text-color-secondary);
+    color: var(--text-tertiary);
     margin: 0;
-    opacity: 0.7;
+    opacity: 0.8;
   }
 }
 
-// 底部装饰
+// 底部装饰 - Warm Amber 主题
 .bottom-decoration {
   display: flex;
   justify-content: center;
@@ -474,7 +474,7 @@ watch(() => props.estimatedSeconds, (newTime) => {
   .dot-dot {
     width: 8px;
     height: 8px;
-    background: rgba(99, 102, 241, 0.3);
+    background: rgba(204, 102, 51, 0.4);
     border-radius: 50%;
     animation: dot-bounce 1.4s ease-in-out infinite;
 
@@ -573,40 +573,6 @@ watch(() => props.estimatedSeconds, (newTime) => {
   transform: translateY(-10px);
 }
 
-// 深色模式适配
-html.dark {
-  .loading-container {
-    background: rgba(40, 40, 42, 0.75);
-    box-shadow:
-      0 20px 60px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  }
-
-  .glow-effect {
-    background: radial-gradient(
-      circle at center,
-      rgba(139, 92, 246, 0.2) 0%,
-      transparent 60%
-    );
-  }
-
-  .pulse-ring {
-    border-color: rgba(139, 92, 246, 0.4);
-  }
-
-  .progress-bar {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .tip-section .tip-text {
-    background: rgba(139, 92, 246, 0.15);
-  }
-
-  .bottom-decoration .dot-dot {
-    background: rgba(139, 92, 246, 0.4);
-  }
-}
 
 // 响应式设计
 @media (max-width: 600px) {

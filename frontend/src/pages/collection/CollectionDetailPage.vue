@@ -320,28 +320,27 @@ async function exportCollection() {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--el-bg-color-page);
+  background-color: var(--bg-deep);
   overflow: hidden;
   border-radius: 24px;
 }
 
 .nav-header {
   padding: 12px var(--page-padding);
-  background: rgba(255, 255, 255, 0.85);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--glass-surface);
+  border-bottom: 1px solid var(--glass-border);
   position: sticky;
   top: 0;
   z-index: 10;
-  backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   transition: all 0.3s ease;
-  border-radius: 20px;
-  margin: 12px 16px 0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
 
   .header-title {
     font-weight: 600;
     font-size: 18px;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
     letter-spacing: -0.5px;
   }
 
@@ -368,31 +367,8 @@ async function exportCollection() {
   }
 }
 
-html.dark .collection-detail-page {
-  background-color: #161616;
-}
-
-html.dark .nav-header {
-  background: rgba(35, 35, 40, 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-html.dark .hero-card {
-  background: #161616;
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-html.dark .problem-card {
-  background: #161616;
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
 .content-wrapper {
   padding: var(--page-padding);
-  max-width: 1000px;
-  margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
   flex: 1;
@@ -403,14 +379,17 @@ html.dark .problem-card {
 
 // Hero Card Styles
 .hero-card {
-  background: var(--el-bg-color);
-  border-radius: 20px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
   padding: 24px;
   margin-bottom: 24px;
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--el-border-color-lighter);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-sm);
 
   &.compact {
     .hero-content {
@@ -443,14 +422,15 @@ html.dark .problem-card {
   .hero-icon {
     width: 64px;
     height: 64px;
-    background: var(--el-color-primary-light-9);
+    background: rgba(204, 102, 51, 0.15);
     border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 32px;
-    color: var(--el-color-primary);
+    color: var(--accent-primary);
     flex-shrink: 0;
+    border: 1px solid rgba(204, 102, 51, 0.2);
   }
 
   .hero-info {
@@ -466,13 +446,13 @@ html.dark .problem-card {
     .title {
       font-size: 24px;
       margin: 0 0 8px 0;
-      color: var(--el-text-color-primary);
+      color: var(--text-primary);
       font-weight: 700;
     }
 
     .description {
       font-size: 14px;
-      color: var(--el-text-color-regular);
+      color: var(--text-secondary);
       margin: 0 0 16px 0;
       line-height: 1.6;
       max-width: 800px;
@@ -488,7 +468,7 @@ html.dark .problem-card {
         align-items: center;
         gap: 4px;
         font-size: 12px;
-        color: var(--el-text-color-secondary);
+        color: var(--text-tertiary);
       }
     }
   }
@@ -513,12 +493,12 @@ html.dark .problem-card {
       font-size: 20px;
       margin: 0;
       font-weight: 600;
-      color: var(--el-text-color-primary);
+      color: var(--text-primary);
     }
 
     .subtitle {
       font-size: 13px;
-      color: var(--el-text-color-secondary);
+      color: var(--text-tertiary);
     }
   }
 
@@ -532,9 +512,9 @@ html.dark .problem-card {
 }
 
 .problem-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 14px;
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -544,8 +524,8 @@ html.dark .problem-card {
   position: relative;
 
   &.is-active, &:hover {
-    background-color: var(--el-color-primary-light-9);
-    border-color: var(--el-color-primary-light-5);
+    background-color: rgba(204, 102, 51, 0.08);
+    border-color: rgba(204, 102, 51, 0.3);
 
     .card-actions .delete-btn {
       opacity: 1;
@@ -554,15 +534,15 @@ html.dark .problem-card {
 
   .card-index {
     font-size: 14px;
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-weight: 700;
-    color: var(--el-text-color-placeholder);
+    color: var(--text-tertiary);
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--el-fill-color-light);
+    background: rgba(255, 248, 245, 0.05);
     border-radius: 10px;
     transition: var(--transition-base);
     flex-shrink: 0;
@@ -576,7 +556,7 @@ html.dark .problem-card {
     .problem-statement {
       font-size: 15px;
       font-weight: 500;
-      color: var(--el-text-color-primary);
+      color: var(--text-primary);
       margin: 0;
       line-height: 1.5;
     }

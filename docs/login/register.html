@@ -1,0 +1,582 @@
+<html lang="en" vid="0"><head vid="1">
+    <meta charset="UTF-8" vid="2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+    <title vid="4">Synapse | Knowledge Precipitation</title>
+    <style vid="5">
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
+
+        :root {
+            --bg-deep: #0a0502;
+            --bg-base: #1a0f08;
+            --amber-deep: #CC6633;
+            --amber-main: #E07B47;
+            --amber-light: #F09562;
+            --text-primary: #fdf6f2;
+            --text-secondary: #b89c8a;
+            --glass-bg: rgba(26, 15, 8, 0.45);
+            --glass-border: rgba(224, 123, 71, 0.15);
+            --glass-highlight: rgba(240, 149, 98, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+        }
+
+
+
+        #neural-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .ambient-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vw;
+            max-width: 1000px;
+            max-height: 1000px;
+            background: radial-gradient(circle, rgba(204,102,51,0.15) 0%, rgba(26,15,8,0) 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .geometry-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0.6;
+        }
+
+
+        .geo-diamond {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border: 1px solid rgba(224, 123, 71, 0.08);
+            transform: rotate(45deg);
+            border-radius: 100px;
+            box-shadow: inset 0 0 40px rgba(224, 123, 71, 0.02);
+        }
+
+        .geo-circle {
+            position: absolute;
+            width: 700px;
+            height: 700px;
+            border-top: 1px solid rgba(224, 123, 71, 0.15);
+            border-bottom: 1px solid rgba(224, 123, 71, 0.05);
+            border-radius: 50%;
+            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+        }
+
+
+
+        .login-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+            animation: etherealEntry 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+        }
+
+        @keyframes etherealEntry {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .glass-panel {
+            background: linear-gradient(145deg, rgba(30, 18, 10, 0.6) 0%, rgba(15, 8, 4, 0.8) 100%);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-top-color: rgba(240, 149, 98, 0.3);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow:
+                    0 30px 60px rgba(0,0,0,0.6),
+                    0 0 40px rgba(204,102,51,0.1),
+                    inset 0 1px 0 rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.03), transparent);
+            transform: skewX(-20deg);
+            animation: sweep 8s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes sweep {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+
+        .system-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(224, 123, 71, 0.1);
+            border: 1px solid rgba(224, 123, 71, 0.2);
+            border-radius: 100px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--amber-light);
+            margin-bottom: 24px;
+        }
+
+        .system-badge .dot {
+            width: 4px;
+            height: 4px;
+            background: var(--amber-light);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--amber-light);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            background: linear-gradient(180deg, #FFFFFF 0%, #E07B47 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            font-weight: 300;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            padding-left: 2px;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(224, 123, 71, 0.3);
+            border-radius: 12px;
+            padding: 14px 16px 14px 44px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input-field:focus {
+            background: rgba(26, 15, 8, 0.6);
+            border-bottom-color: var(--amber-light);
+            box-shadow: 0 10px 20px -10px rgba(224, 123, 71, 0.2), inset 0 0 10px rgba(224, 123, 71, 0.05);
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            bottom: 14px;
+            width: 16px;
+            height: 16px;
+            fill: var(--text-secondary);
+            transition: fill 0.3s ease;
+        }
+
+        .input-field:focus + .input-icon {
+            fill: var(--amber-light);
+        }
+
+        .forgot-link {
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 11px;
+            color: var(--amber-main);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .forgot-link:hover {
+            color: var(--amber-light);
+            text-shadow: 0 0 8px rgba(240, 149, 98, 0.4);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            margin-top: 12px;
+            background: linear-gradient(90deg, var(--amber-deep), var(--amber-main), var(--amber-light));
+            background-size: 200% auto;
+            border: none;
+            border-radius: 12px;
+            color: #0a0502;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 15px rgba(204, 102, 51, 0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+
+        .submit-btn:hover {
+            background-position: right center;
+            box-shadow: 0 8px 25px rgba(204, 102, 51, 0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+            transform: translateY(-1px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 28px 0;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(224, 123, 71, 0.15);
+        }
+
+        .divider span {
+            padding: 0 12px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .social-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .social-btn:hover {
+            background: rgba(224, 123, 71, 0.05);
+            border-color: rgba(224, 123, 71, 0.2);
+        }
+
+        .social-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .footer a {
+            color: var(--amber-main);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: var(--amber-light);
+            text-shadow: 0 0 8px rgba(240, 149, 98, 0.4);
+        }
+
+    </style>
+</head>
+<body vid="6">
+
+
+<div class="ambient-core" vid="7"></div>
+
+<div class="geometry-layer" vid="8">
+    <div class="geo-diamond" vid="9"></div>
+    <div class="geo-circle" vid="10"></div>
+</div>
+
+
+<canvas id="neural-canvas" vid="11"></canvas>
+
+
+<main class="login-wrapper" vid="12">
+    <div class="glass-panel" vid="13">
+
+        <div class="system-badge" vid="14">
+            <div class="dot" vid="15"></div>
+            Knowledge Grid Active
+        </div>
+
+        <div class="header" vid="16">
+            <h1 vid="17">Synapse</h1>
+            <p vid="18">Precipitate AI discourse into your structured, enduring personal knowledge base.</p>
+        </div>
+
+        <form onsubmit="event.preventDefault();" vid="19">
+            <div class="input-group" vid="20">
+                <label vid="21">Identification</label>
+                <input type="email" class="input-field" placeholder="Entity Email Address" required="" vid="22">
+                <svg class="input-icon" viewBox="0 0 24 24" vid="23">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" vid="24"></path>
+                </svg>
+            </div>
+
+            <div class="input-group" vid="25">
+                <label vid="26">Access Key</label>
+                <a href="#" class="forgot-link" vid="27">Recover Key</a>
+                <input type="password" class="input-field" placeholder="••••••••••••" required="" vid="28">
+                <svg class="input-icon" viewBox="0 0 24 24" vid="29">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" vid="30"></path>
+                </svg>
+            </div>
+
+            <button type="submit" class="submit-btn" vid="31">Initialize Connection</button>
+        </form>
+
+        <div class="divider" vid="32">
+            <span vid="33">Or interface via</span>
+        </div>
+
+        <div class="social-grid" vid="34">
+            <button class="social-btn" vid="35">
+                <svg viewBox="0 0 24 24" vid="36">
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z" vid="37"></path>
+                </svg>
+                GitHub
+            </button>
+            <button class="social-btn" vid="38">
+                <svg viewBox="0 0 24 24" vid="39">
+                    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" vid="40"></path>
+                </svg>
+                Google
+            </button>
+        </div>
+
+        <div class="footer" vid="41">
+            Uncharted trajectory? <a href="#" vid="42">Establish new node</a>
+        </div>
+    </div>
+</main>
+
+<script vid="43">
+
+    const canvas = document.getElementById('neural-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let particles = [];
+
+
+    let mouse = { x: null, y: null, radius: 150 };
+
+    window.addEventListener('mousemove', (e) => {
+        mouse.x = e.x;
+        mouse.y = e.y;
+    });
+
+    window.addEventListener('mouseout', () => {
+        mouse.x = null;
+        mouse.y = null;
+    });
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        initParticles();
+    }
+
+    window.addEventListener('resize', resize);
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+            this.baseRadius = Math.random() * 1.5 + 0.5;
+            this.radius = this.baseRadius;
+        }
+
+        update() {
+
+            this.x += this.vx;
+            this.y += this.vy;
+
+
+            if (this.x < 0 || this.x > width) this.vx = -this.vx;
+            if (this.y < 0 || this.y > height) this.vy = -this.vy;
+
+
+            if (mouse.x != null) {
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < mouse.radius) {
+                    const forceDirectionX = dx / distance;
+                    const forceDirectionY = dy / distance;
+                    const force = (mouse.radius - distance) / mouse.radius;
+
+
+                    this.x += forceDirectionX * force * 1.5;
+                    this.y += forceDirectionY * force * 1.5;
+
+
+                    this.radius = this.baseRadius + (force * 1.5);
+                } else {
+                    this.radius = this.baseRadius;
+                }
+            } else {
+                this.radius = this.baseRadius;
+            }
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(240, 149, 98, ${this.radius > this.baseRadius ? 0.8 : 0.4})`;
+            ctx.fill();
+
+
+            if (this.radius > 1) {
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#E07B47';
+            } else {
+                ctx.shadowBlur = 0;
+            }
+        }
+    }
+
+    function initParticles() {
+        particles = [];
+
+        const numParticles = Math.floor((width * height) / 12000);
+
+        const limit = Math.min(numParticles, 150);
+
+        for (let i = 0; i < limit; i++) {
+            particles.push(new Particle());
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+
+
+        const connectionDistance = 120;
+
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].update();
+            particles[i].draw();
+
+            for (let j = i; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < connectionDistance) {
+
+                    const opacity = 1 - (distance / connectionDistance);
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(224, 123, 71, ${opacity * 0.3})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+
+    resize();
+    animate();
+</script>
+
+</body></html>

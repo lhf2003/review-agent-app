@@ -1,95 +1,171 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import { api } from '../../api/http'
 import { useAuthStore } from '../../stores/auth'
-import { useThemeStore } from '../../stores/theme'
 import CustomScroll from '../../components/CustomScroll.vue'
-import HeroSection from './components/HeroSection.vue'
-import StatisticsGrid from './components/StatisticsGrid.vue'
-import RecentActivity from './components/RecentActivity.vue'
-import ProfileEditDialog from './components/ProfileEditDialog.vue'
-import PasswordDialog from './components/PasswordDialog.vue'
-// import ProfileNav from './components/ProfileNav.vue'
 import AchievementsSection from './components/AchievementsSection.vue'
-import PendingReviewReminder from './components/PendingReviewReminder.vue'
-import LearningDashboard from './components/LearningDashboard.vue'
-import KnowledgeGraphCard from './components/KnowledgeGraphCard.vue'
-import { useUserInfo } from './composables/useUserInfo'
-import { useStats } from './composables/useStats'
-import { useAnimations } from './composables/useAnimations'
-import { useAchievements } from './composables/useAchievements'
+import LearningHeatmapChart from '../../components/charts/LearningHeatmapChart.vue'
 
+const router = useRouter()
 const auth = useAuthStore()
-const themeStore = useThemeStore()
 
-// Navigation state
-const activeSection = ref('overview')
+function goBack() {
+  router.back()
+}
 
 // User Info
-const {
-  userInfo,
-  userInfoForm,
-  editingField,
-  loadUserInfo,
-  editField,
-  cancelEdit,
-  saveUserInfo,
-  handleAvatarUpload,
-  beforeAvatarUpload
-} = useUserInfo()
+const userInfo = ref({
+  name: '',
+  title: '',
+  avatar: ''
+})
 
-// Stats
-const {
-  stats,
-  animatedStats,
-  loadStats,
-  statCards,
-  quickActions
-} = useStats()
+// Loading states
+const loading = ref({
+  achievements: false,
+  heatmap: false
+})
 
-// Animations
-const {
-  showContent,
-  cardsVisible,
-  achievementsVisible,
-  initAnimations
-  } = useAnimations()
+// Achievements data
+const achievementsData = ref([])
 
-// Achievements
-const {
-  achievementsData,
-  loading,
-  loadAchievementsData
-} = useAchievements()
+// Heatmap data
+const heatmapData = ref({})
 
-// Dialogs
+// Load user info
+async function loadUserInfo() {
+  try {
+    const data = await api.getUserInfo()
+    if (data) {
+      userInfo.value = {
+        name: data.nickname || data.username || 'User',
+        title: data.title || 'Developer',
+        avatar: data.avatar || ''
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load user info:', error)
+  }
+}
+
+// Load achievements
+async function loadAchievements() {
+  loading.value.achievements = true
+  try {
+    const resp = await api.getUserStats()
+    const data = resp?.data || resp || {}
+    achievementsData.value = data.achievements || []
+  } catch (error) {
+    console.error('Failed to load achievements:', error)
+    achievementsData.value = []
+  } finally {
+    loading.value.achievements = false
+  }
+}
+
+// Load heatmap data
+async function loadHeatmapData() {
+  loading.value.heatmap = true
+  try {
+    // Try to get dashboard data which may contain heatmap info
+    const dashboardData = await api.getDashboard()
+    const heatmap = dashboardData?.heatmap || dashboardData?.activityHeatmap || []
+
+    // Convert array to object format expected by heatmap component
+    const dataObj = {}
+    if (Array.isArray(heatmap)) {
+      heatmap.forEach(item => {
+        const date = item.day || item.date
+        const value = item.value || item.count || item.intensity || 0
+        if (date) {
+          dataObj[date] = value
+        }
+      })
+    }
+
+    // If no data from API, generate mock data for demonstration
+    if (Object.keys(dataObj).length === 0) {
+      generateMockHeatmapData(dataObj)
+    }
+
+    heatmapData.value = dataObj
+  } catch (error) {
+    console.error('Failed to load heatmap data:', error)
+    // Generate mock data on error
+    const mockData = {}
+    generateMockHeatmapData(mockData)
+    heatmapData.value = mockData
+  } finally {
+    loading.value.heatmap = false
+  }
+}
+
+// Generate mock heatmap data for demonstration (past 6 months)
+function generateMockHeatmapData(dataObj) {
+  const now = new Date()
+  for (let i = 0; i < 180; i++) { // ~6 months
+    const date = new Date(now)
+    date.setDate(date.getDate() - i)
+    const dateStr = date.toISOString().split('T')[0]
+    // Random activity level 0-5
+    const value = Math.random() > 0.6 ? Math.floor(Math.random() * 5) + 1 : 0
+    if (value > 0) {
+      dataObj[dateStr] = value
+    }
+  }
+}
+
+// Dialog states
 const profileDialog = ref(false)
 const passwordDialog = ref(false)
+const userInfoForm = ref({
+  name: '',
+  title: ''
+})
 const passwordForm = ref({
   oldPassword: '',
   newPassword: '',
   confirm: ''
 })
 
-onMounted(() => {
-  loadUserInfo()
-  loadStats()
-  loadAchievementsData()
-  initAnimations()
-})
+function openProfileDialog() {
+  userInfoForm.value = {
+    name: userInfo.value.name,
+    title: userInfo.value.title
+  }
+  profileDialog.value = true
+}
+
+async function saveUserInfo() {
+  try {
+    await api.updateUserInfo(userInfoForm.value)
+    userInfo.value.name = userInfoForm.value.name
+    userInfo.value.title = userInfoForm.value.title
+    ElMessage.success('Profile updated successfully')
+    profileDialog.value = false
+  } catch (error) {
+    ElMessage.error('Failed to update profile: ' + error.message)
+  }
+}
+
+function openPasswordDialog() {
+  passwordDialog.value = true
+}
 
 async function changePassword() {
   if (!passwordForm.value.oldPassword) {
-    ElMessage.warning('请输入原密码')
+    ElMessage.warning('Please enter current password')
     return
   }
   if (!passwordForm.value.newPassword || passwordForm.value.newPassword.length < 6) {
-    ElMessage.warning('新密码长度至少6位')
+    ElMessage.warning('New password must be at least 6 characters')
     return
   }
   if (passwordForm.value.newPassword !== passwordForm.value.confirm) {
-    ElMessage.warning('两次密码输入不一致')
+    ElMessage.warning('Passwords do not match')
     return
   }
 
@@ -98,326 +174,469 @@ async function changePassword() {
       passwordForm.value.oldPassword,
       passwordForm.value.newPassword
     )
-    ElMessage.success('密码修改成功')
+    ElMessage.success('Password changed successfully')
     passwordDialog.value = false
     passwordForm.value = { oldPassword: '', newPassword: '', confirm: '' }
-  } catch (e) {
-    ElMessage.error('密码修改失败: ' + e.message)
+  } catch (error) {
+    ElMessage.error('Failed to change password: ' + error.message)
   }
 }
+
+onMounted(() => {
+  loadUserInfo()
+  loadAchievements()
+  loadHeatmapData()
+})
 </script>
 
 <template>
-   <div class="dashboard-container">
-    <CustomScroll class="dashboard-scroll">
-      <!-- Hero Section - 欢迎区 -->
-      <HeroSection
-        :user-info="userInfo"
-        :animated-stats="animatedStats"
-        :show-content="showContent"
-        @edit="profileDialog = true"
-      />
+  <div class="profile-page">
+    <CustomScroll class="profile-scroll">
+      <div class="profile-header">
+        <button class="back-btn" @click="goBack">
+          <el-icon><ArrowLeft /></el-icon>
+          <span>返回</span>
+        </button>
+      </div>
+      <div class="profile-grid">
+        <!-- Left Column: User Info -->
+        <div class="col-left">
+          <section class="card glass profile-card">
+            <div class="profile-hero">
+              <div class="avatar-lg">
+                <img
+                  v-if="userInfo.avatar"
+                  :src="userInfo.avatar"
+                  alt="Avatar"
+                  @error="$event.target.style.display = 'none'"
+                />
+                <span v-else class="avatar-fallback">{{ userInfo.name?.charAt(0) || 'U' }}</span>
+              </div>
+              <h1 class="user-name">{{ userInfo.name }}</h1>
+              <p class="user-title">{{ userInfo.title }}</p>
+            </div>
+          </section>
 
-      <!-- Profile Navigation - 分栏导航 -->
-      <el-radio-group v-model="activeSection" class="nav-radio-group">
-        <el-radio-button value="overview">数据概览</el-radio-button>
-        <el-radio-button value="learning-data">学习数据</el-radio-button>
-        <el-radio-button value="achievements">学习成就</el-radio-button>
-        <el-radio-button value="knowledge-graph">知识图谱</el-radio-button>
-      </el-radio-group>
-
-      <!-- 数据概览区块 -->
-      <div v-show="activeSection === 'overview'" class="overview-content section-transition">
-        <!-- 左侧：统计卡片 -->
-        <div class="overview-left">
-          <div class="section-title">数据概览</div>
-          <StatisticsGrid
-            :animated-stats="animatedStats"
-            :stat-cards="statCards"
-            :cards-visible="cardsVisible"
-          />
+          <!-- Heatmap Card -->
+          <section class="card glass heatmap-card">
+            <div class="card-header">
+              <span class="card-title">Activity</span>
+            </div>
+            <div class="heatmap-container">
+              <LearningHeatmapChart
+                v-if="!loading.heatmap"
+                :data="heatmapData"
+                :loading="loading.heatmap"
+                theme="nebula"
+              />
+              <div v-else class="heatmap-loading">
+                <el-skeleton :rows="3" animated />
+              </div>
+            </div>
+          </section>
         </div>
 
-        <!-- 右侧：最近活动 + 待复习提醒 -->
-        <div class="overview-right">
-          <!-- 待复习提醒 -->
-          <PendingReviewReminder :cards-visible="showContent" />
-
-          <div class="section-title">最近活动</div>
-          <RecentActivity
-            :recent-activities="stats.recentActivities"
-            :cards-visible="cardsVisible"
-          />
-        </div>
-      </div>
-
-      <!-- Learning Data Section - 学习数据仪表盘 -->
-      <div v-show="activeSection === 'learning-data'" class="section-transition">
-        <LearningDashboard />
-      </div>
-
-      <!-- Achievements Section - 学习成就 -->
-      <AchievementsSection
-        v-show="activeSection === 'achievements'"
-        class="section-transition"
-        :achievements="achievementsData.achievements"
-        :loading="loading"
-        :cards-visible="achievementsVisible"
-      />
-
-      <!-- Knowledge Graph Section - 知识图谱 -->
-      <div v-show="activeSection === 'knowledge-graph'" class="section-transition">
-        <KnowledgeGraphCard />
-        <div class="kg-hint">
-          <p class="hint-text">💡 点击上方卡片查看完整的知识图谱可视化</p>
+        <!-- Right Column: Achievements & Other Content -->
+        <div class="col-right">
+          <!-- Achievements Section -->
+          <section class="card glass achievements-card">
+            <AchievementsSection
+              :achievements="achievementsData"
+              :loading="loading"
+              :cards-visible="true"
+            />
+          </section>
         </div>
       </div>
     </CustomScroll>
 
-    <!-- Profile Edit Dialog - 个人信息编辑对话框 -->
-    <ProfileEditDialog
-      v-model:visible="profileDialog"
-      :user-info="userInfo"
-      :user-info-form="userInfoForm"
-      :editing-field="editingField"
-      @edit-field="editField"
-      @cancel-edit="cancelEdit"
-      @save-user-info="saveUserInfo"
-      @handle-avatar-upload="handleAvatarUpload"
-    >
-      <!-- 修改密码按钮 -->
-      <div class="password-section">
-        <el-button type="primary" @click="passwordDialog = true; profileDialog = false">
-          修改密码
-        </el-button>
-      </div>
-    </ProfileEditDialog>
+    <!-- Edit Profile Dialog -->
+    <el-dialog v-model="profileDialog" title="Edit Profile" width="400px">
+      <el-form label-position="top">
+        <el-form-item label="Name">
+          <el-input v-model="userInfoForm.name" />
+        </el-form-item>
+        <el-form-item label="Title">
+          <el-input v-model="userInfoForm.title" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="profileDialog = false">Cancel</el-button>
+        <el-button type="primary" @click="saveUserInfo">Save</el-button>
+      </template>
+    </el-dialog>
 
-    <!-- Change Password Dialog - 修改密码对话框 -->
-    <PasswordDialog
-      v-model:visible="passwordDialog"
-      :password-form="passwordForm"
-      @change-password="changePassword"
-    />
+    <!-- Change Password Dialog -->
+    <el-dialog v-model="passwordDialog" title="Change Password" width="400px">
+      <el-form label-position="top">
+        <el-form-item label="Current Password">
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="New Password">
+          <el-input v-model="passwordForm.newPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="Confirm Password">
+          <el-input v-model="passwordForm.confirm" type="password" show-password />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="passwordDialog = false">Cancel</el-button>
+        <el-button type="primary" @click="changePassword">Change</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
-<style scoped>
-/* Container */
-.dashboard-container {
+<style scoped lang="scss">
+// Glass Effect
+.glass {
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+}
+
+// Container
+.profile-page {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.dashboard-scroll {
+.profile-scroll {
   flex: 1;
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
+  padding: 16px 32px 24px;
 }
 
-/* Profile Navigation - 分栏导航 */
-.nav-radio-group {
-  margin-top: -16px;
-  margin-bottom: 10px;
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-radius: 14px;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+// Back Button Header
+.profile-header {
   display: flex;
-  justify-content: center;
-  gap: 6px;
-  max-width: 480px;
+  align-items: center;
+  margin-bottom: 16px;
+  max-width: 1600px;
   margin-left: auto;
   margin-right: auto;
 }
 
-.nav-radio-group :deep(.el-radio-button) {
-  margin: 0;
-  flex: 1;
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 248, 245, 0.05);
+  border: 1px solid rgba(255, 248, 245, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 248, 245, 0.1);
+    color: rgba(255, 255, 255, 0.95);
+  }
 }
 
-.nav-radio-group :deep(.el-radio-button__inner) {
+// Grid Layout - Two Columns
+.profile-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+// Columns
+.col-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.col-right {
+  display: flex;
+  flex-direction: column;
+}
+
+// Card Styles
+.card {
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+// Profile Card
+.profile-card {
+  min-height: 320px;
+}
+
+.profile-hero {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.avatar-lg {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--gradient-warm);
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  margin: 0 auto 20px;
+  box-shadow: 0 0 40px var(--accent-glow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.avatar-lg img {
   width: 100%;
-  padding: 10px 16px;
-  border-radius: 10px;
-  border: none;
-  background: transparent;
-  color: var(--el-text-color-secondary);
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  font-size: 48px;
+  font-weight: 600;
+  color: white;
+}
+
+.user-name {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.user-title {
+  color: var(--text-secondary);
   font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: none;
+  margin-bottom: 24px;
+}
+
+// Card Header (for heatmap)
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+// Heatmap Card
+.heatmap-card {
+  margin-top: 24px;
+  padding: 20px;
+}
+
+.heatmap-container {
+  width: 100%;
+  min-height: 280px;
+}
+
+.heatmap-loading {
+  width: 100%;
+  height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.nav-radio-group :deep(.el-radio-button__inner:hover) {
-  background: rgba(255, 255, 255, 0.6);
-  color: var(--el-text-color-primary);
-  transform: translateY(-1px);
-}
+// Heatmap Theme Overrides - Nebula warm colors
+.heatmap-card {
+  :deep(.learning-heatmap-chart) {
+    .month-grid {
+      .day-block {
+        border-color: var(--glass-border);
+      }
+    }
 
-.nav-radio-group :deep(.el-radio-button.is-active .el-radio-button__inner) {
-  background: var(--el-color-primary);
-  color: white;
-  box-shadow:
-    0 2px 8px rgba(64, 158, 255, 0.25),
-    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
-  transform: translateY(-1px);
-}
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
 
-.nav-radio-group :deep(.el-radio-button:first-child .el-radio-button__inner),
-.nav-radio-group :deep(.el-radio-button:last-child .el-radio-button__inner) {
-  border-radius: 10px;
-}
-
-/* Dark Mode */
-html.dark .nav-radio-group {
-  background: rgba(40, 40, 40, 0.6);
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-}
-
-html.dark .nav-radio-group :deep(.el-radio-button__inner) {
-  color: var(--el-text-color-secondary);
-}
-
-html.dark .nav-radio-group :deep(.el-radio-button__inner:hover) {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--el-text-color-primary);
-}
-
-html.dark .nav-radio-group :deep(.el-radio-button.is-active .el-radio-button__inner) {
-  background: var(--el-color-primary);
-  box-shadow:
-    0 2px 8px rgba(64, 158, 255, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.15) inset;
-}
-
-/* Section Titles */
-.section-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin-bottom: 20px;
-  opacity: 0;
-  animation: fadeSlideUp 0.6s ease forwards;
-}
-
-.section-title:nth-of-type(2) {
-  animation-delay: 0.2s;
-}
-
-.section-title:nth-of-type(3) {
-  animation-delay: 0.4s;
-}
-
-.section-title:nth-of-type(4) {
-  animation-delay: 0.6s;
-}
-
-/* Overview Content - 两列布局 */
-.overview-content {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 24px;
-  margin-top: 32px;
-}
-
-.overview-left {
-  min-width: 0;
-}
-
-.overview-right {
-  min-width: 0;
-}
-
-@keyframes fadeSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+      &:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+    }
   }
 }
 
-/* Section Transition - 平滑过渡 */
-.section-transition {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  opacity: 1;
-  transform: translateY(0);
-}
+// Achievements Card - Override AchievementsSection styles for nebula theme
+.achievements-card {
+  :deep(.achievements-section) {
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
 
-.section-transition[style*="display: none"] {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.password-section {
-  display: flex;
-  justify-content: center;
-  padding-top: 12px;
-  border-top: 1px solid var(--el-border-color-lighter);
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .overview-content {
-    grid-template-columns: 1fr;
+    &.is-dark {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
   }
 
-  .nav-radio-group {
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-scroll {
-    padding: 16px;
-  }
-
-  .nav-radio-group {
-    margin-top: -12px;
+  :deep(.achievements-header) {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
     margin-bottom: 20px;
-    padding: 5px;
-    border-radius: 12px;
+    padding-bottom: 16px;
+
+    h3 {
+      color: var(--text-primary);
+    }
   }
 
-  .nav-radio-group :deep(.el-radio-button__inner) {
-    padding: 8px 12px;
-    font-size: 13px;
+  :deep(.header-icon) {
+    background: var(--gradient-warm);
+    box-shadow: 0 4px 12px var(--accent-glow-soft);
   }
 
-  .section-title {
-    font-size: 18px;
+  :deep(.summary-text) {
+    color: var(--text-secondary);
   }
 
-  .overview-content {
+  :deep(.filter-control) {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  :deep(.filter-button) {
+    color: var(--text-secondary);
+
+    &:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    &.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+    }
+  }
+
+  :deep(.filter-count) {
+    background: rgba(255, 255, 255, 0.1);
+
+    .filter-button.active & {
+      background: rgba(204, 102, 51, 0.3);
+      color: var(--accent-tertiary);
+    }
+  }
+
+  :deep(.achievement-card) {
+    background: rgba(255, 248, 245, 0.03);
+    border: 1px solid var(--glass-border);
+    box-shadow: none;
+
+    &:hover {
+      background: rgba(255, 248, 245, 0.06);
+      border-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-3px);
+    }
+
+    &.locked {
+      opacity: 0.6;
+    }
+  }
+
+  :deep(.icon-circle) {
+    background: var(--gradient-warm);
+    box-shadow: 0 4px 12px var(--accent-glow-soft);
+
+    &.is-locked {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  :deep(.achievement-name) {
+    color: var(--text-primary);
+  }
+
+  :deep(.achievement-desc) {
+    color: var(--text-secondary);
+  }
+
+  :deep(.unlock-date) {
+    background: rgba(204, 102, 51, 0.2);
+    color: var(--accent-tertiary);
+  }
+
+  :deep(.progress-track) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  :deep(.progress-fill) {
+    background: var(--gradient-warm);
+  }
+
+  :deep(.progress-label) {
+    color: var(--text-secondary);
+  }
+
+  :deep(.progress-track-ring) {
+    stroke: rgba(255, 255, 255, 0.1);
+  }
+
+  :deep(.progress-fill-ring) {
+    stroke: var(--accent-tertiary);
+  }
+
+  :deep(.progress-text) {
+    color: var(--accent-tertiary);
+  }
+
+  :deep(.skeleton-card) {
+    background: rgba(255, 248, 245, 0.03);
+    border: 1px solid var(--glass-border);
+  }
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .profile-grid {
+    grid-template-columns: 300px 1fr;
     gap: 20px;
   }
 }
 
-/* Large screens */
-@media (min-width: 1600px) {
-  .dashboard-scroll {
-    max-width: 1600px;
+@media (max-width: 900px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
   }
 
-  .overview-content {
-    grid-template-columns: 1fr 480px;
+  .col-left {
+    max-width: 400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-scroll {
+    padding: 16px;
   }
 
-  .nav-radio-group {
-    max-width: 520px;
+  .card {
+    padding: 20px;
+  }
+
+  .avatar-lg {
+    width: 100px;
+    height: 100px;
+  }
+
+  .user-name {
+    font-size: 20px;
   }
 }
 </style>

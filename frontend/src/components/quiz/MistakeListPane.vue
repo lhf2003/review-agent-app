@@ -388,28 +388,15 @@ defineExpose({ refreshMistakes })
 
 /* ============ Glassmorphism 效果 ============ */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.64);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  box-shadow: 0 2px 16px -1px rgba(0, 0, 0, 0.04);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   /* Remove transition: all to prevent scale effect on theme switch */
   transition: box-shadow 0.25s ease, transform 0.25s ease !important;
 }
 
-html.dark .glass-panel {
-  background: rgba(40, 40, 42, 0.64);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* 筛选栏深色模式样式 */
-html.dark .filter-bar {
-  background: rgba(40, 40, 42, 0.64);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: none;
-  border-right: none;
-  border-top: none;
-}
 
 .mistake-list-pane.is-embedded {
   gap: 12px;
@@ -437,21 +424,13 @@ html.dark .filter-bar {
   border-left: none;
   border-right: none;
   border-top: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
   box-sizing: border-box;
   transition: background 0.3s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.9);
-
-    html.dark & {
-      background: rgba(50, 50, 52, 0.8);
-    }
-  }
-
-  html.dark & {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    background: var(--glass-surface-hover);
   }
 }
 
@@ -459,14 +438,10 @@ html.dark .filter-bar {
   --el-fill-color-light: transparent;
   display: flex;
   gap: 3px;
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--glass-surface);
   padding: 3px;
   border-radius: 10px;
   flex-shrink: 0;
-
-  html.dark & {
-    background: rgba(255, 255, 255, 0.08);
-  }
 
   :deep(.el-radio-button__inner) {
     border: none !important;
@@ -474,7 +449,7 @@ html.dark .filter-bar {
     border-radius: 8px !important;
     padding: 6px 12px !important;
     margin-right: 0 !important;
-    color: #86868b !important;
+    color: var(--text-secondary) !important;
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
@@ -483,16 +458,16 @@ html.dark .filter-bar {
     box-shadow: none !important;
 
     &:hover {
-      color: #1d1d1f !important;
+      color: var(--text-primary) !important;
       background: transparent !important;
     }
   }
 
   :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner),
   :deep(.el-radio-button.is-active .el-radio-button__inner) {
-    background: rgba(255, 255, 255, 0.9) !important;
-    color: #1d1d1f !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+    background: var(--accent-primary) !important;
+    color: white !important;
+    box-shadow: 0 1px 4px var(--accent-glow-soft) !important;
     border-color: transparent !important;
   }
 
@@ -507,28 +482,6 @@ html.dark .filter-bar {
   }
 }
 
-/* 深色模式适配 */
-html.dark .custom-radio-group {
-  :deep(.el-radio-button__inner) {
-    color: #86868b !important;
-    background: transparent !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
-
-    &:hover {
-      color: #f5f5f7 !important;
-      background: transparent !important;
-    }
-  }
-
-  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner),
-  :deep(.el-radio-button.is-active .el-radio-button__inner) {
-    background: rgba(255, 255, 255, 0.15) !important;
-    color: #f5f5f7 !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
-    border-color: transparent !important;
-  }
-}
 
 .search-group {
   flex: 1;
@@ -538,8 +491,8 @@ html.dark .custom-radio-group {
     width: 100%;
 
     :deep(.el-input__wrapper) {
-      background: rgba(255, 255, 255, 0.6);
-      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: var(--glass-surface);
+      border: 1px solid var(--glass-border);
       border-radius: 10px;
       padding: 4px 12px;
       /* Remove transition: all to prevent scale effect on theme switch */
@@ -547,27 +500,14 @@ html.dark .custom-radio-group {
       box-shadow: none;
 
       &:hover {
-        border-color: rgba(0, 0, 0, 0.12);
+        border-color: var(--glass-border-hover);
       }
 
       &.is-focus {
-        border-color: var(--el-color-primary);
-        background: rgba(255, 255, 255, 0.9);
+        border-color: var(--accent-primary);
+        background: var(--glass-surface-hover);
       }
 
-      html.dark & {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.1);
-
-        &:hover {
-          border-color: rgba(255, 255, 255, 0.15);
-        }
-
-        &.is-focus {
-          background: rgba(255, 255, 255, 0.12);
-          border-color: var(--el-color-primary);
-        }
-      }
     }
   }
 }
@@ -578,16 +518,13 @@ html.dark .custom-radio-group {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: rgba(64, 158, 255, 0.08);
+  background: var(--glass-surface);
   border-radius: 12px;
-  border: 1px solid rgba(64, 158, 255, 0.15);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   flex-shrink: 0;
 
-  html.dark & {
-    background: rgba(64, 158, 255, 0.15);
-    border-color: rgba(64, 158, 255, 0.25);
-  }
 }
 
 @keyframes slideDown {
@@ -643,17 +580,15 @@ html.dark .custom-radio-group {
   align-items: center;
   border: 1px solid transparent;
 
-  html.dark & {
-    background: rgba(255, 255, 255, 0.03);
-  }
 }
 
 // 错题卡片
 .mistake-card {
-  background: rgba(255, 255, 255, 0.64);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   border-radius: 16px;
   padding: 16px;
   overflow: hidden;
@@ -661,24 +596,14 @@ html.dark .custom-radio-group {
   transition: box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease !important;
   cursor: pointer;
   position: relative;
-  box-shadow: 0 2px 16px -1px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   gap: 12px;
 
-  html.dark & {
-    background: rgba(40, 40, 42, 0.64);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
   &:hover {
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 8px 32px -2px rgba(0, 0, 0, 0.08);
+    background: var(--glass-surface-hover);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     transform: scale(1.01);
-
-    html.dark & {
-      background: rgba(50, 50, 52, 0.8);
-    }
   }
 
   &:active {
@@ -686,13 +611,8 @@ html.dark .custom-radio-group {
   }
 
   &.is-selected {
-    background: rgba(64, 158, 255, 0.12);
-    border-color: rgba(64, 158, 255, 0.3);
-
-    html.dark & {
-      background: rgba(64, 158, 255, 0.2);
-      border-color: rgba(64, 158, 255, 0.4);
-    }
+    border-color: var(--accent-primary);
+    background: var(--accent-glow-soft);
   }
 
   &.is-mastered {
@@ -755,9 +675,6 @@ html.dark .custom-radio-group {
   word-break: break-word; /* 防止连续下划线导致溢出 */
   overflow-wrap: break-word;
 
-  html.dark & {
-    color: #f5f5f7;
-  }
 }
 
 .meta-info {
@@ -782,43 +699,22 @@ html.dark .custom-radio-group {
   .el-icon {
     font-size: 12px;
   }
-
-  html.dark & {
-    color: #86868b;
-  }
 }
 
 .knowledge-point {
-  background: rgba(0, 122, 255, 0.12);
-  color: #007aff;
-
-  html.dark & {
-    background: rgba(0, 122, 255, 0.2);
-    color: #0a84ff;
-  }
+  background: var(--accent-glow-soft);
+  color: var(--accent-primary);
 
   &:hover {
-    background: rgba(0, 122, 255, 0.18);
-
-    html.dark & {
-      background: rgba(0, 122, 255, 0.3);
-    }
+    background: var(--accent-glow);
   }
 }
 
 .time-info {
-  background: rgba(0, 0, 0, 0.04);
-
-  html.dark & {
-    background: rgba(255, 255, 255, 0.08);
-  }
+  background: var(--glass-surface);
 
   &:hover {
-    background: rgba(0, 0, 0, 0.06);
-
-    html.dark & {
-      background: rgba(255, 255, 255, 0.12);
-    }
+    background: var(--glass-surface-hover);
   }
 }
 
@@ -831,10 +727,6 @@ html.dark .custom-radio-group {
   padding: 60px 20px;
   gap: 16px;
   color: #86868b;
-
-  html.dark & {
-    color: #86868b;
-  }
 
   .el-icon {
     color: var(--el-color-primary);

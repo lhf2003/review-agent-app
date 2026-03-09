@@ -188,16 +188,16 @@ function handleReset() {
     z-index: 0;
   }
 
-  // Theme Colors - 更专业的配色方案（增强对比度）
+  // Theme Colors - Warm Amber 深色主题配色
   &.gold {
-    --theme-color: #fbbf24;
-    --theme-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    --theme-color-rgb: 251, 191, 36;
+    --theme-color: var(--accent-tertiary);
+    --theme-gradient: var(--gradient-warm);
+    --theme-color-rgb: 204, 102, 51;
   }
   &.purple {
-    --theme-color: #a78bfa;
-    --theme-gradient: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    --theme-color-rgb: 167, 139, 250;
+    --theme-color: #d8b4fe;
+    --theme-gradient: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
+    --theme-color-rgb: 192, 132, 252;
   }
   &.blue {
     --theme-color: #60a5fa;
@@ -205,7 +205,7 @@ function handleReset() {
     --theme-color-rgb: 96, 165, 250;
   }
   &.gray {
-    --theme-color: #9ca3af;
+    --theme-color: var(--text-secondary);
     --theme-gradient: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
     --theme-color-rgb: 156, 163, 175;
   }
@@ -227,22 +227,22 @@ function handleReset() {
       width: 88px;
       height: 88px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.6);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(255, 248, 245, 0.1);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
       display: flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 20px;
       box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.08),
-        0 0 0 4px rgba(var(--theme-color-rgb, 96, 165, 250), 0.15);
-      border: none;
+        0 4px 12px rgba(0, 0, 0, 0.2),
+        0 0 0 4px rgba(var(--theme-color-rgb, 204, 102, 51), 0.2);
+      border: 1px solid var(--glass-border);
 
       .main-icon {
         font-size: 44px;
         color: var(--theme-color);
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         animation: pop-spring 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       }
 
@@ -277,7 +277,7 @@ function handleReset() {
     .result-title {
       font-size: 26px;
       font-weight: 700;
-      color: var(--el-text-color-primary);
+      color: var(--text-primary);
       margin: 0 0 6px;
       letter-spacing: -0.02em;
       line-height: 1.2;
@@ -288,7 +288,7 @@ function handleReset() {
     .result-subtitle {
       font-size: 14px;
       font-weight: 400;
-      color: var(--el-text-color-secondary);
+      color: var(--text-secondary);
       margin: 0 0 20px;
       text-align: center;
       padding: 0 16px;
@@ -300,14 +300,13 @@ function handleReset() {
       display: inline-flex;
       align-items: baseline;
       padding: 10px 28px;
-      background: rgba(255, 255, 255, 0.5);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border-radius: 999px;
-      border: none;
-      box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.04),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      background: var(--glass-surface);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--glass-border);
+      border-top: 1px solid var(--glass-highlight);
+      box-shadow: var(--shadow-sm);
 
       .score-num {
         font-size: 42px;
@@ -322,7 +321,7 @@ function handleReset() {
 
       .score-unit {
         font-size: 18px;
-        color: var(--el-text-color-secondary);
+        color: var(--text-secondary);
         margin-left: 6px;
         font-weight: 600;
       }
@@ -338,33 +337,28 @@ function handleReset() {
 
     .stat-card {
       position: relative;
-      background: rgba(255, 255, 255, 0.4);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: none;
-      border-radius: 14px;
+      background: var(--glass-surface);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--glass-border);
+      border-top: 1px solid var(--glass-highlight);
+      border-radius: var(--radius-md);
       padding: 14px;
       display: flex;
       align-items: center;
       gap: 10px;
-      transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+      transition: all 0.2s ease;
       cursor: default;
-      box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.04),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      box-shadow: var(--shadow-sm);
 
       &:hover {
         transform: translateY(-1px);
-        background: rgba(255, 255, 255, 0.5);
-        box-shadow:
-          0 4px 12px rgba(0, 0, 0, 0.06),
-          inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        background: var(--glass-surface-hover);
+        box-shadow: var(--shadow-md);
       }
 
       &:active {
-        box-shadow:
-          0 2px 6px rgba(0, 0, 0, 0.04),
-          inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        box-shadow: var(--shadow-sm);
       }
 
       .stat-icon-bg {
@@ -387,7 +381,7 @@ function handleReset() {
         .stat-label {
           font-size: 11px;
           font-weight: 500;
-          color: var(--el-text-color-secondary);
+          color: var(--text-secondary);
           margin-bottom: 2px;
           text-transform: uppercase;
           letter-spacing: 0.02em;
@@ -396,31 +390,31 @@ function handleReset() {
         .stat-value {
           font-size: 18px;
           font-weight: 700;
-          color: var(--el-text-color-primary);
-          font-family: var(--el-font-family-no-number);
+          color: var(--text-primary);
+          font-family: var(--font-mono);
           line-height: 1.2;
         }
       }
 
       &.total .stat-icon-bg {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.1));
-        color: #3b82f6;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+        color: #60a5fa;
       }
       &.correct .stat-icon-bg {
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.1));
-        color: #22c55e;
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+        color: var(--mastery-high);
       }
       &.incorrect .stat-icon-bg {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.1));
-        color: #ef4444;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+        color: var(--mastery-low);
       }
       &.unanswered .stat-icon-bg {
-        background: rgba(156, 163, 175, 0.1);
-        color: var(--el-text-color-placeholder);
+        background: rgba(255, 248, 245, 0.08);
+        color: var(--text-tertiary);
       }
       &.unanswered.has-value .stat-icon-bg {
-        background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(251, 191, 36, 0.1));
-        color: #fbbf24;
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+        color: var(--mastery-med);
       }
     }
   }
@@ -433,20 +427,19 @@ function handleReset() {
     gap: 12px;
 
     .action-btn {
-      flex: 1; // 两个按钮等宽
-      height: 44px; // 与全局样式保持一致
+      flex: 1;
+      height: 44px;
       font-size: 15px;
-      font-weight: 500; // 使用全局样式的 500
-      border-radius: 999px; // Apple Style Pill Shape
+      font-weight: 500;
+      border-radius: var(--radius-pill);
       border: none;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1); // 使用全局过渡曲线
+      transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      letter-spacing: -0.01em; // 全局样式的字间距
+      letter-spacing: -0.01em;
 
-      // 确保图标文字对齐
       .el-icon {
         display: inline-flex;
         align-items: center;
@@ -455,33 +448,14 @@ function handleReset() {
       &.primary {
         background: var(--theme-gradient);
         color: #ffffff;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 0 1px rgba(0, 0, 0, 0.1);
         font-weight: 600;
         position: relative;
-
-        // 增加背景对比度层
-        &::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.08);
-          border-radius: inherit;
-          pointer-events: none;
-        }
-
-        // 确保文字在上层
-        span, .el-icon {
-          position: relative;
-          z-index: 1;
-        }
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
         &:hover {
           opacity: 0.95;
-          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
-
-          &::before {
-            background: rgba(0, 0, 0, 0.05);
-          }
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+          transform: translateY(-1px);
         }
 
         &:active {
@@ -494,11 +468,13 @@ function handleReset() {
       }
 
       &.secondary {
-        background: rgba(142, 142, 147, 0.12); // Apple System Gray
-        color: var(--el-text-color-primary);
+        background: rgba(255, 248, 245, 0.08);
+        color: var(--text-primary);
+        border: 1px solid var(--glass-border);
 
         &:hover {
-          background: rgba(142, 142, 147, 0.2);
+          background: rgba(255, 248, 245, 0.12);
+          border-color: var(--glass-border-hover);
         }
 
         &:active {
@@ -513,85 +489,6 @@ function handleReset() {
   }
 }
 
-// 深色模式适配 - 玻璃质感优化
-html.dark {
-  .result-content {
-    // 图标环 - 玻璃质感
-    .icon-ring {
-      background: rgba(60, 60, 62, 0.5) !important;
-      backdrop-filter: blur(20px) saturate(180%) !important;
-      -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-      box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.3),
-        0 0 0 4px rgba(var(--theme-color-rgb, 96, 165, 250), 0.18) !important;
-      border: none !important;
-    }
-
-    // 分数徽章 - 玻璃质感
-    .score-badge {
-      background: rgba(60, 60, 62, 0.5) !important;
-      backdrop-filter: blur(20px) saturate(180%) !important;
-      -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-      border: none !important;
-      box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-    }
-
-    // 统计卡片 - 玻璃质感
-    .stat-card {
-      background: rgba(60, 60, 62, 0.4) !important;
-      backdrop-filter: blur(20px) saturate(180%) !important;
-      -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-      border: none !important;
-      box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
-
-      &:hover {
-        background: rgba(70, 70, 72, 0.45) !important;
-        box-shadow:
-          0 4px 12px rgba(0, 0, 0, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-      }
-
-      &.total .stat-icon-bg {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(59, 130, 246, 0.18)) !important;
-        color: #60a5fa !important;
-      }
-      &.correct .stat-icon-bg {
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(34, 197, 94, 0.18)) !important;
-        color: #4ade80 !important;
-      }
-      &.incorrect .stat-icon-bg {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.18)) !important;
-        color: #f87171 !important;
-      }
-      &.unanswered .stat-icon-bg {
-        background: rgba(156, 163, 175, 0.2) !important;
-        color: rgba(255, 255, 255, 0.5) !important;
-      }
-      &.unanswered.has-value .stat-icon-bg {
-        background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.18)) !important;
-        color: #fbbf24 !important;
-      }
-    }
-
-    // 次要按钮 - 使用全局深色模式样式
-    .action-btn.secondary {
-      background: rgba(142, 142, 147, 0.25) !important;
-      color: #ffffff !important;
-
-      &:hover {
-        background: rgba(142, 142, 147, 0.35) !important;
-      }
-
-      &:active {
-        color: #ffffff !important;
-      }
-    }
-  }
-}
 
 // 优化的动画效果 - 更自然的物理效果
 @keyframes pop-spring {
@@ -618,16 +515,15 @@ html.dark {
 // 非 scoped 样式：用于 append-to-body 的弹窗
 // Apple Style 玻璃质感优化
 
-// 弹窗容器 - 玻璃质感
+// 弹窗容器 - Warm Amber 深色玻璃质感
 .quiz-result-modal {
-  background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(40px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
-  border: none !important;
-  border-radius: 24px !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  background: var(--glass-surface) !important;
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-top: 1px solid var(--glass-highlight) !important;
+  border-radius: var(--radius-card) !important;
+  box-shadow: var(--shadow-lg) !important;
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;
@@ -639,17 +535,6 @@ html.dark {
 
   .el-dialog__header { display: none; }
   .el-dialog__body { padding: 0 !important; }
-}
-
-// 深色模式 - 弹窗容器玻璃质感
-html.dark .quiz-result-modal {
-  background: rgba(40, 40, 42, 0.6) !important;
-  backdrop-filter: blur(40px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
-  border: none !important;
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 
 // 响应式优化

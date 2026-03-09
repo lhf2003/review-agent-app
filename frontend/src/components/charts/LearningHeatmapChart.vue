@@ -4,19 +4,77 @@
       <el-skeleton :rows="3" animated />
     </div>
     <div v-else-if="!hasData" class="chart-empty">
-      <el-empty description="暂无学习记录" :image-size="120" />
+      <el-empty description="暂无学习记录" :image-size="100" />
     </div>
-    <div v-else ref="chartRef" class="chart-container"></div>
+    <div v-else class="heatmap-wrapper">
+      <!-- Month Navigation Header -->
+      <div class="month-header">
+        <button class="nav-btn" @click="goToPrevMonth">
+          <el-icon><ArrowLeft /></el-icon>
+        </button>
+        <span class="month-title">{{ monthTitle }}</span>
+        <button class="nav-btn" @click="goToNextMonth" :disabled="isCurrentMonth">
+          <el-icon><ArrowRight /></el-icon>
+        </button>
+      </div>
+
+      <!-- Weekday Headers -->
+      <div class="weekday-headers">
+        <div v-for="day in weekdays" :key="day" class="weekday-label">{{ day }}</div>
+      </div>
+
+      <!-- Month Grid -->
+      <div class="month-grid">
+        <div
+          v-for="(day, index) in monthDays"
+          :key="index"
+          class="day-cell"
+          :class="{
+            'is-today': day.isToday,
+            'is-other-month': day.isOtherMonth,
+            'is-empty': !day.date
+          }"
+          @click="day.date && handleDayClick(day)"
+          @mouseenter="day.date && handleDayHover(day)"
+          @mouseleave="day.date && handleDayLeave()"
+        >
+          <template v-if="day.date">
+            <div
+              class="day-block"
+              :style="{ backgroundColor: getColorByValue(day.value) }"
+            >
+              <span class="day-number">{{ day.dayOfMonth }}</span>
+            </div>
+          </template>
+          <template v-else>
+            <div class="day-block empty"></div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Custom Legend -->
+      <div class="custom-legend">
+        <span class="legend-label">少</span>
+        <div class="legend-bar">
+          <div
+            v-for="(color, index) in legendColors"
+            :key="index"
+            class="legend-item"
+            :class="{ 'is-highlighted': getColorIndex(hoveredValue) === index }"
+            :style="{ backgroundColor: color }"
+          ></div>
+        </div>
+        <span class="legend-label">多</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import * as echarts from 'echarts'
-import { useThemeStore } from '../../stores/theme'
+import { ref, computed, watch } from 'vue'
+import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 
 const props = defineProps({
-  // 数据格式：{ '2026-01-01': 3, '2026-01-02': 1, ... }
   data: {
     type: Object,
     default: () => ({})
@@ -25,40 +83,109 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  // 图表高度
-  height: {
+  theme: {
     type: String,
-    default: '200px'
+    default: 'default'
   }
 })
 
-const emit = defineEmits(['chart-ready', 'chart-dispose', 'date-click'])
+const emit = defineEmits(['date-click'])
 
-const themeStore = useThemeStore()
-const chartRef = ref(null)
-let chartInstance = null
-let resizeObserver = null
+const monthOffset = ref(0)
+const hoveredValue = ref(null)
 
-const hasData = computed(() => props.data && Object.keys(props.data).length > 0)
+const hasData = computed(() => props.data !== null && props.data !== undefined)
 
-// 生成日历数据
-function generateCalendarData() {
-  const now = new Date()
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const start = new Date(end.getFullYear() - 1, end.getMonth(), end.getDate() + 1)
+const legendColors = computed(() => {
+  if (props.theme === 'nebula') {
+    return [
+      'rgba(204, 102, 51, 0.15)',
+      'rgba(204, 102, 51, 0.35)',
+      'rgba(204, 102, 51, 0.55)',
+      'rgba(204, 102, 51, 0.75)',
+      'rgba(204, 102, 51, 0.95)'
+    ]
+  }
+  return ['#2c2c2e', '#3d6b59', '#4ade80', '#22c55e', '#16a34a']
+})
 
-  const dateList = []
-  const valueList = []
+const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 
-  let current = new Date(start)
-  while (current <= end) {
-    const dateStr = formatDateToStr(current)
-    dateList.push(dateStr)
-    valueList.push(props.data[dateStr] || 0)
-    current.setDate(current.getDate() + 1)
+const isCurrentMonth = computed(() => monthOffset.value >= 0)
+
+const monthTitle = computed(() => {
+  const { year, month } = getMonthRange(monthOffset.value)
+  return `${year}年${month + 1}月`
+})
+
+const monthDays = computed(() => {
+  const { year, month } = getMonthRange(monthOffset.value)
+  const days = []
+
+  // First day of the month
+  const firstDay = new Date(year, month, 1)
+  // Last day of the month
+  const lastDay = new Date(year, month + 1, 0)
+
+  // Day of week for first day (0 = Sunday)
+  const firstDayOfWeek = firstDay.getDay()
+  // Total days in month
+  const totalDays = lastDay.getDate()
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  // Empty cells for days before the first day of month
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    days.push({ date: null })
   }
 
-  return { dateList, valueList }
+  // Days of the month
+  for (let day = 1; day <= totalDays; day++) {
+    const currentDate = new Date(year, month, day)
+    const dateStr = formatDateToStr(currentDate)
+    const value = props.data[dateStr] || 0
+
+    days.push({
+      date: dateStr,
+      dayOfMonth: day,
+      value: value,
+      isToday: currentDate.getTime() === today.getTime(),
+      isOtherMonth: false
+    })
+  }
+
+  // Calculate how many rows we need (each row has 7 cells)
+  const totalCellsNeeded = Math.ceil(days.length / 7) * 7
+  const remainingCells = totalCellsNeeded - days.length
+
+  // Only fill necessary empty cells to complete the last row
+  for (let i = 0; i < remainingCells; i++) {
+    days.push({ date: null })
+  }
+
+  return days
+})
+
+function getMonthRange(offset) {
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth()
+
+  let targetMonth = currentMonth + offset
+  let targetYear = currentYear
+
+  // Handle year wrap-around
+  while (targetMonth < 0) {
+    targetMonth += 12
+    targetYear--
+  }
+  while (targetMonth > 11) {
+    targetMonth -= 12
+    targetYear++
+  }
+
+  return { year: targetYear, month: targetMonth }
 }
 
 function formatDateToStr(date) {
@@ -68,216 +195,75 @@ function formatDateToStr(date) {
   return `${y}-${m}-${d}`
 }
 
-// 初始化图表
-function initChart() {
-  if (!chartRef.value) return
-
-  if (chartInstance) {
-    chartInstance.dispose()
-  }
-
-  const theme = themeStore.isDark ? 'dark' : undefined
-  chartInstance = echarts.init(chartRef.value, theme, {
-    backgroundColor: 'transparent',
-    renderer: 'canvas'
-  })
-
-  // 停止之前的 ResizeObserver
-  if (resizeObserver) {
-    resizeObserver.disconnect()
-  }
-
-  // 监听容器尺寸变化
-  resizeObserver = new ResizeObserver((entries) => {
-    for (let entry of entries) {
-      const { width, height } = entry.contentRect
-      if (width > 0 && height > 0 && chartInstance) {
-        chartInstance.resize()
-      }
-    }
-  })
-
-  resizeObserver.observe(chartRef.value)
-
-  updateChart()
-  emit('chart-ready', chartInstance)
+function getMaxValue() {
+  const allValues = monthDays.value
+    .filter(d => d.date)
+    .map(d => d.value)
+  return Math.max(...allValues, 1)
 }
 
-// 更新图表
-function updateChart() {
-  // 如果图表未初始化，尝试初始化
-  if (!chartInstance) {
-    initChart()
-    return
-  }
-
-  if (!hasData.value) return
-
-  const { dateList, valueList } = generateCalendarData()
-  const now = new Date()
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const start = new Date(end.getFullYear() - 1, end.getMonth(), end.getDate() + 1)
-
-  // 计算最大值用于颜色映射
-  const maxValue = Math.max(...valueList, 1)
-
-  const option = {
-    tooltip: {
-      confine: true,
-      backgroundColor: themeStore.isDark
-        ? 'rgba(30, 30, 30, 0.9)'
-        : 'rgba(255, 255, 255, 0.9)',
-      borderColor: themeStore.isDark
-        ? 'rgba(255, 255, 255, 0.1)'
-        : 'rgba(0, 0, 0, 0.1)',
-      textStyle: {
-        color: themeStore.isDark ? '#fff' : '#333'
-      },
-      formatter: function (params) {
-        if (params && params.value) {
-          const count = params.value[1]
-          return `${params.value[0]}<br/>完成测验: ${count} 次`
-        }
-        return ''
-      }
-    },
-    visualMap: {
-      min: 0,
-      max: maxValue,
-      calculable: false,
-      orient: 'horizontal',
-      left: 'center',
-      bottom: 0,
-      itemWidth: 12,
-      itemHeight: 80,
-      inRange: {
-        color: themeStore.isDark
-          ? ['#2c2c2e', '#3d6b59', '#4ade80', '#22c55e', '#16a34a']
-          : ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']
-      },
-      text: ['多', '少'],
-      textStyle: {
-        color: themeStore.isDark ? '#909399' : '#606266',
-        fontSize: 11
-      }
-    },
-    calendar: {
-      top: 40,
-      left: 30,
-      right: 30,
-      bottom: 60,
-      range: [start, end],
-      cellSize: ['auto', 14],
-      splitLine: {
-        show: true,
-        lineStyle: {
-          color: themeStore.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
-        }
-      },
-      itemStyle: {
-        color: themeStore.isDark ? '#2c2c2e' : '#ebedf0',
-        borderWidth: 2,
-        borderColor: themeStore.isDark ? '#1c1c1e' : '#fff',
-        borderRadius: 2
-      },
-      yearLabel: {
-        show: false
-      },
-      monthLabel: {
-        show: true,
-        nameMap: 'ZH',
-        fontSize: 11,
-        color: themeStore.isDark ? '#909399' : '#606266'
-      },
-      dayLabel: {
-        show: true,
-        nameMap: 'ZH',
-        firstDay: 1,
-        fontSize: 10,
-        color: themeStore.isDark ? '#909399' : '#606266'
-      }
-    },
-    series: [{
-      type: 'heatmap',
-      coordinateSystem: 'calendar',
-      data: dateList.map((date, index) => [date, valueList[index]]),
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowColor: 'rgba(0, 0, 0, 0.3)'
-        }
-      }
-    }]
-  }
-
-  chartInstance.setOption(option, true)
-
-  // 点击事件
-  chartInstance.off('click')
-  chartInstance.on('click', function (params) {
-    if (params && params.value) {
-      emit('date-click', params.value[0])
-    }
-  })
+function getColorIndex(value) {
+  if (value === 0) return -1
+  const maxValue = getMaxValue()
+  const ratio = value / maxValue
+  return Math.min(Math.floor(ratio * 5), 4)
 }
 
-// 调整图表大小
-function resize() {
-  if (!chartInstance) {
-    initChart()
-  } else {
-    chartInstance.resize()
+function getColorByValue(value) {
+  if (value === 0) return 'rgba(255, 248, 245, 0.03)'
+
+  const index = getColorIndex(value)
+
+  if (props.theme === 'nebula') {
+    const colors = [
+      { r: 204, g: 102, b: 51, a: 0.25 },
+      { r: 204, g: 102, b: 51, a: 0.45 },
+      { r: 204, g: 102, b: 51, a: 0.65 },
+      { r: 204, g: 102, b: 51, a: 0.85 },
+      { r: 204, g: 102, b: 51, a: 1.0 }
+    ]
+    const c = colors[index]
+    return `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`
+  }
+
+  const colors = ['#2c2c2e', '#3d6b59', '#4ade80', '#22c55e', '#16a34a']
+  return colors[index]
+}
+
+function handleDayHover(day) {
+  if (day.date) {
+    hoveredValue.value = day.value
   }
 }
 
-// 监听数据变化
+function handleDayLeave() {
+  hoveredValue.value = null
+}
+
+function goToPrevMonth() {
+  monthOffset.value--
+}
+
+function goToNextMonth() {
+  if (!isCurrentMonth.value) {
+    monthOffset.value++
+  }
+}
+
+function handleDayClick(day) {
+  emit('date-click', day.date)
+}
+
 watch(() => props.data, () => {
-  nextTick(() => {
-    updateChart()
-  })
+  monthOffset.value = 0
 }, { deep: true })
-
-// 监听主题变化
-watch(() => themeStore.isDark, () => {
-  initChart()
-})
-
-onMounted(() => {
-  requestAnimationFrame(() => {
-    initChart()
-    setTimeout(() => {
-      resize()
-    }, 100)
-  })
-})
-
-onUnmounted(() => {
-  // 停止 ResizeObserver
-  if (resizeObserver) {
-    resizeObserver.disconnect()
-    resizeObserver = null
-  }
-
-  // 销毁图表实例
-  if (chartInstance) {
-    chartInstance.dispose()
-    chartInstance = null
-    emit('chart-dispose')
-  }
-})
-
-// 暴露方法给父组件
-defineExpose({
-  resize,
-  getInstance: () => chartInstance
-})
 </script>
 
 <style scoped lang="scss">
 .learning-heatmap-chart {
   width: 100%;
   height: 100%;
-  min-height: 180px;
+  min-height: 160px;
 }
 
 .chart-loading,
@@ -287,12 +273,164 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 180px;
+  min-height: 160px;
 }
 
-.chart-container {
+.heatmap-wrapper {
   width: 100%;
-  height: v-bind(height);
-  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// Month Navigation Header
+.month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--glass-surface-hover);
+    color: var(--text-primary);
+    border-color: var(--glass-border-hover);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .el-icon {
+    font-size: 12px;
+  }
+}
+
+.month-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+// Weekday Headers
+.weekday-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.weekday-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  padding: 4px 0;
+}
+
+// Month Grid
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  min-height: 28px;
+
+  &.is-empty {
+    pointer-events: none;
+  }
+
+  &:not(.is-empty) {
+    cursor: pointer;
+
+    &:hover .day-block:not(.empty) {
+      transform: scale(1.1);
+      border-color: var(--glass-border-hover);
+    }
+  }
+
+  &.is-today .day-block:not(.empty) {
+    box-shadow: 0 0 0 2px var(--accent-primary);
+  }
+}
+
+.day-block {
+  width: 100%;
+  height: 100%;
+  min-height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+
+  &.empty {
+    background: transparent;
+  }
+}
+
+.day-number {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+// Custom Legend
+.custom-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.legend-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.legend-bar {
+  display: flex;
+  gap: 2px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.legend-item {
+  width: 16px;
+  height: 8px;
+  transition: all 0.2s ease;
+
+  &.is-highlighted {
+    transform: scale(1.3);
+    box-shadow: 0 0 8px rgba(204, 102, 51, 0.6);
+    z-index: 1;
+  }
+
+  &:not(.is-highlighted) {
+    opacity: 0.5;
+  }
 }
 </style>

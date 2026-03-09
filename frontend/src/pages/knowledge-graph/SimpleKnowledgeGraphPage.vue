@@ -1,27 +1,35 @@
 <template>
   <div class="knowledge-graph-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-left">
+    <!-- 左侧边栏导航 -->
+    <aside class="sidebar">
+      <!-- 返回按钮 & 标题区 -->
+      <div class="sidebar-header">
         <ElButton type="text" @click="$router.back()" class="back-btn">
           <ElIcon><ArrowLeft /></ElIcon>
           返回
         </ElButton>
-        <span class="page-title">知识图谱</span>
-        <ElTag size="small" type="info" class="beta-tag">测试版</ElTag>
+        <div class="title-row">
+          <span class="page-title">知识图谱</span>
+          <ElTag size="small" type="info" class="beta-tag">测试版</ElTag>
+        </div>
 
         <!-- 聚焦模式指示器 -->
         <Transition name="fade">
-          <ElTag v-if="focusedNodeId" type="warning" effect="dark" class="focus-tag" closable @close="exitFocusMode">
+          <div v-if="focusedNodeId" class="focus-indicator" @click="exitFocusMode">
             <ElIcon><ZoomIn /></ElIcon>
-            聚焦模式
-          </ElTag>
+            <span>聚焦模式</span>
+            <ElIcon class="close-icon"><Close /></ElIcon>
+          </div>
         </Transition>
       </div>
 
-      <div class="header-center">
-        <!-- 图层模式切换 -->
-        <ElRadioGroup v-model="layerMode" size="small" @change="switchLayerMode">
+      <!-- 图层模式切换 -->
+      <div class="sidebar-section">
+        <div class="section-label">
+          <ElIcon><Grid /></ElIcon>
+          视图模式
+        </div>
+        <ElRadioGroup v-model="layerMode" size="small" @change="switchLayerMode" class="layer-radio-group">
           <ElRadioButton label="knowledge">
             <ElIcon><Grid /></ElIcon>
             知识层
@@ -35,64 +43,80 @@
             混合视图
           </ElRadioButton>
         </ElRadioGroup>
-
-        <span class="stats-text" v-if="layerMode === 'knowledge' || layerMode === 'mixed'">
-          节点: <strong>{{ visibleNodes.length }}</strong>
-          <span v-if="focusedNodeId">/{{ nodes.length }}</span>
-          边: <strong>{{ visibleEdges.length }}</strong>
-        </span>
       </div>
 
-      <div class="header-right">
-        <!-- 图表控制按钮组 -->
-        <div class="chart-controls">
-          <ElTooltip content="重置视图" placement="bottom">
-            <ElButton type="text" circle class="control-btn" @click="resetView">
+      <!-- 图例 -->
+      <div class="sidebar-section">
+        <div class="section-label">
+          <ElIcon><InfoFilled /></ElIcon>
+          掌握度图例
+        </div>
+        <div class="legend-list">
+          <div class="legend-item">
+            <span class="legend-dot weak"></span>
+            <span class="legend-text">薄弱 (0-40%)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot medium"></span>
+            <span class="legend-text">一般 (41-70%)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot strong"></span>
+            <span class="legend-text">良好 (71-100%)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 控制按钮 -->
+      <div class="sidebar-section">
+        <div class="section-label">
+          <ElIcon><Operation /></ElIcon>
+          视图控制
+        </div>
+        <div class="control-buttons">
+          <ElTooltip content="重置视图" placement="top">
+            <ElButton type="default" size="small" class="control-btn" @click="resetView">
               <ElIcon><RefreshRight /></ElIcon>
+              重置
             </ElButton>
           </ElTooltip>
-          <ElTooltip content="放大" placement="bottom">
-            <ElButton type="text" circle class="control-btn" @click="zoomIn">
+          <ElTooltip content="放大" placement="top">
+            <ElButton type="default" size="small" class="control-btn" @click="zoomIn">
               <ElIcon><ZoomIn /></ElIcon>
+              放大
             </ElButton>
           </ElTooltip>
-          <ElTooltip content="缩小" placement="bottom">
-            <ElButton type="text" circle class="control-btn" @click="zoomOut">
+          <ElTooltip content="缩小" placement="top">
+            <ElButton type="default" size="small" class="control-btn" @click="zoomOut">
               <ElIcon><ZoomOut /></ElIcon>
+              缩小
             </ElButton>
           </ElTooltip>
         </div>
+      </div>
 
-        <!-- 过滤器按钮 -->
+      <!-- 过滤器按钮 -->
+      <div class="sidebar-section">
         <ElButton
           :type="showFilters ? 'primary' : 'default'"
           size="small"
           @click="showFilters = !showFilters"
-          class="filter-btn"
+          class="filter-toggle-btn"
         >
           <ElIcon><Filter /></ElIcon>
-          筛选
+          {{ showFilters ? '收起筛选' : '展开筛选' }}
           <ElBadge v-if="activeFilterCount > 0" :value="activeFilterCount" class="filter-badge" />
         </ElButton>
-
-        <ElTooltip content="节点颜色表示掌握度" placement="bottom">
-          <div class="legend">
-            <div class="legend-item">
-              <span class="legend-dot weak"></span>
-              <span class="legend-text">薄弱</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot medium"></span>
-              <span class="legend-text">一般</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot strong"></span>
-              <span class="legend-text">良好</span>
-            </div>
-          </div>
-        </ElTooltip>
       </div>
-    </div>
+
+      <!-- 底部提示 -->
+      <div class="sidebar-footer">
+        <div class="hint-text">
+          <ElIcon><Pointer /></ElIcon>
+          <span>单击选中，双击聚焦，拖拽调整</span>
+        </div>
+      </div>
+    </aside>
 
     <!-- 主体区域：过滤器 + 图表 + 详情面板 -->
     <div class="main-container">
@@ -222,11 +246,6 @@
           </div>
         </Transition>
 
-        <!-- 图例提示 - 底部 -->
-        <div class="bottom-hint">
-          <ElIcon><Pointer /></ElIcon>
-          <span>单击选中节点，双击聚焦，拖拽调整位置</span>
-        </div>
       </div>
 
       <!-- 右侧范式详情面板 -->
@@ -493,7 +512,7 @@ import {
 import {
   ArrowLeft, Filter, ZoomIn, ZoomOut, InfoFilled, Close, RefreshRight,
   EditPen, Pointer, CircleCheck, Folder, Share, DocumentChecked,
-  CircleClose, TrendCharts, Document, ArrowRight, View, Grid, List
+  CircleClose, TrendCharts, Document, ArrowRight, View, Grid, List, Operation
 } from '@element-plus/icons-vue'
 import { knowledgeGraphApi } from '../../api/knowledgeGraph.js'
 import { paradigmVisualizationApi } from '../../api/paradigmVisualization.js'
@@ -1104,158 +1123,254 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .knowledge-graph-page {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100vh;
-  background: #161616;
+  background: var(--bg-deep);
   border-radius: 24px;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-main);
 }
 
-// 页面头部
-.page-header {
+// 左侧边栏
+.sidebar {
+  width: 200px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-right: 1px solid var(--glass-border);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-  background: rgba(30, 41, 59, 0.5);
-  border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+  flex-direction: column;
   flex-shrink: 0;
-  backdrop-filter: blur(10px);
+  overflow: hidden;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.sidebar-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--glass-border);
 
   .back-btn {
-    color: #94a3b8;
-    font-size: 14px;
+    color: var(--text-secondary);
+    font-size: 13px;
     display: flex;
     align-items: center;
     gap: 4px;
-    transition: color 150ms ease;
     cursor: pointer;
+    padding: 0;
+    margin-bottom: 12px;
+  }
 
-    &:hover {
-      color: #f1f5f9;
-    }
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
   }
 
   .page-title {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 600;
-    color: #f1f5f9;
+    color: var(--text-primary);
     letter-spacing: -0.3px;
   }
 
   .beta-tag {
-    background: rgba(59, 130, 246, 0.15) !important;
-    color: #3b82f6 !important;
-    border-color: rgba(59, 130, 246, 0.3) !important;
+    background: rgba(204, 102, 51, 0.15) !important;
+    color: var(--accent-primary) !important;
+    border-color: rgba(204, 102, 51, 0.3) !important;
     font-weight: 500;
+    font-size: 11px;
+    padding: 0 6px;
+    height: 20px;
+    line-height: 18px;
   }
 
-  .focus-tag {
-    margin-left: 8px;
-    animation: pulse-tag 2s ease-in-out infinite;
-  }
-}
-
-@keyframes pulse-tag {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-}
-
-.header-center {
-  .stats-text {
-    color: #64748b;
-    font-size: 13px;
-    font-weight: 500;
-
-    strong {
-      color: #f1f5f9;
-      margin: 0 4px;
-      font-weight: 600;
-    }
-  }
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-
-  .chart-controls {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px;
-    background: rgba(51, 65, 85, 0.3);
-    border-radius: 8px;
-
-    .control-btn {
-      color: #94a3b8;
-      transition: all 150ms ease;
-      cursor: pointer;
-
-      &:hover {
-        color: #f1f5f9;
-        background: rgba(30, 41, 59, 0.5);
-      }
-    }
-  }
-
-  .filter-btn {
+  .focus-indicator {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-weight: 500;
-    transition: all 150ms ease;
+    padding: 6px 10px;
+    background: rgba(204, 102, 51, 0.15);
+    border: 1px solid rgba(204, 102, 51, 0.3);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--accent-primary);
     cursor: pointer;
+    margin-top: 8px;
+
+    .close-icon {
+      margin-left: auto;
+      font-size: 12px;
+    }
+  }
+}
+
+.sidebar-section {
+  padding: 16px;
+  border-bottom: 1px solid var(--glass-border);
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+
+  .el-icon {
+    font-size: 14px;
+    color: var(--accent-primary);
+  }
+}
+
+// 图层模式切换样式
+.layer-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+
+  :deep(.el-radio-button) {
+    display: flex;
+    width: 100%;
   }
 
-  .filter-badge {
-    margin-left: 4px;
-  }
-
-  .legend {
+  :deep(.el-radio-button__inner) {
+    width: 100%;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 6px 12px;
-    background: rgba(51, 65, 85, 0.3);
-    border-radius: 8px;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--glass-surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px !important;
+    color: var(--text-secondary);
+    font-size: 13px;
   }
+
+  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+    background: rgba(204, 102, 51, 0.15);
+    border-color: rgba(204, 102, 51, 0.4);
+    color: var(--accent-primary);
+    box-shadow: none;
+  }
+}
+
+// 图例列表
+.legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 
   .legend-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    transition: opacity 150ms ease;
-
-    &:hover {
-      opacity: 0.8;
-    }
+    gap: 10px;
+    cursor: default;
   }
 
   .legend-dot {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    box-shadow: 0 0 8px currentColor;
+    flex-shrink: 0;
 
-    &.weak { background: #ef4444; color: #ef4444; }
-    &.medium { background: #f59e0b; color: #f59e0b; }
-    &.strong { background: #22c55e; color: #22c55e; }
+    &.weak {
+      background: var(--mastery-low);
+      box-shadow: 0 0 8px var(--mastery-low);
+    }
+    &.medium {
+      background: var(--mastery-med);
+      box-shadow: 0 0 8px var(--mastery-med);
+    }
+    &.strong {
+      background: var(--mastery-high);
+      box-shadow: 0 0 8px var(--mastery-high);
+    }
   }
 
   .legend-text {
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 12px;
     font-weight: 500;
+  }
+}
+
+// 控制按钮
+.control-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+
+  .control-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 2px;
+    background: var(--glass-surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+
+    .el-icon {
+      font-size: 16px;
+    }
+  }
+}
+
+// 过滤器切换按钮
+.filter-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.filter-badge {
+  margin-left: 4px;
+}
+
+// 侧边栏底部
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid var(--glass-border);
+
+  .hint-text {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+
+    .el-icon {
+      font-size: 13px;
+      color: var(--accent-primary);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    span {
+      flex: 1;
+    }
   }
 }
 
@@ -1270,8 +1385,10 @@ onUnmounted(() => {
 // 过滤器面板
 .filter-panel {
   width: 260px;
-  background: rgba(30, 41, 59, 0.5);
-  border-right: 1px solid rgba(100, 116, 139, 0.2);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-right: 1px solid var(--glass-border);
   padding: 20px;
   overflow-y: auto;
   flex-shrink: 0;
@@ -1286,11 +1403,11 @@ onUnmounted(() => {
   .filter-title {
     font-size: 15px;
     font-weight: 600;
-    color: #f1f5f9;
+    color: var(--text-primary);
   }
 
   .reset-btn {
-    color: #64748b;
+    color: var(--text-tertiary);
     font-size: 12px;
     display: flex;
     align-items: center;
@@ -1299,7 +1416,7 @@ onUnmounted(() => {
     cursor: pointer;
 
     &:hover {
-      color: #3b82f6;
+      color: var(--accent-primary);
     }
   }
 }
@@ -1313,7 +1430,7 @@ onUnmounted(() => {
     gap: 8px;
     font-size: 12px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text-secondary);
     margin-bottom: 14px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -1335,24 +1452,25 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: rgba(51, 65, 85, 0.3);
-  border: 1px solid transparent;
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 150ms ease;
   user-select: none;
 
   &:hover {
-    background: rgba(100, 116, 139, 0.4);
-    color: #f1f5f9;
+    background: var(--glass-surface-hover);
+    border-color: var(--glass-border-hover);
+    color: var(--text-primary);
   }
 
   &.active {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.4);
-    color: #3b82f6;
+    background: rgba(204, 102, 51, 0.15);
+    border-color: rgba(204, 102, 51, 0.4);
+    color: var(--accent-primary);
   }
 
   .chip-dot {
@@ -1360,9 +1478,9 @@ onUnmounted(() => {
     height: 8px;
     border-radius: 50%;
 
-    &.weak { background: #ef4444; }
-    &.medium { background: #f59e0b; }
-    &.strong { background: #22c55e; }
+    &.weak { background: var(--mastery-low); }
+    &.medium { background: var(--mastery-med); }
+    &.strong { background: var(--mastery-high); }
   }
 }
 
@@ -1371,15 +1489,15 @@ onUnmounted(() => {
   align-items: flex-start;
   gap: 10px;
   padding: 14px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: rgba(204, 102, 51, 0.1);
+  border: 1px solid rgba(204, 102, 51, 0.2);
   border-radius: 10px;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   line-height: 1.5;
 
   .el-icon {
-    color: #f59e0b;
+    color: var(--accent-primary);
     margin-top: 2px;
     flex-shrink: 0;
   }
@@ -1390,7 +1508,7 @@ onUnmounted(() => {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(ellipse at center, rgba(30, 41, 59, 0.3) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(204, 102, 51, 0.08) 0%, transparent 70%);
 }
 
 .chart {
@@ -1409,7 +1527,7 @@ onUnmounted(() => {
     width: 180px;
     height: 140px;
     margin: 0 auto 20px;
-    color: #64748b;
+    color: var(--text-tertiary);
     opacity: 0.6;
 
     svg {
@@ -1421,18 +1539,18 @@ onUnmounted(() => {
   .empty-title {
     font-size: 16px;
     font-weight: 500;
-    color: #94a3b8;
+    color: var(--text-secondary);
     margin-bottom: 8px;
   }
 
   .empty-subtitle {
     font-size: 13px;
-    color: #64748b;
+    color: var(--text-tertiary);
     margin-bottom: 20px;
   }
 
   :deep(.el-empty__description) {
-    color: #94a3b8;
+    color: var(--text-secondary);
   }
 }
 
@@ -1445,45 +1563,27 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(100, 116, 139, 0.2);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
   font-size: 13px;
-  color: #94a3b8;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  color: var(--text-secondary);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow-md);
 
   .el-icon {
-    color: #3b82f6;
-  }
-}
-
-.bottom-hint {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(100, 116, 139, 0.2);
-  border-radius: 16px;
-  font-size: 12px;
-  color: #64748b;
-  backdrop-filter: blur(10px);
-
-  .el-icon {
-    color: #3b82f6;
+    color: var(--accent-primary);
   }
 }
 
 // 详情面板
 .detail-panel {
   width: 340px;
-  background: rgba(30, 41, 59, 0.5);
-  border-left: 1px solid rgba(100, 116, 139, 0.2);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-left: 1px solid var(--glass-border);
   padding: 20px;
   overflow-y: auto;
   flex-shrink: 0;
@@ -1492,27 +1592,30 @@ onUnmounted(() => {
 .detail-header {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--glass-border);
 
   .node-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 20px;
     flex-shrink: 0;
+    background: rgba(204, 102, 51, 0.15);
+    color: var(--accent-primary);
+    border: 1px solid rgba(204, 102, 51, 0.3);
   }
 
   .detail-title {
     flex: 1;
     font-size: 17px;
     font-weight: 600;
-    color: #f1f5f9;
+    color: var(--text-primary);
     margin: 0;
     line-height: 1.4;
     padding-top: 2px;
@@ -1520,13 +1623,13 @@ onUnmounted(() => {
   }
 
   .close-btn {
-    color: #64748b;
+    color: var(--text-tertiary);
     transition: color 150ms ease;
     cursor: pointer;
     margin-top: 4px;
 
     &:hover {
-      color: #f1f5f9;
+      color: var(--accent-primary);
     }
   }
 }
@@ -1548,24 +1651,26 @@ onUnmounted(() => {
   .section-title {
     font-size: 12px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   .section-count {
     padding: 2px 8px;
-    background: rgba(51, 65, 85, 0.3);
+    background: var(--glass-surface);
+    border: 1px solid var(--glass-border);
     border-radius: 10px;
     font-size: 11px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text-secondary);
   }
 }
 
 // 掌握度区块
 .mastery-section {
-  background: rgba(51, 65, 85, 0.3);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   padding: 16px;
 }
@@ -1578,7 +1683,7 @@ onUnmounted(() => {
 
   .mastery-label {
     font-size: 13px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-weight: 500;
   }
 
@@ -1604,7 +1709,7 @@ onUnmounted(() => {
 .progress-wrapper {
   .progress-track {
     height: 8px;
-    background: rgba(100, 116, 139, 0.2);
+    background: rgba(255, 248, 245, 0.1);
     border-radius: 4px;
     overflow: hidden;
   }
@@ -1613,6 +1718,8 @@ onUnmounted(() => {
     height: 100%;
     border-radius: 4px;
     transition: width 0.5s ease;
+    background: var(--accent-primary);
+    box-shadow: 0 0 10px var(--accent-glow-soft);
   }
 
   .progress-markers {
@@ -1622,7 +1729,7 @@ onUnmounted(() => {
 
     .marker {
       font-size: 11px;
-      color: #64748b;
+      color: var(--text-tertiary);
     }
   }
 }
@@ -1631,20 +1738,23 @@ onUnmounted(() => {
 .stats-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .stat-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
-  background: rgba(51, 65, 85, 0.3);
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: 10px;
-  transition: transform 150ms ease;
+  transition: all 150ms ease;
 
   &:hover {
     transform: translateX(4px);
+    background: var(--glass-surface-hover);
+    border-color: var(--glass-border-hover);
   }
 
   .stat-icon {
@@ -1655,6 +1765,9 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    background: rgba(204, 102, 51, 0.15);
+    color: var(--accent-primary);
+    border: 1px solid rgba(204, 102, 51, 0.3);
   }
 
   .stat-info {
@@ -1664,14 +1777,14 @@ onUnmounted(() => {
   .stat-value {
     font-size: 20px;
     font-weight: 700;
-    color: #f1f5f9;
+    color: var(--text-primary);
     line-height: 1;
     margin-bottom: 4px;
   }
 
   .stat-label {
     font-size: 12px;
-    color: #94a3b8;
+    color: var(--text-secondary);
   }
 }
 
@@ -1687,14 +1800,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(51, 65, 85, 0.3);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 150ms ease;
-  border: 1px solid transparent;
 
   &:hover {
-    background: rgba(100, 116, 139, 0.4);
+    background: var(--glass-surface-hover);
+    border-color: var(--glass-border-hover);
     transform: translateX(4px);
 
     .neighbor-arrow {
@@ -1718,7 +1832,7 @@ onUnmounted(() => {
   .neighbor-name {
     flex: 1;
     font-size: 13px;
-    color: #f1f5f9;
+    color: var(--text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1732,7 +1846,7 @@ onUnmounted(() => {
 
   .neighbor-arrow {
     font-size: 12px;
-    color: #64748b;
+    color: var(--text-tertiary);
     opacity: 0;
     transform: translateX(-4px);
     transition: all 150ms ease;
@@ -1741,7 +1855,7 @@ onUnmounted(() => {
 
 .show-more-btn {
   margin-top: 8px;
-  color: #3b82f6;
+  color: var(--accent-primary);
   font-weight: 500;
 }
 
@@ -1751,13 +1865,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: rgba(51, 65, 85, 0.3);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--text-secondary);
 
   .el-icon {
     font-size: 14px;
+    color: var(--accent-primary);
   }
 }
 
@@ -1768,7 +1884,7 @@ onUnmounted(() => {
   gap: 10px;
   margin-top: 8px;
   padding-top: 20px;
-  border-top: 1px solid rgba(100, 116, 139, 0.2);
+  border-top: 1px solid var(--glass-border);
 
   .action-btn {
     display: flex;
@@ -1780,27 +1896,28 @@ onUnmounted(() => {
     font-weight: 500;
     transition: all 150ms ease;
     cursor: pointer;
+    border: none;
 
     &.primary {
-      background: #3b82f6;
-      border-color: #3b82f6;
+      background: var(--accent-primary);
+      color: white;
 
       &:hover {
-        background: #2563eb;
-        border-color: #2563eb;
+        background: var(--accent-secondary);
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 4px 16px var(--accent-glow-soft);
       }
     }
 
     &:not(.primary) {
-      background: rgba(51, 65, 85, 0.3);
-      border-color: rgba(100, 116, 139, 0.2);
-      color: #94a3b8;
+      background: var(--glass-surface);
+      border: 1px solid var(--glass-border);
+      color: var(--text-secondary);
 
       &:hover {
-        background: rgba(100, 116, 139, 0.4);
-        color: #f1f5f9;
+        background: var(--glass-surface-hover);
+        border-color: var(--glass-border-hover);
+        color: var(--text-primary);
       }
     }
   }
@@ -1809,8 +1926,10 @@ onUnmounted(() => {
 // 列表面板
 .list-panel {
   width: 280px;
-  background: rgba(30, 41, 59, 0.5);
-  border-left: 1px solid rgba(100, 116, 139, 0.2);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-left: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -1818,7 +1937,7 @@ onUnmounted(() => {
 
 .list-header {
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+  border-bottom: 1px solid var(--glass-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1826,13 +1945,13 @@ onUnmounted(() => {
   .list-title {
     font-size: 15px;
     font-weight: 600;
-    color: #f1f5f9;
+    color: var(--text-primary);
     margin: 0;
   }
 
   .list-count {
     font-size: 12px;
-    color: #64748b;
+    color: var(--text-tertiary);
     font-weight: 500;
   }
 }
@@ -1852,13 +1971,16 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 150ms ease;
   margin-bottom: 4px;
+  border: 1px solid transparent;
 
   &:hover {
-    background: rgba(51, 65, 85, 0.3);
+    background: var(--glass-surface);
+    border-color: var(--glass-border);
   }
 
   &.is-weak {
     background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
 
     &:hover {
       background: rgba(239, 68, 68, 0.15);
@@ -1875,7 +1997,7 @@ onUnmounted(() => {
   .list-name {
     flex: 1;
     font-size: 13px;
-    color: #f1f5f9;
+    color: var(--text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1892,13 +2014,13 @@ onUnmounted(() => {
   text-align: center;
   padding: 12px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 // 邻居弹窗
 :deep(.neighbors-dialog) {
   .el-dialog__header {
-    border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+    border-bottom: 1px solid var(--glass-border);
     margin-right: 0;
     padding: 16px 20px;
   }
@@ -1919,15 +2041,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 12px;
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(100, 116, 139, 0.2);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: 10px;
   cursor: pointer;
   transition: all 150ms ease;
 
   &:hover {
-    border-color: #3b82f6;
-    background: rgba(59, 130, 246, 0.08);
+    border-color: var(--accent-primary);
+    background: rgba(204, 102, 51, 0.08);
     transform: translateY(-2px);
   }
 
@@ -1941,7 +2063,7 @@ onUnmounted(() => {
   .card-name {
     flex: 1;
     font-size: 13px;
-    color: #f1f5f9;
+    color: var(--text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2008,13 +2130,17 @@ onUnmounted(() => {
 }
 
 @media (max-width: 992px) {
+  .sidebar {
+    width: 180px;
+  }
+
   .filter-panel {
     position: absolute;
-    left: 0;
+    left: 200px;
     top: 0;
     bottom: 0;
     z-index: 10;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-lg);
   }
 
   .detail-panel,
@@ -2026,22 +2152,60 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .knowledge-graph-page {
     border-radius: 16px;
+    flex-direction: column;
   }
 
-  .page-header {
-    padding: 10px 16px;
-    flex-wrap: wrap;
-    gap: 10px;
+  .sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid var(--glass-border);
+  }
 
-    .header-center {
-      order: 3;
-      width: 100%;
-      text-align: center;
+  .sidebar-header {
+    padding: 12px 16px;
+  }
+
+  .sidebar-section {
+    padding: 12px 16px;
+  }
+
+  .layer-radio-group {
+    flex-direction: row !important;
+
+    :deep(.el-radio-button__inner) {
+      justify-content: center !important;
     }
   }
 
-  .legend {
-    display: none !important;
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .legend-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+
+    .legend-item {
+      flex: 1;
+      min-width: 100px;
+    }
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
+
+  .filter-panel {
+    left: 0;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 50%;
+    border-right: none;
+    border-top: 1px solid var(--glass-border);
   }
 
   .detail-panel,
@@ -2051,7 +2215,7 @@ onUnmounted(() => {
     top: 0;
     bottom: 0;
     z-index: 10;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-lg);
   }
 
   .neighbors-grid {
@@ -2073,7 +2237,7 @@ onUnmounted(() => {
   .description-text {
     font-size: 14px;
     line-height: 1.6;
-    color: #94a3b8;
+    color: var(--text-secondary);
     margin: 0;
   }
 }
@@ -2089,7 +2253,7 @@ onUnmounted(() => {
   .flowchart-container {
     .flowchart-description {
       font-size: 14px;
-      color: #94a3b8;
+      color: var(--text-secondary);
       margin-bottom: 16px;
       line-height: 1.6;
     }
@@ -2101,7 +2265,7 @@ onUnmounted(() => {
     justify-content: center;
     gap: 12px;
     padding: 60px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 14px;
 
     .el-icon {
@@ -2110,33 +2274,27 @@ onUnmounted(() => {
   }
 }
 
-// 图层切换按钮样式
+// 滤镜面板中的图层切换按钮样式（保持原有）
 :deep(.el-radio-group) {
   .el-radio-button__inner {
     display: flex;
     align-items: center;
     gap: 4px;
-    background: rgba(51, 65, 85, 0.5);
-    border-color: rgba(100, 116, 139, 0.3);
-    color: #94a3b8;
+    background: var(--glass-surface);
+    border-color: var(--glass-border);
+    color: var(--text-secondary);
 
     &:hover {
-      color: #f1f5f9;
+      color: var(--text-primary);
+      background: var(--glass-surface-hover);
     }
   }
 
   .el-radio-button__original-radio:checked + .el-radio-button__inner {
-    background: #3b82f6;
-    border-color: #3b82f6;
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
     color: #fff;
-    box-shadow: none;
-  }
-}
-
-// 深色模式适配
-html.dark {
-  .paradigm-detail-panel {
-    background: rgba(30, 41, 59, 0.8);
+    box-shadow: 0 0 12px var(--accent-glow-soft);
   }
 }
 </style>

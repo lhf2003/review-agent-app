@@ -251,19 +251,19 @@ function formatQuestionType(type) {
   padding: 16px;
   border-radius: 16px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 
-  // Glassmorphism Base
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  // Glassmorphism - 与 QuizHistoryPage.vue 保持一致
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease !important;
 
   &:hover {
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(255, 255, 255, 0.6);
+    transform: scale(1.01);
+    background: var(--glass-surface-hover);
+    box-shadow: var(--shadow-md);
     z-index: 1;
   }
 
@@ -433,45 +433,4 @@ function formatQuestionType(type) {
   }
 }
 
-// Dark Mode Adaptation
-html.dark .review-card {
-  background: rgba(30, 30, 35, 0.85);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
-  // 确保文字在深色背景下可见
-  .question-text {
-    color: rgba(255, 255, 255, 0.95) !important;
-  }
-
-  .meta-item {
-    color: rgba(255, 255, 255, 0.75) !important;
-  }
-
-  .review-date {
-    color: rgba(255, 255, 255, 0.65) !important;
-  }
-
-  &:hover {
-    background: rgba(35, 35, 40, 0.9);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
-  }
-
-  .action-btn.dismiss-btn {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.8);
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: rgba(255, 255, 255, 0.95);
-    }
-  }
-
-  .data-warning {
-    background: rgba(255, 149, 0, 0.12);
-    border-color: rgba(255, 149, 0, 0.3);
-    color: rgba(255, 255, 255, 0.9);
-  }
-}
 </style>

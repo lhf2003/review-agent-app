@@ -254,45 +254,34 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
 @import '../../styles/quiz-common';
-@import '../../styles/variables';
 
 .single-choice-question {
-  // 使用共享的 CSS 变量
-  --card-radius: var(--quiz-card-radius);
-  --transition-spring: var(--quiz-transition-spring);
-  --transition-smooth: var(--quiz-transition-smooth);
-  --primary-color: var(--quiz-primary-color);
-  --success-color: var(--quiz-success-color);
-  --danger-color: var(--quiz-danger-color);
-
-  background: var(--el-bg-color);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: var(--card-radius);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
   padding: 32px;
   margin-bottom: 24px;
-  border: 1px solid var(--el-border-color-light);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.02),
-    0 10px 15px -3px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.02);
-  transition: var(--transition-smooth);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-base);
   position: relative;
-  opacity: 0.95;
 
   &.compact-mode {
     padding: 20px;
     margin-bottom: 16px;
     background: transparent;
     box-shadow: none;
-    border: 1px solid var(--el-border-color-lighter);
+    border: 1px solid var(--glass-border);
     backdrop-filter: none;
 
     .question-number { display: none; }
     .question-text { font-size: 15px; margin-bottom: 16px; }
     .options-list { gap: 10px; }
-    .option-item { padding: 12px 16px; border-radius: 12px; }
+    .option-item { padding: 12px 16px; border-radius: var(--radius-md); }
     .option-marker { width: 28px; height: 28px; font-size: 13px; border-radius: 8px; }
     .option-content { font-size: 14px; }
   }
@@ -316,23 +305,24 @@ defineExpose({
     align-items: center;
     gap: 16px;
     padding: 14px 20px;
-    border: none;
-    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    transition: all 0.2s ease;
     position: relative;
-    background: var(--el-fill-color-light);
+    background: rgba(255, 248, 245, 0.05);
     min-height: 64px;
     box-sizing: border-box;
 
     &:hover:not(.is-disabled) {
-      background: var(--el-fill-color);
+      background: var(--glass-surface-hover);
       transform: scale(1.01);
       z-index: 1;
+      border-color: var(--glass-border-hover);
 
       .option-marker {
-        background: var(--el-color-primary-light-9);
-        color: var(--primary-color);
+        background: rgba(204, 102, 51, 0.15);
+        color: var(--accent-tertiary);
       }
     }
 
@@ -346,22 +336,22 @@ defineExpose({
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: var(--el-fill-color-light);
-    color: var(--el-text-color-regular);
+    background: rgba(255, 248, 245, 0.08);
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 15px;
     font-weight: 600;
     flex-shrink: 0;
-    transition: var(--transition-smooth);
+    transition: var(--transition-base);
   }
 
   // Option Content
   .option-content {
     flex: 1;
     font-size: 16px;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
     line-height: 1.5;
     font-weight: 400;
     transition: color 0.2s ease;
@@ -369,60 +359,61 @@ defineExpose({
 
   // Selected State
   .option-item.is-selected {
-    background: var(--el-color-primary-light-9);
-    box-shadow: none;
+    background: rgba(204, 102, 51, 0.1);
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 8px rgba(204, 102, 51, 0.15);
     z-index: 2;
 
     .option-marker {
-      background: var(--primary-color);
+      background: var(--accent-primary);
       color: white;
-      box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.3);
+      box-shadow: 0 2px 8px rgba(204, 102, 51, 0.3);
     }
 
     .option-content {
       font-weight: 600;
-      color: var(--primary-color);
+      color: var(--accent-tertiary);
     }
   }
 
   // Correct State
   .option-item.is-correct {
-    background: var(--el-color-success-light-9);
-    box-shadow: none;
+    background: rgba(34, 197, 94, 0.1);
+    border-color: var(--mastery-high);
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
     z-index: 2;
 
     .option-marker {
-      background: var(--success-color);
+      background: var(--mastery-high);
       color: white;
-      box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
     }
 
     .option-content {
-      color: #1a7f37;
+      color: var(--mastery-high);
       font-weight: 600;
     }
   }
 
-  // Wrong State - 用户选择的错误答案
+  // Wrong State
   .option-item.is-wrong {
-    background: linear-gradient(135deg, rgba(245, 108, 108, 0.15) 0%, rgba(245, 108, 108, 0.08) 100%);
-    border: 2px solid var(--danger-color);
-    box-shadow: 0 0 0 4px rgba(245, 108, 108, 0.1);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
+    border: 2px solid var(--mastery-low);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
     animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
     z-index: 3;
 
     .option-marker {
-      background: var(--danger-color);
+      background: var(--mastery-low);
       color: white;
-      box-shadow: 0 2px 8px rgba(245, 108, 108, 0.4);
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
     }
 
     .option-content {
-      color: var(--danger-color);
+      color: var(--mastery-low);
       font-weight: 600;
     }
 
-    // 错误图标样式
     .answer-icon {
       animation: iconPop 0.3s ease both;
     }
@@ -443,85 +434,7 @@ defineExpose({
     &:hover {
       transform: none;
       box-shadow: none;
-      background: var(--el-fill-color-light);
-    }
-  }
-
-  // Dark Mode Adaptation
-}
-
-html.dark .single-choice-question {
-  background: var(--el-bg-color);
-  border-color: var(--el-border-color);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-
-  &.compact-mode {
-    background: transparent;
-    border-color: var(--el-border-color);
-  }
-
-  .option-item {
-    background: rgba(255, 255, 255, 0.05);
-    border: none;
-
-    &:hover:not(.is-disabled) {
-      background: rgba(255, 255, 255, 0.1);
-      box-shadow: none;
-      transform: scale(1.01);
-    }
-  }
-
-  .option-marker {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .option-content {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .option-item.is-selected {
-    background: rgba(var(--el-color-primary-rgb), 0.25);
-    border: none;
-
-    .option-content { color: white; }
-
-    .option-marker {
-      background: var(--primary-color);
-      color: white;
-    }
-  }
-
-  .option-item.is-correct {
-    background: rgba(52, 199, 89, 0.2);
-    border: none;
-
-    .option-content { color: #4cd964; }
-
-    .option-marker {
-      background: var(--success-color);
-      color: white;
-    }
-  }
-
-  .option-item.is-wrong {
-    background: linear-gradient(135deg, rgba(255, 69, 58, 0.25) 0%, rgba(255, 69, 58, 0.15) 100%);
-    border: 2px solid #ff453a;
-    box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.15);
-
-    .option-content {
-      color: #ff453a;
-      font-weight: 600;
-    }
-
-    .option-marker {
-      background: #ff453a;
-      color: white;
-      box-shadow: 0 2px 10px rgba(255, 69, 58, 0.5);
-    }
-
-    .answer-icon {
-      animation: iconPop 0.3s ease both;
+      background: rgba(255, 248, 245, 0.05);
     }
   }
 }

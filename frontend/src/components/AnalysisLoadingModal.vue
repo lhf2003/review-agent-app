@@ -220,16 +220,16 @@ function handleRetry() {
 </template>
 
 <style scoped lang="scss">
-// 加载遮罩层
+// 加载遮罩层 - 使用全局变量
 .loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(26, 15, 8, 0.8);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -237,23 +237,23 @@ function handleRetry() {
   padding: 20px;
 }
 
-// 加载容器
+// 加载容器 - 使用全局 Glass 变量
 .loading-container {
   position: relative;
   width: 100%;
   max-width: 480px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-radius: 24px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  border-radius: var(--radius-card);
   padding: 48px 40px 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
-  0 0 0 1px rgba(255, 255, 255, 0.8),
-  inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
-// 顶部光效
+// 顶部光效 - 使用全局变量
 .glow-effect {
   position: absolute;
   top: -50%;
@@ -263,7 +263,7 @@ function handleRetry() {
   height: 100%;
   background: radial-gradient(
           circle at center,
-          rgba(99, 102, 241, 0.15) 0%,
+          var(--glass-highlight) 0%,
           transparent 60%
   );
   pointer-events: none;
@@ -291,13 +291,13 @@ function handleRetry() {
   justify-content: center;
 }
 
-// 脉冲环
+// 脉冲环 - 使用全局变量
 .pulse-ring {
   position: absolute;
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 2px solid rgba(99, 102, 241, 0.3);
+  border: 2px solid var(--glass-border-hover);
   animation: pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
   &.delay-1 {
@@ -309,11 +309,11 @@ function handleRetry() {
   }
 }
 
-// 中心图标
+// 中心图标 - 使用全局变量
 .center-icon {
   font-size: 48px;
   animation: icon-bounce 2s ease-in-out infinite;
-  filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.2));
+  filter: drop-shadow(0 4px 12px var(--glass-border-hover));
 }
 
 // 阶段信息
@@ -323,7 +323,7 @@ function handleRetry() {
   .stage-title {
     font-size: 22px;
     font-weight: 700;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
     margin: 0 0 12px;
     letter-spacing: -0.02em;
   }
@@ -331,7 +331,7 @@ function handleRetry() {
   .stage-description {
     font-size: 15px;
     font-weight: 400;
-    color: var(--el-text-color-secondary);
+    color: var(--text-secondary);
     margin: 0 0 8px;
     line-height: 1.6;
   }
@@ -339,9 +339,9 @@ function handleRetry() {
   .file-name {
     font-size: 13px;
     font-weight: 500;
-    color: var(--el-color-primary);
+    color: var(--text-primary);
     margin: 0;
-    opacity: 0.8;
+    opacity: 0.9;
   }
 }
 
@@ -353,8 +353,8 @@ function handleRetry() {
   .progress-bar {
     position: relative;
     width: 100%;
-    height: 8px;
-    background: rgba(0, 0, 0, 0.06);
+    height: 6px;
+    background: var(--glass-border);
     border-radius: 999px;
     overflow: hidden;
     margin-bottom: 12px;
@@ -363,12 +363,13 @@ function handleRetry() {
   .progress-fill {
     position: relative;
     height: 100%;
-    background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%);
+    background: var(--gradient-warm);
     background-size: 200% 100%;
     border-radius: 999px;
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     animation: gradient-shift 2s ease-in-out infinite;
     overflow: hidden;
+    box-shadow: 0 0 10px var(--accent-glow-soft);
 
     .progress-shine {
       position: absolute;
@@ -390,7 +391,7 @@ function handleRetry() {
     display: flex;
     justify-content: space-between;
     font-size: 13px;
-    color: var(--el-text-color-secondary);
+    color: var(--text-tertiary);
 
     .time-elapsed {
       font-weight: 500;
@@ -403,7 +404,7 @@ function handleRetry() {
   }
 }
 
-// 提示区域
+// 提示区域 - 使用全局变量
 .tip-section {
   width: 100%;
   margin-bottom: 20px;
@@ -414,12 +415,13 @@ function handleRetry() {
 
   .tip-text {
     font-size: 14px;
-    color: var(--el-text-color-regular);
+    color: var(--text-secondary);
     line-height: 1.5;
     margin: 0;
     padding: 10px 16px;
-    background: rgba(99, 102, 241, 0.08);
-    border-radius: 12px;
+    background: var(--glass-surface-hover);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
   }
 }
 
@@ -430,7 +432,7 @@ function handleRetry() {
   margin-bottom: 20px;
 }
 
-// 底部装饰
+// 底部装饰 - 使用全局变量
 .bottom-decoration {
   display: flex;
   justify-content: center;
@@ -440,7 +442,7 @@ function handleRetry() {
   .dot-dot {
     width: 8px;
     height: 8px;
-    background: rgba(99, 102, 241, 0.3);
+    background: var(--glass-border-hover);
     border-radius: 50%;
     animation: dot-bounce 1.4s ease-in-out infinite;
 
@@ -537,40 +539,6 @@ function handleRetry() {
 .tip-fade-leave-to {
   opacity: 0;
   transform: translateY(-10px);
-}
-
-// 深色模式适配
-html.dark {
-  .loading-container {
-    background: rgba(40, 40, 42, 0.75);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  }
-
-  .glow-effect {
-    background: radial-gradient(
-            circle at center,
-            rgba(139, 92, 246, 0.2) 0%,
-            transparent 60%
-    );
-  }
-
-  .pulse-ring {
-    border-color: rgba(139, 92, 246, 0.4);
-  }
-
-  .progress-bar {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .tip-section .tip-text {
-    background: rgba(139, 92, 246, 0.15);
-  }
-
-  .bottom-decoration .dot-dot {
-    background: rgba(139, 92, 246, 0.4);
-  }
 }
 
 // 响应式设计

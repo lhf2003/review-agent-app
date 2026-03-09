@@ -257,26 +257,6 @@ function formatRelativeTime(timestamp) {
   min-height: 300px;
 }
 
-html.dark {
-  .message-bubble.ai-bubble {
-    background: rgba(30, 30, 35, 0.8);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.9);
-  }
-  
-  .message-meta {
-    color: rgba(255, 255, 255, 0.5);
-  }
-  
-  .timestamp-bar {
-    color: rgba(255, 255, 255, 0.6);
-  }
-  
-  .bubble-content :deep(pre) {
-    background: rgba(255, 255, 255, 0.05);
-  }
-}
-
 @media (max-width: 768px) {
   .conversation-viewer {
     padding: 12px;

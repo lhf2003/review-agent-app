@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import DataFileCard from './DataFileCard.vue'
-import CustomScroll from './CustomScroll.vue'
+import CustomScroll from '../CustomScroll.vue'
 import { ElEmpty, ElSkeleton, ElSkeletonItem } from 'element-plus'
 
 /**
@@ -202,11 +202,13 @@ function handleRetry(item) {
 }
 
 .skeleton-card {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: 20px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
 }
 
 .skeleton-content {
@@ -243,13 +245,13 @@ function handleRetry(item) {
 .empty-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin: 0 0 8px;
 }
 
 .empty-desc {
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -271,22 +273,6 @@ function handleRetry(item) {
 
 .card-fade-move {
   transition: transform 0.3s ease;
-}
-
-// 暗黑模式
-html.dark {
-  .skeleton-card {
-    background: rgba(30, 30, 35, 0.5);
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-  
-  .empty-title {
-    color: rgba(255, 255, 255, 0.9);
-  }
-  
-  .empty-desc {
-    color: rgba(255, 255, 255, 0.6);
-  }
 }
 
 // 减少动画偏好

@@ -246,43 +246,32 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
 @import '../../styles/quiz-common';
-@import '../../styles/variables';
 
 .true-false-question {
-  // 使用共享的 CSS 变量
-  --card-radius: var(--quiz-card-radius);
-  --transition-spring: var(--quiz-transition-spring);
-  --transition-smooth: var(--quiz-transition-smooth);
-  --primary-color: var(--quiz-primary-color);
-  --success-color: var(--quiz-success-color);
-  --danger-color: var(--quiz-danger-color);
-
   // Specific colors for True/False
-  --true-color: #34c759;
-  --false-color: #ff3b30;
+  --true-color: var(--mastery-high);
+  --false-color: var(--mastery-low);
 
-  background: var(--el-bg-color);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: var(--card-radius);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
   padding: 32px;
   margin-bottom: 24px;
-  border: 1px solid var(--el-border-color-light);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.02),
-    0 10px 15px -3px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.02);
-  transition: var(--transition-smooth);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-base);
   position: relative;
-  opacity: 0.95;
 
   &.compact-mode {
     padding: 20px;
     margin-bottom: 16px;
     background: transparent;
     box-shadow: none;
-    border: 1px solid var(--el-border-color-lighter);
+    border: 1px solid var(--glass-border);
     backdrop-filter: none;
 
     .option-item { min-height: 80px; padding: 16px; }
@@ -410,21 +399,21 @@ defineExpose({
     }
     
     &.is-show-correct {
-      border-color: var(--success-color) !important;
-      background: rgba(52, 199, 89, 0.2) !important;
-      box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.2);
+      border-color: var(--mastery-high) !important;
+      background: rgba(34, 197, 94, 0.15) !important;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
     }
-    
+
     &.is-disabled {
       opacity: 0.6;
       cursor: default;
       filter: grayscale(0.5);
-      
+
       &:hover {
         transform: none;
         box-shadow: none;
-        border-color: rgba(0, 0, 0, 0.06);
-        background: var(--el-fill-color-light);
+        border-color: var(--glass-border);
+        background: rgba(255, 248, 245, 0.05);
       }
     }
   }
@@ -437,106 +426,28 @@ defineExpose({
     position: relative;
     z-index: 1;
   }
-  
+
   .option-label {
     font-size: 14px;
     font-weight: 600;
-    color: var(--el-text-color-secondary);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 2px;
   }
-  
+
   .option-value {
     font-size: 36px;
     font-weight: 800;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
     transition: color 0.3s ease;
   }
-  
+
   .answer-icon {
     position: absolute;
     right: 20px;
     top: 20px;
     font-size: 32px;
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
-  }
-  
-  // Dark Mode Adaptation
-  :global(.dark) & {
-    background: rgba(28, 28, 30, 0.65);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    
-    &.compact-mode {
-      background: transparent;
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .question-text {
-      color: #FFFFFF;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
-    
-    .option-item {
-      background: rgba(44, 44, 46, 0.4);
-      border-color: rgba(255, 255, 255, 0.08);
-      
-      &::before {
-        background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
-      }
-      
-      &:hover:not(.is-disabled) {
-        background: rgba(58, 58, 60, 0.8);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-    }
-    
-    .option-value {
-      color: rgba(255, 255, 255, 0.9);
-    }
-    
-    .option-label {
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    // 暗色模式下也保持选中状态的一致性
-    .option-item.is-selected:not(.is-show-correct) {
-      border-color: var(--primary-color);
-      background: rgba(var(--el-color-primary-rgb), 0.2);
-
-      .option-value {
-        color: var(--el-color-primary);
-      }
-    }
-
-    .option-item.option-true.is-selected.is-show-correct {
-      border-color: var(--true-color);
-      background: rgba(52, 199, 89, 0.2);
-
-      .option-value { color: #4cd964; }
-    }
-
-    .option-item.option-false.is-selected.is-show-correct {
-      border-color: var(--false-color);
-      background: rgba(255, 69, 58, 0.2);
-
-      .option-value { color: #ff453a; }
-    }
-
-    // 用户选择错误时的深色模式样式
-    .option-item.is-selected.is-wrong {
-      border-color: #ff453a;
-      background: linear-gradient(135deg, rgba(255, 69, 58, 0.25) 0%, rgba(255, 69, 58, 0.15) 100%);
-      box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.15);
-
-      .option-value {
-        color: #ff453a;
-      }
-
-      .answer-icon {
-        animation: iconPop 0.3s ease both;
-      }
-    }
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
   }
 }
 </style>

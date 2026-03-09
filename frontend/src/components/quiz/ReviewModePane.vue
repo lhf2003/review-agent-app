@@ -222,11 +222,6 @@ watch(() => props.questionId, (newId) => {
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
-
-  html.dark & {
-    background: rgba(30, 41, 59, 0.85);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .header-title {
@@ -302,11 +297,4 @@ watch(() => props.questionId, (newId) => {
   }
 }
 
-// 深色模式适配
-html.dark {
-  .submit-section {
-    background: rgba(64, 158, 255, 0.1);
-    border-color: rgba(64, 158, 255, 0.3);
-  }
-}
 </style>

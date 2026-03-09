@@ -1,7 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, ref, nextTick, watch } from 'vue'
 import { FullScreen, Close } from '@element-plus/icons-vue'
-import { useThemeStore } from '../../stores/theme'
 import { api } from '../../api/http'
 import * as echarts from 'echarts'
 import 'echarts/theme/dark'
@@ -22,8 +21,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['fullscreenToggle'])
-
-const themeStore = useThemeStore()
 
 // Trend Chart State
 const trendSource = ref({})
@@ -143,9 +140,8 @@ function updateTrendChart() {
 }
 
 function initChart() {
-  const theme = themeStore.isDark ? 'dark' : undefined
   if (trendChartRef.value) {
-    trendChartInstance = echarts.init(trendChartRef.value, theme, { backgroundColor: 'transparent' })
+    trendChartInstance = echarts.init(trendChartRef.value, 'dark', { backgroundColor: 'transparent' })
   }
 }
 
@@ -165,13 +161,6 @@ function toggleFullscreen() {
 watch(() => props.dateRange, () => {
   loadTrend()
 }, { deep: true })
-
-// Watch theme changes
-watch(() => themeStore.isDark, () => {
-  trendChartInstance?.dispose()
-  initChart()
-  updateTrendChart()
-})
 
 onMounted(() => {
   initChart()
@@ -193,7 +182,7 @@ onUnmounted(() => {
         <el-icon><FullScreen /></el-icon>
       </el-button>
     </div>
-    
+
     <!-- Fullscreen Exit Button -->
     <div v-if="isFullscreen" class="fullscreen-exit-btn">
       <el-button circle @click="toggleFullscreen">
@@ -228,7 +217,7 @@ onUnmounted(() => {
   height: 100vh;
   z-index: 2000;
   border-radius: 0;
-  background: var(--el-bg-color-page);
+  background: var(--bg-deep);
 }
 
 .chart-header {
@@ -236,7 +225,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
@@ -244,7 +233,7 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .chart-container {
@@ -270,16 +259,10 @@ onUnmounted(() => {
 }
 
 .fullscreen-exit-btn .el-button {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: var(--el-text-color-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-html.dark .fullscreen-exit-btn .el-button {
   background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 </style>

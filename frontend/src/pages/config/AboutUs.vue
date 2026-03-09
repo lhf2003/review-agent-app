@@ -1,7 +1,6 @@
 <script setup>
 import { ref } from 'vue'
 import { InfoFilled, Star, Link, Document } from '@element-plus/icons-vue'
-import CustomScroll from '../../components/CustomScroll.vue'
 
 const version = ref('1.0.0')
 const features = ref([
@@ -52,9 +51,8 @@ const links = ref([
 </script>
 
 <template>
-  <CustomScroll class="about-page-scroll">
-    <div class="about-page">
-      <div class="about-container">
+  <div class="about-page">
+    <div class="about-container">
       <!-- Header Section -->
       <div class="header-section">
         <div class="logo-area">
@@ -147,14 +145,9 @@ const links = ref([
       </div>
       </div>
     </div>
-  </CustomScroll>
 </template>
 
 <style scoped>
-.about-page-scroll {
-  height: 100%;
-}
-
 .about-page {
   display: flex;
   justify-content: center;
@@ -194,7 +187,7 @@ const links = ref([
   font-size: 48px;
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -202,7 +195,7 @@ const links = ref([
 
 .app-subtitle {
   font-size: 18px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   margin: 0 0 24px 0;
   line-height: 1.6;
 }
@@ -212,38 +205,42 @@ const links = ref([
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: var(--el-fill-color-light);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
 }
 
 /* Content Cards */
 .content-card {
-  background: var(--el-bg-color);
-  border-radius: 16px;
-  border: 1px solid var(--el-border-color-light);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   padding: 24px;
   margin-bottom: 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: var(--transition-base);
 }
 
 .card-header {
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .card-header h3 {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .card-content {
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
   line-height: 1.8;
 }
 
@@ -254,23 +251,23 @@ const links = ref([
 }
 
 .description strong {
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .highlight-box {
-  background: linear-gradient(135deg, var(--el-color-primary-light-9) 0%, var(--el-color-primary-light-8) 100%);
+  background: linear-gradient(135deg, rgba(204, 102, 51, 0.1) 0%, rgba(224, 123, 71, 0.08) 100%);
   border-radius: 12px;
   padding: 16px 20px;
   margin-top: 20px;
-  border-left: 4px solid var(--el-color-primary);
+  border-left: 4px solid var(--accent-primary);
 }
 
 .highlight-text {
   margin: 0;
   font-size: 15px;
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 /* Features Grid */
@@ -284,15 +281,17 @@ const links = ref([
   display: flex;
   gap: 16px;
   padding: 16px;
-  background: var(--el-fill-color-light);
-  border-radius: 12px;
-  transition: all 0.3s ease;
+  background: rgba(255, 248, 245, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
 }
 
 .feature-item:hover {
-  background: var(--el-fill-color);
+  background: var(--glass-surface-hover);
+  border-color: var(--glass-border-hover);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .feature-icon {
@@ -310,13 +309,13 @@ const links = ref([
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .feature-desc {
   font-size: 14px;
   margin: 0;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   line-height: 1.6;
 }
 
@@ -332,7 +331,7 @@ const links = ref([
   padding-left: 28px;
   margin-bottom: 12px;
   font-size: 15px;
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
 }
 
 .target-list li:last-child {
@@ -344,7 +343,7 @@ const links = ref([
   position: absolute;
   left: 0;
   top: 0;
-  color: var(--el-color-primary);
+  color: var(--accent-primary);
   font-weight: 700;
   font-size: 18px;
 }
@@ -361,20 +360,22 @@ const links = ref([
   align-items: center;
   gap: 12px;
   padding: 14px 18px;
-  background: var(--el-fill-color-light);
-  border-radius: 10px;
-  color: var(--el-text-color-primary);
+  background: rgba(255, 248, 245, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
   font-size: 15px;
   font-weight: 500;
 }
 
 .link-item:hover {
-  background: var(--el-color-primary);
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
   color: #fff;
   transform: translateX(4px);
-  box-shadow: 0 4px 12px var(--el-color-primary-light-5);
+  box-shadow: 0 4px 16px var(--accent-glow-soft);
 }
 
 .link-icon {
@@ -392,13 +393,13 @@ const links = ref([
   text-align: center;
   padding: 32px 0;
   margin-top: 40px;
-  border-top: 1px solid var(--el-border-color-lighter);
+  border-top: 1px solid var(--glass-border);
 }
 
 .footer-text {
   margin: 0;
   font-size: 15px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
 }
 
 /* Responsive */

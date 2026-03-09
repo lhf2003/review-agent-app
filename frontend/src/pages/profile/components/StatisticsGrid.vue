@@ -172,14 +172,6 @@ const getIconComponent = (iconName) => {
   color: #F56C6C;
 }
 
-/* Dark Mode */
-html.dark .stat-card {
-  background: rgba(30, 30, 30, 0.85);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.24),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-}
-
 /* Responsive Design */
 @media (max-width: 1200px) {
   .stats-grid {

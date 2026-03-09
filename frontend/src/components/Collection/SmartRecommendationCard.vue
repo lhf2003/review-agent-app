@@ -186,31 +186,26 @@ async function handleQuickCreate() {
 </script>
 
 <style scoped lang="scss">
-.smart-recommendation-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-}
+@use '../../styles/nebula-theme.scss' as *;
 
-html.dark .smart-recommendation-card {
-  background: rgba(28, 28, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+.smart-recommendation-card {
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: var(--transition-smooth);
 }
 
 .smart-recommendation-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+  background: var(--glass-surface-hover);
+  box-shadow: var(--shadow-md);
 }
 
-html.dark .smart-recommendation-card:hover {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
 
 .card-header {
   display: flex;
@@ -230,18 +225,16 @@ html.dark .smart-recommendation-card:hover {
 .card-icon {
   width: 40px;
   height: 40px;
-  background: var(--el-color-primary-light-9);
-  border-radius: 10px;
+  background: rgba(204, 102, 51, 0.1);
+  border: 1px solid rgba(204, 102, 51, 0.2);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--el-color-primary);
+  color: var(--accent-tertiary);
   font-size: 20px;
 }
 
-html.dark .card-icon {
-  background: rgba(64, 158, 255, 0.15);
-}
 
 .card-info {
   display: flex;
@@ -252,7 +245,7 @@ html.dark .card-icon {
 .card-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .card-meta {
@@ -260,15 +253,15 @@ html.dark .card-icon {
   align-items: center;
   gap: 12px;
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .confidence {
-  color: var(--el-color-success);
+  color: var(--mastery-high);
 }
 
 .expand-icon {
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   transition: transform 0.3s ease;
 }
 
@@ -285,11 +278,7 @@ html.dark .card-icon {
 
 .card-content {
   padding: 0 20px 20px;
-  border-top: 1px solid var(--el-border-color-lighter);
-}
-
-html.dark .card-content {
-  border-top-color: rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--glass-border);
 }
 
 .content-header {
@@ -302,29 +291,22 @@ html.dark .card-content {
 .content-header .label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .analysis-list {
   max-height: 200px;
   overflow-y: auto;
   padding: 8px 12px;
-  background: var(--el-fill-color-lighter);
-  border-radius: 10px;
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
   margin-bottom: 16px;
-}
-
-html.dark .analysis-list {
-  background: rgba(0, 0, 0, 0.2);
 }
 
 .analysis-item {
   padding: 10px 0;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-}
-
-html.dark .analysis-item {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .analysis-item:last-child {
@@ -339,7 +321,7 @@ html.dark .analysis-item {
 
 .item-title {
   font-size: 13px;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -349,7 +331,7 @@ html.dark .analysis-item {
 
 .item-date {
   font-size: 11px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
 }
 
 .edit-section {

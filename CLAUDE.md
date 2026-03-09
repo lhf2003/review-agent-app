@@ -1,11 +1,13 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+使用自动化测试工具（playwright、chormdevtools）时，需要登录的情况，用户名：刘鸿飞，密码：admin123。
 
-> **Documentation Structure**:
-> - [AI-CODE-GUIDE.md](./AI-CODE-GUIDE.md) - Detailed coding standards with templates and anti-patterns
-> - [ARCHITECTURE.md](./ARCHITECTURE.md) - Project architecture, modules, and data models
-> - This file - Quick reference for build commands and key constraints
+> **文档结构**：
+> - 本文档 - 快速参考（构建命令、关键约束）
+> - [AI-CODE-GUIDE.md](./AI-CODE-GUIDE.md) - 详细编码规范
+> - [ARCHITECTURE.md](./ARCHITECTURE.md) - 项目架构详情
+>
+> This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ---
 
@@ -39,8 +41,14 @@ mvn javafx:run           # Run the JavaFX application
 
 ## Quick Constraints Reference
 
-### Backend - Authentication
-**Rule**: Use `SecurityUtils.getCurrentUserId()` - NEVER accept userId from Header/Body
+### [L1] Backend - Authentication
+| Attribute | Value |
+|-----------|-------|
+| **Scope** | Backend |
+| **Auto-Fixable** | Yes |
+
+Use `SecurityUtils.getCurrentUserId()` - **NEVER** accept userId from Header/Body
+
 ```java
 // ✅ CORRECT
 Long userId = securityUtils.getCurrentUserId();
@@ -48,10 +56,19 @@ Long userId = securityUtils.getCurrentUserId();
 // ❌ WRONG - Security vulnerability
 public void method(@RequestHeader("userId") Long userId)
 ```
-See [AI-CODE-GUIDE.md#rule-be-001](./AI-CODE-GUIDE.md#rule-be-001) for full details.
 
-### Backend - Transactions
-**Rule**: All write operations must have `@Transactional(rollbackFor = Exception.class)`
+See [AI-CODE-GUIDE.md#rule-be-001](./AI-CODE-GUIDE.md#rule-be-001) for details.
+
+---
+
+### [L1] Backend - Transactions
+| Attribute | Value |
+|-----------|-------|
+| **Scope** | Backend |
+| **Auto-Fixable** | Yes |
+
+All write operations must have `@Transactional(rollbackFor = Exception.class)`
+
 ```java
 @Transactional(rollbackFor = Exception.class)
 public void updateData(Long id) {
@@ -59,15 +76,52 @@ public void updateData(Long id) {
 }
 ```
 
-### Backend - Date Formatting
-**Rule**: Use `@JsonFormat` in VO classes - NEVER format dates in frontend
+See [AI-CODE-GUIDE.md#rule-be-002](./AI-CODE-GUIDE.md#rule-be-002) for details.
+
+---
+
+### [L1] Backend - Date Formatting
+| Attribute | Value |
+|-----------|-------|
+| **Scope** | Backend |
+| **Auto-Fixable** | Yes |
+
+Use `@JsonFormat` in VO classes - **NEVER** format dates in frontend
+
 ```java
 @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
 private LocalDateTime createdTime;
 ```
 
-### Frontend - Scroll Components
-**Rule**: MUST use `CustomScroll.vue` or `ScrollStack/` for all scrollable areas
+---
+
+### [L1] Backend - Database Migration
+| Attribute | Value |
+|-----------|-------|
+| **Scope** | Backend |
+| **Auto-Fixable** | No |
+
+Use Flyway for database version control
+
+```bash
+# Migration files location
+backend/src/main/resources/db/migration/
+
+# Naming convention
+V1__Initial_schema.sql
+V2__Add_user_profile.sql
+```
+
+---
+
+### [L1] Frontend - Scroll Components
+| Attribute | Value |
+|-----------|-------|
+| **Scope** | Frontend |
+| **Auto-Fixable** | Yes |
+
+MUST use `CustomScroll.vue` or `ScrollStack/` for all scrollable areas
+
 ```vue
 <template>
   <CustomScroll class="content-scroll">
@@ -76,24 +130,51 @@ private LocalDateTime createdTime;
 </template>
 ```
 
-### Frontend - ECharts
-**Rule**: NEVER check container size before init - use ResizeObserver
-See [AI-CODE-GUIDE.md#rule-fe-001](./AI-CODE-GUIDE.md#rule-fe-001) for the complete template.
+---
 
-### Frontend - Dark Mode
-**Rule**: Use `html.dark` selector (NOT `:global(.dark)` or `@media`)
-```scss
-html.dark .my-component {
-  background: rgba(28, 28, 30, 0.75);
-}
+### [L1] Frontend - ECharts
+| Attribute | Value |
+|-----------|-------|
+| **Scope** | Frontend |
+| **Auto-Fixable** | Yes |
+
+NEVER check container size before init - use ResizeObserver
+
+```javascript
+const resizeObserver = new ResizeObserver(() => {
+  chartInstance?.resize()
+})
+resizeObserver.observe(chartRef.value)
 ```
 
-### Frontend - API Response Handling
-**Rule**: `normalizeResponse` unwraps `data` when `code === 0`, components receive direct data
-```javascript
-// Backend returns: { code: 0, message: "ok", data: { nodes: [...], edges: [...] } }
-// But API layer returns: { nodes: [...], edges: [...] } (data unwrapped)
+See [AI-CODE-GUIDE.md#rule-fe-002](./AI-CODE-GUIDE.md#rule-fe-002) for details.
 
+---
+
+### [L1] Frontend - Single Theme
+| Attribute | Value |
+|-----------|-------|
+| **Scope** | Frontend |
+| **Auto-Fixable** | Yes |
+
+**System has ONLY ONE fixed dark theme** - No theme switching functionality
+
+- Do NOT use `html.dark` selectors (removed in cleanup)
+- Do NOT import or use `useThemeStore` for theme switching
+- Charts use fixed dark color values directly
+- Theme store (`frontend/src/stores/theme.js`) is kept for compatibility but `isDark` is always `true`
+
+---
+
+### [L1] Frontend - API Response Handling
+| Attribute | Value |
+|-----------|-------|
+| **Scope** | Frontend |
+| **Auto-Fixable** | Yes |
+
+`normalizeResponse` unwraps `data` when `code === 0`, components receive direct data
+
+```javascript
 // ✅ CORRECT - Access data directly
 const data = await knowledgeGraphApi.getSimpleGraph()
 if (data && Array.isArray(data.nodes)) {
@@ -106,57 +187,27 @@ if (res.code === 200) {        // Error: code is undefined
   nodes.value = res.data.nodes // Error: data is undefined
 }
 ```
+
 **Note**: See `frontend/src/api/base.js` → `normalizeResponse()` for implementation details. When `code !== 0`, an Error is thrown with `message`.
-
-### Backend - Database Migration
-**Rule**: Use Flyway for database version control
-```bash
-# Migration files location
-backend/src/main/resources/db/migration/
-
-# Naming convention
-V1__Initial_schema.sql
-V2__Add_user_profile.sql
-V3.1__Fix_quiz_index.sql
-
-# Baseline (for existing databases)
-spring.flyway.baseline-on-migrate=true
-```
-See [AI-CODE-GUIDE.md#rule-db-002](./AI-CODE-GUIDE.md#rule-db-002) for full details.
 
 ---
 
-## Project Architecture Overview
+### [L1] Document Location Rules
+| Attribute | Value |
+|-----------|-------|
+| **Scope** | All |
+| **Auto-Fixable** | No |
 
-**Review Agent** - A knowledge management tool that parses AI chat logs, extracts structured insights via LLM analysis, and provides quiz-based learning features.
+**Root directory only allows**: README.md, CLAUDE.md, CHANGELOG.md
 
-### Component Diagram
+**All other documents must be placed under `docs/`** with naming convention:
 ```
-┌─────────────┐      ┌──────────────┐      ┌─────────────┐
-│   Frontend  │──────│   Backend    │──────│  MySQL/     │
-│  (Vue 3)    │ JWT  │ (Spring Boot)│      │  Redis      │
-└─────────────┘      └──────────────┘      └─────────────┘
-                            │
-                            │ LLM API
-                            ▼
-                    ┌──────────────┐
-                    │ OpenAI/      │
-                    │ Gemini/      │
-                    │ Ollama/      │
-                    │ DashScope    │
-                    └──────────────┘
+YYYY-MM-DD-CASE-NNN-DESCRIPTION_VERSION.md
+
+Examples:
+✅ 2026-01-15-CASE-001-memory-leak-analysis_01.md
+❌ temp.md (no date/case number)
 ```
-
-### Core Modules
-1. **Sync & Data** - File scanning and metadata management
-2. **Analysis** - LLM-powered content analysis (DataAnalysisNode, TagClassifyNode)
-3. **Tags & Collections** - Two-level tag system and collection management
-4. **Quiz** - AI-generated questions and answer recording
-5. **Mistake Book** - Wrong answer tracking with Ebbinghaus forgetting curve
-6. **Smart Recommendations** - Review recommendations based on forgetting curve
-7. **Achievements** - Learning progress and achievement system
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed module index and data models.
 
 ---
 
@@ -174,41 +225,59 @@ DB_PASSWORD=123456        # MySQL password (default: 123456)
 DASHSCOPE_API_KEY=xxx     # Alibaba DashScope API key
 JWT_SECRET=xxx            # JWT signing secret (min 256 bits)
 OLLAMA_BASE_URL=xxx       # Local Ollama config
-OLLAMA_CHAT_MODEL=xxx
 ```
 
 ---
 
-## Document Location Rules
+## Scenario Index: When I...
 
-**Root directory only allows**:
-- `README.md` - Project documentation for users
-- `CLAUDE.md` - This file, Claude Code quick reference
-- `AI-CODE-GUIDE.md` - Detailed coding standards
-- `ARCHITECTURE.md` - Architecture documentation
-- `CHANGELOG.md` - Project changelog
-
-**All other documents must be placed under `docs/`** with naming convention:
-```
-YYYY-MM-DD-CASE-NNN-DESCRIPTION_VERSION.md
-
-Examples:
-✅ 2026-01-15-CASE-001-memory-leak-analysis_01.md
-✅ 2026-02-12-CASE-001-echarts-resize-fix_01.md
-❌ temp.md (no date/case number)
-```
-
-See [AI-CODE-GUIDE.md#rule-doc-001](./AI-CODE-GUIDE.md#rule-doc-001) for full document specifications.
+| When I... | Check These Rules | See Also |
+|-----------|------------------|----------|
+| **Write Backend Service methods** | [L1] Authentication, [L1] Transactions | AI-CODE-GUIDE.md |
+| **Write Backend Controller** | [L1] Authentication | AI-CODE-GUIDE.md |
+| **Create new VO/DTO classes** | [L1] Date Formatting | AI-CODE-GUIDE.md |
+| **Create database migrations** | [L1] Database Migration | AI-CODE-GUIDE.md |
+| **Write Vue components** | [L1] Scroll Components, [L1] Single Theme | AI-CODE-GUIDE.md |
+| **Use ECharts** | [L1] ECharts | AI-CODE-GUIDE.md |
+| **Call API from frontend** | [L1] API Response Handling | AI-CODE-GUIDE.md |
+| **Create documentation** | [L1] Document Location Rules | AI-CODE-GUIDE.md |
+| **Understand module relationships** | - | ARCHITECTURE.md |
+| **Check database schema** | - | ARCHITECTURE.md |
 
 ---
 
-## Quick Links
+## L1/L2/L3 Level Definitions
 
-| Need | Document |
-|------|----------|
-| Detailed coding rules with templates | [AI-CODE-GUIDE.md](./AI-CODE-GUIDE.md) |
-| Architecture & data models | [ARCHITECTURE.md](./ARCHITECTURE.md) |
-| Build commands | This file (above) |
-| Module dependencies | [ARCHITECTURE.md#模块索引](./ARCHITECTURE.md#模块索引) |
-| Database schema | [ARCHITECTURE.md#数据模型](./ARCHITECTURE.md#数据模型) |
-| Database migration (Flyway) | [AI-CODE-GUIDE.md#rule-db-002](./AI-CODE-GUIDE.md#rule-db-002) |
+| Level | Description | Compliance |
+|-------|-------------|------------|
+| **L1** | Must follow | Violation causes bugs or security issues |
+| **L2** | Strongly recommended | Exceptions need comments explaining why |
+| **L3** | Best practice | Optimization suggestions |
+
+---
+
+## File Structure Reference
+
+```
+backend/
+├── src/main/java/
+│   ├── controller/      # REST API endpoints
+│   ├── service/         # Business logic
+│   ├── repository/      # Database access
+│   ├── entity/          # JPA entities
+│   ├── vo/              # Value objects (API response)
+│   └── config/          # Configuration classes
+├── src/main/resources/
+│   └── db/migration/    # Flyway migrations
+└── pom.xml
+
+frontend/
+├── src/
+│   ├── api/             # API client
+│   ├── components/      # Vue components
+│   ├── pages/           # Page components
+│   ├── stores/          # Pinia stores
+│   ├── router/          # Vue Router
+│   └── styles/          # SCSS styles
+└── package.json
+```

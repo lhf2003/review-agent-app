@@ -249,7 +249,9 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
+
 .quiz-history-page {
   height: 100%;
   display: flex;
@@ -260,18 +262,18 @@ onMounted(() => {
 
 /* ============ Glassmorphism 效果 ============ */
 .glass-card {
-  background: rgba(255, 255, 255, 0.64);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  box-shadow: 0 2px 16px -1px rgba(0, 0, 0, 0.04);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
   /* Remove transition: all to prevent scale effect on theme switch */
   transition: box-shadow 0.25s ease, transform 0.25s ease !important;
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 32px -2px rgba(0, 0, 0, 0.08);
+  background: var(--glass-surface-hover);
+  box-shadow: var(--shadow-md);
 }
 
 /* ============ 筛选栏 ============ */
@@ -287,13 +289,13 @@ onMounted(() => {
   border-left: none;
   border-right: none;
   border-top: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--glass-border);
   gap: 12px;
   box-sizing: border-box;
 }
 
 .filter-bar:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--glass-surface-hover);
 }
 
 .filter-controls {
@@ -309,7 +311,7 @@ onMounted(() => {
   --el-fill-color-light: transparent;
   display: flex;
   gap: 3px;
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--glass-surface);
   padding: 3px;
   border-radius: 10px;
   flex-shrink: 0;
@@ -321,7 +323,7 @@ onMounted(() => {
   border-radius: 8px !important;
   padding: 6px 12px !important;
   margin-right: 0 !important;
-  color: #86868b !important;
+  color: var(--text-secondary) !important;
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
@@ -331,15 +333,15 @@ onMounted(() => {
 }
 
 .filter-tabs :deep(.el-radio-button__inner:hover) {
-  color: #1d1d1f !important;
+  color: var(--text-primary) !important;
   background: transparent !important;
 }
 
 .filter-tabs :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner),
 .filter-tabs :deep(.el-radio-button.is-active .el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.9) !important;
-  color: #1d1d1f !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+  background: var(--accent-primary) !important;
+  color: #fff !important;
+  box-shadow: var(--shadow-sm) !important;
   border-color: transparent !important;
 }
 
@@ -352,45 +354,14 @@ onMounted(() => {
   border-radius: 8px !important;
 }
 
-/* 深色模式适配 */
-html.dark .filter-tabs {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-html.dark .filter-tabs :deep(.el-radio-button__inner) {
-  color: #86868b !important;
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-html.dark .filter-tabs :deep(.el-radio-button__inner:hover) {
-  color: #f5f5f7 !important;
-  background: transparent !important;
-}
-
-html.dark .filter-tabs :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner),
-html.dark .filter-tabs :deep(.el-radio-button.is-active .el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.15) !important;
-  color: #f5f5f7 !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
-  border-color: transparent !important;
-}
-
-/* 深色模式首尾按钮圆角 */
-html.dark .filter-tabs :deep(.el-radio-button:first-child .el-radio-button__inner),
-html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner) {
-  border-radius: 8px !important;
-}
-
 .collection-select {
   width: 140px;
 }
 
 .collection-select :deep(.el-input__wrapper) {
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   box-shadow: none;
   /* Remove transition: all to prevent scale effect on theme switch */
   transition: border-color 0.2s ease, background-color 0.2s ease !important;
@@ -398,12 +369,12 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
 }
 
 .collection-select :deep(.el-input__wrapper:hover) {
-  border-color: rgba(0, 0, 0, 0.12);
+  border-color: var(--glass-border-hover);
 }
 
 .collection-select :deep(.el-input__wrapper.is-focus) {
-    border-color: #0071e3;
-    background: white;
+    border-color: var(--accent-primary);
+    background: var(--glass-surface-hover);
   }
 
 /* ============ 习题列表 ============ */
@@ -430,7 +401,7 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
 
 .quiz-card:hover {
   transform: scale(1.01);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--glass-surface-hover);
 }
 
 .quiz-card:active {
@@ -438,17 +409,16 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
 }
 
 .quiz-card.is-selected {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(var(--el-color-primary-rgb), 0.4);
+  background: var(--glass-surface-active);
+  border-color: var(--accent-primary);
   box-shadow:
-    0 0 0 1px rgba(var(--el-color-primary-rgb), 0.15) inset,
-    0 4px 16px -2px rgba(var(--el-color-primary-rgb), 0.12),
-    0 8px 24px -4px rgba(0, 0, 0, 0.08);
+    0 0 0 1px var(--accent-primary) inset,
+    var(--shadow-md);
 }
 
 .quiz-card.is-selected:hover {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(var(--el-color-primary-rgb), 0.5);
+  background: var(--glass-surface-active);
+  border-color: var(--accent-secondary);
 }
 
 .card-header {
@@ -462,7 +432,7 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
   font-size: 15px;
   font-weight: 600;
   margin: 0;
-  color: #1d1d1f;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
   line-height: 1.4;
   margin-right: 8px;
@@ -479,18 +449,18 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
 }
 
 .status-completed {
-  background: rgba(52, 199, 89, 0.12);
-  color: #34c759;
+  background: var(--mastery-high);
+  color: #fff;
 }
 
 .status-progress {
-  background: rgba(0, 122, 255, 0.12);
-  color: #007aff;
+  background: var(--accent-primary);
+  color: #fff;
 }
 
 .status-outdated {
-  background: rgba(255, 149, 0, 0.12);
-  color: #ff9500;
+  background: var(--accent-secondary);
+  color: #fff;
 }
 
 /* ============ 统计信息 ============ */
@@ -514,36 +484,36 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
 
 .stat-icon {
   font-size: 14px;
-  color: #86868b;
+  color: var(--text-secondary);
 }
 
 .stat-label {
   font-size: 12px;
-  color: #86868b;
+  color: var(--text-secondary);
   display: none; /* Hide label to save space in compact view */
 }
 
 .stat-value {
   font-size: 13px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--text-primary);
 }
 
 .stat-time {
-  color: #86868b;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .stat-time .stat-value {
   font-weight: 400;
-  color: #86868b;
+  color: var(--text-secondary);
 }
 
 /* ============ 分数颜色 ============ */
-.score-excellent { color: #34c759; }
-.score-good { color: #007aff; }
-.score-pass { color: #ff9500; }
-.score-fail { color: #ff3b30; }
+.score-excellent { color: var(--mastery-high); }
+.score-good { color: var(--mastery-medium); }
+.score-pass { color: var(--accent-tertiary); }
+.score-fail { color: var(--accent-secondary); }
 
 /* ============ 空状态 ============ */
 .empty-state {
@@ -558,26 +528,26 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
 }
 
 .empty-icon {
-  color: #c7c7cc;
+  color: var(--text-tertiary);
   margin-bottom: 16px;
 }
 
 .empty-title {
   font-size: 16px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--text-primary);
   margin: 0 0 6px 0;
 }
 
 .empty-desc {
   font-size: 13px;
-  color: #86868b;
+  color: var(--text-secondary);
   margin: 0 0 20px 0;
 }
 
 .create-btn {
   padding: 8px 16px;
-  background: #0071e3;
+  background: var(--accent-primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -589,7 +559,7 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
 }
 
 .create-btn:hover {
-  background: #0077ed;
+  background: var(--accent-secondary);
   transform: scale(1.02);
 }
 
@@ -624,8 +594,8 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
 }
 
 .pagination-container :deep(.el-pager li.is-active) {
-  background: #0071e3;
-  border-color: #0071e3;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
 }
 
 /* ============ 响应式 ============ */
@@ -656,72 +626,4 @@ html.dark .filter-tabs :deep(.el-radio-button:last-child .el-radio-button__inner
   }
 }
 
-/* ============ html.dark 深色模式兼容 ============ */
-html.dark .quiz-history-page {
-  .glass-header {
-    background: rgba(30, 30, 30, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .glass-card {
-    background: rgba(40, 40, 42, 0.64);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .glass-card:hover {
-    background: rgba(50, 50, 52, 0.8);
-  }
-
-  .quiz-card.is-selected {
-    background: rgba(50, 50, 52, 0.8);
-    border-color: rgba(var(--el-color-primary-rgb), 0.35);
-    box-shadow:
-      0 0 0 1px rgba(var(--el-color-primary-rgb), 0.12) inset,
-      0 4px 16px -2px rgba(var(--el-color-primary-rgb), 0.15),
-      0 8px 24px -4px rgba(0, 0, 0, 0.2);
-  }
-
-  .quiz-card.is-selected:hover {
-    background: rgba(55, 55, 57, 0.9);
-    border-color: rgba(var(--el-color-primary-rgb), 0.45);
-  }
-
-  .filter-bar {
-    background: rgba(40, 40, 42, 0.64);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    border-left: none;
-    border-right: none;
-    border-top: none;
-  }
-
-  .card-title {
-    color: #f5f5f7;
-  }
-
-  .stat-icon,
-  .stat-label,
-  .stat-time {
-    color: #86868b;
-  }
-
-  .stat-time .stat-value {
-    color: #86868b;
-  }
-
-  .stat-value {
-    color: #f5f5f7;
-  }
-
-  .empty-icon {
-    color: #48484a;
-  }
-
-  .empty-title {
-    color: #f5f5f7;
-  }
-
-  .empty-desc {
-    color: #86868b;
-  }
-}
 </style>

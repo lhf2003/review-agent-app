@@ -252,19 +252,9 @@ onMounted(() => {
   transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-html.dark .chart-card {
-  background: rgba(28, 28, 30, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-}
-
 .chart-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-}
-
-html.dark .chart-card:hover {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .chart-card.full-width {

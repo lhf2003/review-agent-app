@@ -13,7 +13,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
-import { useThemeStore } from '../../stores/theme'
 
 const props = defineProps({
   // 数据格式：[{ date: '2026-02-01', score: 85 }, ...]
@@ -34,7 +33,6 @@ const props = defineProps({
 
 const emit = defineEmits(['chart-ready', 'chart-dispose'])
 
-const themeStore = useThemeStore()
 const chartRef = ref(null)
 let chartInstance = null
 let resizeObserver = null
@@ -50,8 +48,7 @@ function initChart() {
     chartInstance.dispose()
   }
 
-  const theme = themeStore.isDark ? 'dark' : undefined
-  chartInstance = echarts.init(chartRef.value, theme, {
+  chartInstance = echarts.init(chartRef.value, 'dark', {
     backgroundColor: 'transparent',
     renderer: 'canvas'
   })
@@ -94,14 +91,10 @@ function updateChart() {
     tooltip: {
       trigger: 'axis',
       confine: true,
-      backgroundColor: themeStore.isDark
-        ? 'rgba(30, 30, 30, 0.9)'
-        : 'rgba(255, 255, 255, 0.9)',
-      borderColor: themeStore.isDark
-        ? 'rgba(255, 255, 255, 0.1)'
-        : 'rgba(0, 0, 0, 0.1)',
+      backgroundColor: 'rgba(30, 30, 30, 0.9)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
       textStyle: {
-        color: themeStore.isDark ? '#fff' : '#333'
+        color: '#fff'
       },
       formatter: function (params) {
         if (params && params[0]) {
@@ -114,7 +107,7 @@ function updateChart() {
       data: ['测验分数'],
       bottom: 0,
       textStyle: {
-        color: themeStore.isDark ? '#909399' : '#606266'
+        color: '#909399'
       }
     },
     grid: {
@@ -129,12 +122,12 @@ function updateChart() {
       boundaryGap: false,
       data: dates,
       axisLabel: {
-        color: themeStore.isDark ? '#909399' : '#606266',
+        color: '#909399',
         fontSize: 12
       },
       axisLine: {
         lineStyle: {
-          color: themeStore.isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'
+          color: 'rgba(255,255,255,0.2)'
         }
       }
     },
@@ -142,20 +135,20 @@ function updateChart() {
       type: 'value',
       name: '分数',
       nameTextStyle: {
-        color: themeStore.isDark ? '#909399' : '#606266'
+        color: '#909399'
       },
       axisLabel: {
-        color: themeStore.isDark ? '#909399' : '#606266',
+        color: '#909399',
         fontSize: 12
       },
       axisLine: {
         lineStyle: {
-          color: themeStore.isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'
+          color: 'rgba(255,255,255,0.2)'
         }
       },
       splitLine: {
         lineStyle: {
-          color: themeStore.isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+          color: 'rgba(255,255,255,0.05)'
         }
       }
     },
@@ -210,11 +203,6 @@ watch(() => props.data, () => {
     updateChart()
   })
 }, { deep: true })
-
-// 监听主题变化
-watch(() => themeStore.isDark, () => {
-  initChart()
-})
 
 onMounted(() => {
   // 使用 requestAnimationFrame 确保 DOM 渲染完成

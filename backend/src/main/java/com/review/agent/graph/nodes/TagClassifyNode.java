@@ -63,10 +63,10 @@ public class TagClassifyNode implements NodeAction {
         NodeExecuteDto result = new NodeExecuteDto();
 
         try {
-            // 1. 技术领域分类（原有功能）
+            // 1. 技术领域分类
             TechDomainResult techResult = classifyTechDomain(originalContent.toString(), dimensionContext);
 
-            // 2. 思维范式识别（新增功能）
+            // 2. 思维范式识别
             List<ThinkingParadigmResult> paradigmResults = classifyThinkingParadigms(originalContent.toString(), dimensionContext);
 
             // 3. 构建多维度结果
@@ -119,7 +119,7 @@ public class TagClassifyNode implements NodeAction {
     }
 
     /**
-     * 技术领域分类（原有功能改造）
+     * 技术领域分类
      */
     private TechDomainResult classifyTechDomain(String content, DimensionContext context) {
         String systemPrompt = promptService.getClassifyPrompt(context.techDomainCategories);
@@ -209,24 +209,15 @@ public class TagClassifyNode implements NodeAction {
 
     /**
      * 构建维度上下文
+     * 优化：使用一次性查询获取所有技术领域标签，在Java层面构建层级关系，避免N+1查询
      */
     private DimensionContext buildDimensionContext(Long userId) {
         DimensionContext context = new DimensionContext();
 
-        // 1. 技术领域分类
-        StringBuilder techCategoriesBuilder = new StringBuilder();
-        List<Tag> techDomainTags = tagService.findTechDomainTags(userId);
-        for (Tag tag : techDomainTags) {
-            context.techDomainNameToIdMap.put(tag.getName(), tag.getId());
-            techCategoriesBuilder.append(tag.getName()).append("\n");
-
-            List<Tag> subTags = tagService.findSubTagsByParentId(userId, tag.getId());
-            for (Tag subTag : subTags) {
-                context.techDomainNameToIdMap.put(subTag.getName(), subTag.getId());
-                techCategoriesBuilder.append("- ").append(subTag.getName()).append("\n");
-            }
-        }
-        context.techDomainCategories = techCategoriesBuilder.toString();
+        // 1. 技术领域分类 - 一次性查询所有标签，Java层面构建层级
+        TagService.TechDomainHierarchy hierarchy = tagService.findTechDomainTagsWithHierarchy(userId);
+        context.techDomainNameToIdMap.putAll(hierarchy.buildNameToIdMap());
+        context.techDomainCategories = hierarchy.buildCategoryString();
 
         // 2. 思维范式定义
         StringBuilder paradigmBuilder = new StringBuilder();
@@ -248,16 +239,18 @@ public class TagClassifyNode implements NodeAction {
      * 更新NodeExecuteDto结果
      */
     private void updateNodeExecuteDto(NodeExecuteDto result, MultiDimensionTagResult multiResult) {
-        // 技术领域（兼容旧字段）
+        // 技术领域
         if (multiResult.getTechDomain() != null) {
             result.setTagId(multiResult.getTechDomain().getMainTagId());
             result.setRecommends(String.join(",", multiResult.getTechDomain().getRecommends()));
             result.setSubTagId(multiResult.getTechDomain().getSubTagIds().stream()
-                    .map(String::valueOf).reduce((a, b) -> a + "," + b).orElse(""));
+                    .map(String::valueOf)
+                    .reduce((a, b) -> a + "," + b)
+                    .orElse(""));
             result.setSubTagName(String.join(",", multiResult.getTechDomain().getSubTagNames()));
         }
 
-        // 思维范式（新字段）
+        // 思维范式
         result.setMultiDimensionResult(multiResult);
     }
 

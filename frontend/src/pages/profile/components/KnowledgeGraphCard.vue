@@ -140,7 +140,4 @@ export default {
   50% { opacity: 0.7; transform: scale(1.1); }
 }
 
-html.dark .preview-dots {
-  border-top-color: rgba(255, 255, 255, 0.1);
-}
 </style>

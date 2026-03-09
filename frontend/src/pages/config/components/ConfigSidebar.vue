@@ -72,29 +72,32 @@ const navigate = (path) => {
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
   font-size: 15px;
   font-weight: 500;
   transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  border: 1px solid transparent;
 }
 
 .nav-item:hover {
-  background-color: var(--el-fill-color-light);
-  color: var(--el-text-color-primary);
+  background-color: var(--glass-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--glass-border-hover);
 }
 
 .nav-item.active {
-  background-color: var(--el-color-primary);
+  background-color: var(--accent-primary);
   color: #fff;
-  box-shadow: 0 4px 12px var(--el-color-primary-light-5);
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 16px var(--accent-glow-soft);
 }
 
 .nav-group-title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   padding: 8px 12px;
   margin-top: 8px;
   margin-bottom: 2px;

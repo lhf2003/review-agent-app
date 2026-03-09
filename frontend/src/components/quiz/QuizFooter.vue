@@ -53,8 +53,9 @@ defineEmits(['prev', 'next', 'submit'])
       提交答案
     </el-button>
 
+    <!-- 下一题按钮（仅在非最后一题时显示） -->
     <el-button
-      v-if="!isAllSubmitted"
+      v-if="!isAllSubmitted && currentIndex < totalQuestions - 1"
       type="primary"
       :disabled="!canGoNext"
       @click="$emit('next')"
@@ -89,43 +90,47 @@ defineEmits(['prev', 'next', 'submit'])
     font-size: 16px;
     font-weight: 600;
     border-radius: 26px; // Pill shape
+  }
 
-    &.prev-btn {
-      background: var(--el-bg-color);
-      border: 1px solid var(--el-border-color);
+  :deep(.nav-btn.prev-btn) {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-primary) !important;
 
-      &:hover:not(:disabled) {
-        background: var(--el-fill-color-light);
-        border-color: var(--el-border-color-darker);
-      }
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-color: rgba(204, 102, 51, 0.5) !important;
+      box-shadow: 0 0 16px rgba(204, 102, 51, 0.3);
+    }
+  }
+
+  :deep(.nav-btn.next-btn) {
+    background: linear-gradient(135deg, #CC6633 0%, #E07B47 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(204, 102, 51, 0.4);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(204, 102, 51, 0.55);
     }
 
-    &.next-btn {
-      box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+  }
 
-      &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(var(--el-color-primary-rgb), 0.4);
-      }
+  :deep(.nav-btn.submit-btn) {
+    background: linear-gradient(135deg, #CC6633 0%, #E07B47 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(204, 102, 51, 0.4);
 
-      &:active:not(:disabled) {
-        transform: scale(0.98);
-      }
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(204, 102, 51, 0.55);
     }
 
-    &.submit-btn {
-      background: var(--el-color-success);
-      border-color: var(--el-color-success);
-      box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
-
-      &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(103, 194, 58, 0.4);
-      }
-
-      &:active:not(:disabled) {
-        transform: scale(0.98);
-      }
+    &:active:not(:disabled) {
+      transform: scale(0.98);
     }
   }
 
@@ -134,40 +139,17 @@ defineEmits(['prev', 'next', 'submit'])
     align-items: center;
     gap: 8px;
     padding: 12px 24px;
-    background: rgba(103, 194, 58, 0.1);
-    border: 1px solid var(--el-color-success);
+    background: rgba(204, 102, 51, 0.1);
+    border: 1px solid rgba(204, 102, 51, 0.4);
     border-radius: 26px;
     font-size: 16px;
     font-weight: 600;
-    color: var(--el-color-success);
+    color: var(--accent-secondary);
 
     .el-icon {
       font-size: 20px;
+      color: var(--accent-primary);
     }
-  }
-}
-
-// Dark Mode Adaptation
-:global(.dark) {
-  .quiz-footer .nav-btn.prev-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: white;
-
-    &:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.1);
-    }
-  }
-
-  .quiz-footer .nav-btn.submit-btn {
-    background: var(--el-color-success);
-    color: white;
-  }
-
-  .quiz-footer .completion-badge {
-    background: rgba(103, 194, 58, 0.15);
-    border-color: rgba(103, 194, 58, 0.4);
-    color: #67c23a;
   }
 }
 

@@ -1,6 +1,7 @@
 <template>
-  <div class="achievements-section" :class="{ 'cards-visible': cardsVisible, 'is-dark': isDark }">
-    <div class="achievements-header">
+  <div class="achievements-section" :class="{ 'cards-visible': cardsVisible, 'is-expanded': isExpanded }">
+    <!-- Collapsible Header -->
+    <div class="achievements-header" @click="toggleExpand">
       <div class="header-left">
         <div class="header-icon">
           <el-icon><Trophy /></el-icon>
@@ -27,15 +28,21 @@
           <span class="progress-text">{{ Math.round((unlockedCount / totalCount) * 100) || 0 }}%</span>
         </div>
         <span class="summary-text">已解锁 {{ unlockedCount }}/{{ totalCount }}</span>
+        <div class="expand-arrow" :class="{ 'is-expanded': isExpanded }">
+          <el-icon><ArrowDown /></el-icon>
+        </div>
       </div>
     </div>
+
+    <!-- Expandable Content -->
+    <div class="achievements-content" :class="{ 'is-expanded': isExpanded }">
 
     <div v-if="loading.achievements" class="loading-grid">
       <div v-for="i in 3" :key="i" class="skeleton-card">
         <el-skeleton animated>
           <template #template>
-            <div style="display: flex; gap: 16px; align-items: center;">
-              <el-skeleton-item variant="circle" style="width: 56px; height: 56px" />
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <el-skeleton-item variant="circle" style="width: 40px; height: 40px" />
               <div style="flex: 1">
                 <el-skeleton-item variant="text" style="width: 50%" />
                 <el-skeleton-item variant="text" style="width: 80%; margin-top: 8px" />
@@ -114,19 +121,16 @@
     </div>
       </template>
     </template>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { defineProps, computed, ref } from 'vue'
-import { useThemeStore } from '../../../stores/theme'
 import {
   Check, Clock, Star, Trophy, Medal, Document,
-  FolderOpened, Edit, CircleCheck, Calendar, Lock
+  FolderOpened, Edit, CircleCheck, Calendar, Lock, ArrowDown
 } from '@element-plus/icons-vue'
-
-const themeStore = useThemeStore()
-const isDark = computed(() => themeStore.isDark)
 
 const props = defineProps({
   achievements: {
@@ -145,6 +149,13 @@ const props = defineProps({
 
 // Filter state
 const activeFilter = ref('all')
+
+// Expand/Collapse state
+const isExpanded = ref(false)
+
+function toggleExpand() {
+  isExpanded.value = !isExpanded.value
+}
 
 const unlockedCount = computed(() => props.achievements.filter(a => a.unlocked).length)
 const totalCount = computed(() => props.achievements.length)
@@ -195,15 +206,7 @@ function formatDate(dateStr) {
 $ease-apple: cubic-bezier(0.25, 1, 0.5, 1);
 $ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
-// Light Mode Colors - Apple System Style
-$glass-bg-light: rgba(255, 255, 255, 0.7);
-$glass-border-light: rgba(255, 255, 255, 0.8);
-$glass-shadow-light: 0 8px 32px rgba(0, 0, 0, 0.06);
-$text-primary-light: #1d1d1f;
-$text-secondary-light: #6e6e73;
-$icon-bg-light: linear-gradient(135deg, #4A9EFF 0%, #007AFF 100%);
-
-// Dark Mode Colors - Apple System Style
+// Dark Mode Colors - Fixed for single theme
 $glass-bg-dark: rgba(30, 30, 30, 0.6);
 $glass-border-dark: rgba(255, 255, 255, 0.1);
 $glass-shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -214,19 +217,12 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 
 .achievements-section {
   padding: 28px;
-  background: $glass-bg-light;
+  background: $glass-bg-dark;
   border-radius: 20px;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid $glass-border-light;
-  box-shadow: $glass-shadow-light;
-  transition: background 0.3s $ease-smooth, border-color 0.3s $ease-smooth;
-
-  &.is-dark {
-    background: $glass-bg-dark;
-    border-color: $glass-border-dark;
-    box-shadow: $glass-shadow-dark;
-  }
+  border: 1px solid $glass-border-dark;
+  box-shadow: $glass-shadow-dark;
 }
 
 // Header
@@ -234,12 +230,35 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 28px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
 
-  .is-dark & {
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+  &:hover {
+    opacity: 0.8;
+  }
+
+  .is-expanded & {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+    margin-bottom: 24px;
+  }
+}
+
+// Expandable Content with Animation
+.achievements-content {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-10px);
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease,
+              transform 0.3s ease;
+
+  &.is-expanded {
+    max-height: 2000px;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -252,13 +271,9 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
     margin: 0;
     font-size: 22px;
     font-weight: 600;
-    color: $text-primary-light;
+    color: $text-primary-dark;
     letter-spacing: -0.02em;
     line-height: 1.2;
-
-    .is-dark & {
-      color: $text-primary-dark;
-    }
   }
 }
 
@@ -266,17 +281,12 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: $icon-bg-light;
+  background: $icon-bg-dark;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
-
-  .is-dark & {
-    background: $icon-bg-dark;
-    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
-  }
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
 }
 
 .achievement-summary {
@@ -298,21 +308,13 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 }
 
 .progress-track {
-  stroke: rgba(0, 0, 0, 0.1);
-
-  .is-dark & {
-    stroke: rgba(255, 255, 255, 0.1);
-  }
+  stroke: rgba(255, 255, 255, 0.1);
 }
 
 .progress-fill {
-  stroke: #34C759;
+  stroke: #30D158;
   stroke-linecap: round;
   transition: stroke-dasharray 0.8s $ease-apple;
-
-  .is-dark & {
-    stroke: #30D158;
-  }
 }
 
 .progress-text {
@@ -322,20 +324,37 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   transform: translate(-50%, -50%);
   font-size: 11px;
   font-weight: 700;
-  color: #34C759;
-
-  .is-dark & {
-    color: #30D158;
-  }
+  color: #30D158;
 }
 
 .summary-text {
   font-size: 14px;
   font-weight: 500;
-  color: $text-secondary-light;
+  color: $text-secondary-dark;
+}
 
-  .is-dark & {
+// Expand Arrow
+.expand-arrow {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease;
+
+  .el-icon {
+    font-size: 14px;
     color: $text-secondary-dark;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  &.is-expanded {
+    transform: rotate(180deg);
   }
 }
 
@@ -345,13 +364,9 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   gap: 8px;
   margin-bottom: 24px;
   padding: 4px;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   width: fit-content;
-
-  .is-dark & {
-    background: rgba(255, 255, 255, 0.08);
-  }
 }
 
 .filter-button {
@@ -364,33 +379,19 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
-  color: $text-secondary-light;
+  color: $text-secondary-dark;
   cursor: pointer;
   transition: all 0.2s $ease-smooth;
   position: relative;
 
-  .is-dark & {
-    color: $text-secondary-dark;
-  }
-
   &:hover:not(.active) {
-    background: rgba(0, 0, 0, 0.05);
-
-    .is-dark & {
-      background: rgba(255, 255, 255, 0.05);
-    }
+    background: rgba(255, 255, 255, 0.05);
   }
 
   &.active {
-    background: white;
-    color: $text-primary-light;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-    .is-dark & {
-      background: rgba(60, 60, 60, 0.9);
-      color: $text-primary-dark;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
+    background: rgba(60, 60, 60, 0.9);
+    color: $text-primary-dark;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -399,81 +400,55 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   min-width: 20px;
   text-align: center;
 
-  .is-dark & {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
   .filter-button.active & {
-    background: rgba(0, 122, 255, 0.15);
-    color: #007AFF;
-
-    .is-dark & {
-      background: rgba(10, 132, 255, 0.2);
-      color: #0A84FF;
-    }
+    background: rgba(10, 132, 255, 0.2);
+    color: #0A84FF;
   }
 }
 
-// Grid
+// Grid - Compact cards (260px min width)
 .achievements-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
 }
 
 .loading-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
 }
 
 .skeleton-card {
-  padding: 20px;
-  background: $glass-bg-light;
-  border-radius: 16px;
-  border: 1px solid $glass-border-light;
-
-  .is-dark & {
-    background: $glass-bg-dark;
-    border-color: $glass-border-dark;
-  }
+  padding: 16px;
+  background: $glass-bg-dark;
+  border-radius: 14px;
+  border: 1px solid $glass-border-dark;
 }
 
-// Card - Modern AppleStyle
+// Card - Modern AppleStyle (Compact)
 .achievement-card {
   display: flex;
-  gap: 16px;
-  padding: 20px;
-  background: $glass-bg-light;
-  border-radius: 16px;
-  border: 1px solid $glass-border-light;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  gap: 12px;
+  padding: 16px;
+  background: $glass-bg-dark;
+  border-radius: 14px;
+  border: 1px solid $glass-border-dark;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   transition: all 0.3s $ease-apple;
   cursor: pointer;
   position: relative;
   overflow: hidden;
 
-  .is-dark & {
-    background: $glass-bg-dark;
-    border-color: $glass-border-dark;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-
   &:hover {
-    transform: translateY(-3px);
-    background: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
-    border-color: rgba(255, 255, 255, 0.9);
-
-    .is-dark & {
-      background: rgba(255, 255, 255, 0.08);
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
-      border-color: rgba(255, 255, 255, 0.12);
-    }
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   // Locked state
@@ -481,43 +456,38 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
     opacity: 0.75;
 
     &:hover {
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
   }
 }
 
-// Icon - Simplified, no white ring
+// Icon - Compact size (40px)
 .card-icon-wrapper {
   position: relative;
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
 }
 
 .icon-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: $icon-bg-light;
+  background: $icon-bg-dark;
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.25);
   transition: all 0.3s $ease-apple;
 
-  .is-dark & {
-    background: $icon-bg-dark;
-    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.25);
+  .el-icon {
+    font-size: 20px;
   }
 
   &.is-locked {
-    background: linear-gradient(135deg, #86868b 0%, #636366 100%);
+    background: $icon-bg-locked-dark;
     box-shadow: none;
-
-    .is-dark & {
-      background: $icon-bg-locked-dark;
-    }
   }
 
   .main-icon {
@@ -525,23 +495,23 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   }
 }
 
-// Badges - No white border
+// Badges - Compact (20px)
 .lock-badge,
 .check-badge {
   position: absolute;
-  bottom: -4px;
-  right: -4px;
-  width: 24px;
-  height: 24px;
+  bottom: -3px;
+  right: -3px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   transition: all 0.2s $ease-smooth;
 
-  .is-dark & {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  .el-icon {
+    font-size: 10px;
   }
 }
 
@@ -551,12 +521,8 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 }
 
 .check-badge {
-  background: #34C759;
+  background: #30D158;
   color: white;
-
-  .is-dark & {
-    background: #30D158;
-  }
 }
 
 // Content
@@ -580,17 +546,13 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: $text-primary-light;
+  color: $text-primary-dark;
   letter-spacing: -0.01em;
   line-height: 1.3;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-
-  .is-dark & {
-    color: $text-primary-dark;
-  }
 
   .achievement-card.locked & {
     font-weight: 500;
@@ -599,33 +561,24 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 
 .unlock-date {
   font-size: 11px;
-  color: #007AFF;
+  color: #0A84FF;
   font-weight: 600;
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(10, 132, 255, 0.15);
   padding: 3px 8px;
   border-radius: 6px;
   white-space: nowrap;
   flex-shrink: 0;
-
-  .is-dark & {
-    color: #0A84FF;
-    background: rgba(10, 132, 255, 0.15);
-  }
 }
 
 .achievement-desc {
   margin: 0;
   font-size: 13px;
-  color: $text-secondary-light;
+  color: $text-secondary-dark;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-
-  .is-dark & {
-    color: $text-secondary-dark;
-  }
 }
 
 // Progress Bar
@@ -639,18 +592,14 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 .progress-track {
   flex: 1;
   height: 5px;
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
   overflow: hidden;
-
-  .is-dark & {
-    background: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #34C759 0%, #30D158 100%);
+  background: linear-gradient(90deg, #30D158 0%, #30D158 100%);
   border-radius: 3px;
   transition: width 0.6s $ease-apple;
 }
@@ -658,23 +607,15 @@ $icon-bg-locked-dark: rgba(255, 255, 255, 0.08);
 .progress-label {
   font-size: 12px;
   font-weight: 600;
-  color: $text-secondary-light;
+  color: $text-secondary-dark;
   min-width: 45px;
   text-align: right;
-
-  .is-dark & {
-    color: $text-secondary-dark;
-  }
 }
 
 // Empty state
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: $text-secondary-light;
-
-  .is-dark & {
-    color: $text-secondary-dark;
-  }
+  color: $text-secondary-dark;
 }
 </style>

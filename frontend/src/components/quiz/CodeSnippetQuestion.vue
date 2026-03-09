@@ -338,41 +338,30 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
 @import '../../styles/quiz-common';
-@import '../../styles/variables';
 
 .code-snippet-question {
-  // 使用共享的 CSS 变量
-  --card-radius: var(--quiz-card-radius);
-  --transition-spring: var(--quiz-transition-spring);
-  --transition-smooth: var(--quiz-transition-smooth);
-  --primary-color: var(--quiz-primary-color);
-  --success-color: var(--quiz-success-color);
-  --danger-color: var(--quiz-danger-color);
-  --code-bg: var(--quiz-code-bg);
   --code-line-height: 28px;
   --code-font-size: 14px;
 
-  background: var(--el-bg-color);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: var(--card-radius);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
   padding: 32px;
   margin-bottom: 24px;
-  border: 1px solid var(--el-border-color-light);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.02),
-    0 10px 15px -3px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.02);
-  transition: var(--transition-smooth);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-base);
   position: relative;
-  opacity: 0.95;
 
   &.compact-mode {
     padding: 20px;
     background: transparent;
     box-shadow: none;
-    border: 1px solid var(--el-border-color-lighter);
+    border: 1px solid var(--glass-border);
     backdrop-filter: none;
   }
   
@@ -523,26 +512,16 @@ defineExpose({
     40%, 60% { transform: translate3d(4px, 0, 0); }
   }
 
-  // Dark Mode Adaptation
-  :global(.dark) & {
-    background: rgba(28, 28, 30, 0.65);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    
-    &.compact-mode {
-      background: transparent;
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .question-text {
-      color: #FFFFFF;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
-    
-    .code-container {
-      background: #1e1e1e;
-      border-color: rgba(255, 255, 255, 0.1);
-    }
+  // 正确状态
+  &.is-correct {
+    background: rgba(34, 197, 94, 0.15);
+    box-shadow: inset 3px 0 0 var(--mastery-high);
+  }
+
+  // 错误状态
+  &.is-wrong {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+    box-shadow: inset 3px 0 0 var(--mastery-low), inset 0 0 0 1px rgba(239, 68, 68, 0.3);
   }
 }
 </style>

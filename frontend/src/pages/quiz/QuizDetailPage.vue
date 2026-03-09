@@ -208,7 +208,9 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
+
 .quiz-detail-page {
   max-width: 900px;
   margin: 0 auto;
@@ -258,7 +260,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 60px 0;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .page-header {
@@ -268,17 +270,12 @@ onMounted(() => {
   padding: 0 16px;
   height: 52px;
   min-height: 52px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
   transition: background 0.3s ease;
-
-  html.dark & {
-    background: rgba(30, 41, 59, 0.85);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .header-left {
@@ -295,8 +292,8 @@ onMounted(() => {
 
 .title-icon {
   font-size: 22px;
-  color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
+  color: var(--accent-primary);
+  background: rgba(204, 102, 51, 0.15);
   padding: 4px;
   border-radius: 6px;
   display: flex;
@@ -307,15 +304,15 @@ onMounted(() => {
 .title-text {
   font-size: 18px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 
 .subtitle-text {
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   padding-left: 12px;
-  border-left: 1px solid var(--el-border-color);
+  border-left: 1px solid var(--glass-border);
   line-height: 1.2;
 }
 
@@ -338,7 +335,7 @@ onMounted(() => {
 
 .stat-label {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -347,7 +344,7 @@ onMounted(() => {
 .stat-value {
   font-size: 15px;
   font-weight: 700;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
 }
@@ -394,44 +391,4 @@ onMounted(() => {
   padding: 4px 24px 24px 24px;
 }
 
-/* ============ Dark Mode ============ */
-html.dark .quiz-detail-page {
-  .page-header {
-    background: rgba(30, 41, 59, 0.7);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-
-    &.is-embedded {
-      background: transparent;
-      border-bottom-color: rgba(255, 255, 255, 0.1);
-      box-shadow: none;
-    }
-  }
-
-  .title-icon {
-    background: rgba(64, 158, 255, 0.15);
-  }
-
-  .loading-container,
-  .error-state {
-    background: rgba(0, 0, 0, 0.2);
-
-    .el-icon {
-      color: var(--el-color-primary);
-    }
-  }
-
-  .statistics-bar {
-    /* Deprecated - kept for reference if needed but hidden */
-    display: none;
-  }
-
-  .stat-label {
-    color: rgba(255, 255, 255, 0.6);
-  }
-
-  .stat-value {
-    color: #ffffff;
-  }
-}
 </style>

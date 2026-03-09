@@ -48,9 +48,103 @@ public class TagService {
 
     /**
      * 查询技术领域下的子标签
+     * @deprecated 使用 {@link #findTechDomainTagsWithHierarchy(Long)} 替代，避免N+1查询
      */
+    @Deprecated
     public List<Tag> findSubTagsByParentId(Long userId, Long parentId) {
         return tagRepository.findByParentIdOrderByName(parentId);
+    }
+
+    /**
+     * 查询技术领域所有标签（包含层级关系）
+     * 一次性查询所有标签，在Java层面构建层级关系，避免N+1查询
+     */
+    public TechDomainHierarchy findTechDomainTagsWithHierarchy(Long userId) {
+        TagDimension techDomain = tagDimensionRepository.findByCode("TECH_DOMAIN")
+                .orElseThrow(() -> new IllegalStateException("技术领域维度不存在"));
+
+        // 一次性查询所有相关标签（系统标签 + 用户标签）
+        List<Tag> allTags = tagRepository.findByDimensionIdAndUserIdIncludingSystem(techDomain.getId(), userId);
+
+        // 在Java层面构建层级关系
+        Map<Long, Tag> tagMap = new HashMap<>();
+        List<Tag> rootTags = new ArrayList<>();
+        Map<Long, List<Tag>> parentToChildrenMap = new HashMap<>();
+
+        // 第一步：建立ID映射和分组
+        for (Tag tag : allTags) {
+            tagMap.put(tag.getId(), tag);
+            if (tag.getParentId() == null) {
+                rootTags.add(tag);
+            } else {
+                parentToChildrenMap.computeIfAbsent(tag.getParentId(), k -> new ArrayList<>()).add(tag);
+            }
+        }
+
+        return new TechDomainHierarchy(rootTags, parentToChildrenMap, tagMap);
+    }
+
+    /**
+     * 技术领域标签层级结构容器
+     */
+    public static class TechDomainHierarchy {
+        private final List<Tag> rootTags;
+        private final Map<Long, List<Tag>> parentToChildrenMap;
+        private final Map<Long, Tag> tagMap;
+
+        public TechDomainHierarchy(List<Tag> rootTags, Map<Long, List<Tag>> parentToChildrenMap, Map<Long, Tag> tagMap) {
+            this.rootTags = rootTags;
+            this.parentToChildrenMap = parentToChildrenMap;
+            this.tagMap = tagMap;
+        }
+
+        /**
+         * 获取所有根标签（一级标签）
+         */
+        public List<Tag> getRootTags() {
+            return rootTags;
+        }
+
+        /**
+         * 获取指定父标签的子标签
+         */
+        public List<Tag> getChildren(Long parentId) {
+            return parentToChildrenMap.getOrDefault(parentId, Collections.emptyList());
+        }
+
+        /**
+         * 获取所有标签Map
+         */
+        public Map<Long, Tag> getTagMap() {
+            return tagMap;
+        }
+
+        /**
+         * 构建分类字符串（用于Prompt）
+         * 格式：主标签\n- 子标签1\n- 子标签2\n...
+         */
+        public String buildCategoryString() {
+            StringBuilder builder = new StringBuilder();
+            for (Tag rootTag : rootTags) {
+                builder.append(rootTag.getName()).append("\n");
+                List<Tag> children = getChildren(rootTag.getId());
+                for (Tag child : children) {
+                    builder.append("- ").append(child.getName()).append("\n");
+                }
+            }
+            return builder.toString();
+        }
+
+        /**
+         * 构建名称到ID的映射
+         */
+        public Map<String, Long> buildNameToIdMap() {
+            Map<String, Long> map = new HashMap<>();
+            for (Tag tag : tagMap.values()) {
+                map.put(tag.getName(), tag.getId());
+            }
+            return map;
+        }
     }
 
     /**
@@ -75,7 +169,7 @@ public class TagService {
         }
 
         // 构建路径
-        if (tag.getParentId() != null) {
+        if (tag.getParentId() != null && tag.getParentId() != 0) {
             Tag parent = tagRepository.findById(tag.getParentId())
                     .orElseThrow(() -> new IllegalArgumentException("父标签不存在"));
             tag.setLevel(parent.getLevel() + 1);
@@ -288,25 +382,84 @@ public class TagService {
         private List<TagVO> children;
 
         // Getters and Setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public Long getDimensionId() { return dimensionId; }
-        public void setDimensionId(Long dimensionId) { this.dimensionId = dimensionId; }
-        public String getDimensionName() { return dimensionName; }
-        public void setDimensionName(String dimensionName) { this.dimensionName = dimensionName; }
-        public Long getParentId() { return parentId; }
-        public void setParentId(Long parentId) { this.parentId = parentId; }
-        public Integer getLevel() { return level; }
-        public void setLevel(Integer level) { this.level = level; }
-        public String getPath() { return path; }
-        public void setPath(String path) { this.path = path; }
-        public Boolean getIsSystemTag() { return isSystemTag; }
-        public void setIsSystemTag(Boolean isSystemTag) { this.isSystemTag = isSystemTag; }
-        public LocalDateTime getCreatedTime() { return createdTime; }
-        public void setCreatedTime(LocalDateTime createdTime) { this.createdTime = createdTime; }
-        public List<TagVO> getChildren() { return children; }
-        public void setChildren(List<TagVO> children) { this.children = children; }
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public Long getDimensionId() {
+            return dimensionId;
+        }
+
+        public void setDimensionId(Long dimensionId) {
+            this.dimensionId = dimensionId;
+        }
+
+        public String getDimensionName() {
+            return dimensionName;
+        }
+
+        public void setDimensionName(String dimensionName) {
+            this.dimensionName = dimensionName;
+        }
+
+        public Long getParentId() {
+            return parentId;
+        }
+
+        public void setParentId(Long parentId) {
+            this.parentId = parentId;
+        }
+
+        public Integer getLevel() {
+            return level;
+        }
+
+        public void setLevel(Integer level) {
+            this.level = level;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public void setPath(String path) {
+            this.path = path;
+        }
+
+        public Boolean getIsSystemTag() {
+            return isSystemTag;
+        }
+
+        public void setIsSystemTag(Boolean isSystemTag) {
+            this.isSystemTag = isSystemTag;
+        }
+
+        public LocalDateTime getCreatedTime() {
+            return createdTime;
+        }
+
+        public void setCreatedTime(LocalDateTime createdTime) {
+            this.createdTime = createdTime;
+        }
+
+        public List<TagVO> getChildren() {
+            return children;
+        }
+
+        public void setChildren(List<TagVO> children) {
+            this.children = children;
+        }
     }
 }

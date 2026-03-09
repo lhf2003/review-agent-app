@@ -11,7 +11,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
-import { useThemeStore } from '../../stores/theme'
 
 const props = defineProps({
   // 进度值 0-100
@@ -48,7 +47,6 @@ const props = defineProps({
 
 const emit = defineEmits(['chart-ready', 'chart-dispose'])
 
-const themeStore = useThemeStore()
 const chartRef = ref(null)
 let chartInstance = null
 
@@ -74,8 +72,7 @@ function initChart() {
     chartInstance.dispose()
   }
 
-  const theme = themeStore.isDark ? 'dark' : undefined
-  chartInstance = echarts.init(chartRef.value, theme, {
+  chartInstance = echarts.init(chartRef.value, 'dark', {
     backgroundColor: 'transparent',
     renderer: 'canvas'
   })
@@ -93,14 +90,10 @@ function updateChart() {
 
   const option = {
     tooltip: {
-      backgroundColor: themeStore.isDark
-        ? 'rgba(30, 30, 30, 0.9)'
-        : 'rgba(255, 255, 255, 0.9)',
-      borderColor: themeStore.isDark
-        ? 'rgba(255, 255, 255, 0.1)'
-        : 'rgba(0, 0, 0, 0.1)',
+      backgroundColor: 'rgba(30, 30, 30, 0.9)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
       textStyle: {
-        color: themeStore.isDark ? '#fff' : '#333'
+        color: '#fff'
       },
       formatter: function (params) {
         return props.label + ': ' + params.value + '%'
@@ -130,14 +123,14 @@ function updateChart() {
       axisLine: {
         lineStyle: {
           width: 18,
-          color: [[1, themeStore.isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)']]
+          color: [[1, 'rgba(255,255,255,0.15)']]
         }
       },
       axisTick: {
         distance: -20,
         length: 8,
         lineStyle: {
-          color: themeStore.isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+          color: 'rgba(255,255,255,0.3)',
           width: 2
         }
       },
@@ -145,12 +138,12 @@ function updateChart() {
         distance: -24,
         length: 12,
         lineStyle: {
-          color: themeStore.isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+          color: 'rgba(255,255,255,0.3)',
           width: 2
         }
       },
       axisLabel: {
-        color: themeStore.isDark ? '#909399' : '#606266',
+        color: '#909399',
         fontSize: 11,
         distance: -35,
         formatter: function (value) {
@@ -165,7 +158,7 @@ function updateChart() {
         fontSize: 28,
         offsetCenter: [0, '10%'],
         valueStyle: {
-          color: themeStore.isDark ? '#fff' : '#333',
+          color: '#fff',
           fontSize: 32,
           fontWeight: 600
         }
@@ -194,11 +187,6 @@ watch(() => props.value, () => {
   nextTick(() => {
     updateChart()
   })
-})
-
-// 监听主题变化
-watch(() => themeStore.isDark, () => {
-  initChart()
 })
 
 onMounted(() => {

@@ -4,7 +4,6 @@ import { onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Bell, WarningFilled, CircleCheck } from '@element-plus/icons-vue'
 import { api } from '../../api/http'
-import CustomScroll from '../../components/CustomScroll.vue'
 
 const loading = ref(false)
 const notificationPermission = ref('default')
@@ -183,8 +182,7 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-  <CustomScroll class="settings-page-scroll">
-    <div class="settings-page">
+  <div class="settings-page">
     <div class="page-header">
       <h2>通知设置</h2>
       <p>配置复习提醒和通知偏好</p>
@@ -308,15 +306,10 @@ onBeforeRouteLeave((to, from, next) => {
         保存更改
       </el-button>
     </div>
-    </div>
-  </CustomScroll>
+  </div>
 </template>
 
 <style scoped>
-.settings-page-scroll {
-  height: 100%;
-}
-
 .settings-page {
   max-width: 800px;
   padding-bottom: 80px;
@@ -330,21 +323,24 @@ onBeforeRouteLeave((to, from, next) => {
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .page-header p {
   margin: 0;
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .form-card {
-  background: var(--el-bg-color);
-  border-radius: 16px;
-  border: 1px solid var(--el-border-color-light);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
   padding: 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: var(--transition-base);
   margin-bottom: 16px;
 }
 
@@ -354,7 +350,7 @@ onBeforeRouteLeave((to, from, next) => {
   gap: 8px;
   font-size: 16px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin-bottom: 16px;
 }
 
@@ -369,18 +365,21 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 .permission-status.success {
-  background-color: var(--el-color-success-light-9);
-  color: var(--el-color-success);
+  background-color: rgba(34, 197, 94, 0.15);
+  color: var(--mastery-high);
+  border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .permission-status.error {
-  background-color: var(--el-color-danger-light-9);
-  color: var(--el-color-danger);
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--mastery-low);
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .permission-status.warning {
-  background-color: var(--el-color-warning-light-9);
-  color: var(--el-color-warning);
+  background-color: rgba(245, 158, 11, 0.15);
+  color: var(--mastery-med);
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .permission-btn {
@@ -389,7 +388,7 @@ onBeforeRouteLeave((to, from, next) => {
 
 :deep(.el-form-item__label) {
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: var(--text-secondary);
   padding-bottom: 8px;
 }
 
@@ -406,7 +405,7 @@ onBeforeRouteLeave((to, from, next) => {
 .sub-label {
   font-size: 13px;
   font-weight: normal;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   margin-top: 2px;
 }
 
@@ -419,23 +418,24 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 .apple-select :deep(.el-input__wrapper) {
-  box-shadow: none !important;
-  background-color: var(--el-fill-color-light);
-  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--glass-border) inset !important;
+  background-color: rgba(255, 248, 245, 0.03);
+  border-radius: var(--radius-md);
 }
 
 :deep(.el-divider--horizontal) {
   margin: 16px 0;
-  border-top-color: var(--el-border-color-lighter);
+  border-top-color: var(--glass-border);
 }
 
 .info-card {
-  background: var(--el-fill-color-light);
+  background: rgba(204, 102, 51, 0.08);
+  border-color: rgba(204, 102, 51, 0.2);
 }
 
 .info-content {
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   line-height: 1.8;
 }
 
@@ -451,7 +451,7 @@ onBeforeRouteLeave((to, from, next) => {
 .info-content .tip {
   margin-top: 12px;
   font-size: 13px;
-  color: var(--el-color-primary);
+  color: var(--accent-tertiary);
 }
 
 .floating-save-bar {
@@ -464,26 +464,19 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 .save-btn {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-radius: 24px;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  border-radius: var(--radius-pill);
   padding: 12px 32px;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .save-btn:hover {
+  background: var(--accent-secondary);
+  border-color: var(--accent-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
-}
-
-/* Dark Mode */
-html.dark .form-card {
-  background: rgba(40, 40, 40, 0.6);
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-html.dark .info-card {
-  background: rgba(50, 50, 50, 0.6);
+  box-shadow: 0 4px 16px var(--accent-glow-soft);
 }
 
 @media (max-width: 768px) {

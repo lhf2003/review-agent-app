@@ -68,9 +68,20 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     List<Tag> findSystemTagsByDimension(@Param("dimensionId") Long dimensionId);
 
     /**
+     * 查询某维度下的所有标签（系统标签 + 指定用户的标签）
+     */
+    @Query("SELECT t FROM Tag t WHERE t.dimensionId = :dimensionId AND (t.userId IS NULL OR t.userId = :userId)")
+    List<Tag> findByDimensionIdAndUserIdIncludingSystem(@Param("dimensionId") Long dimensionId, @Param("userId") Long userId);
+
+    /**
      * 根据名称和维度查询
      */
     Optional<Tag> findByNameAndDimensionId(String name, Long dimensionId);
+
+    /**
+     * 根据路径查询标签
+     */
+    Optional<Tag> findByPath(String path);
 
     /**
      * 统计用户的标签数量

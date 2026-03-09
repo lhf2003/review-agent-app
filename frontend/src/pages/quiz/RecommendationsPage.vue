@@ -159,7 +159,7 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
-@import '../../styles/variables';
+@use '../../styles/nebula-theme.scss' as *;
 
 .recommendations-page {
   display: grid;
@@ -201,10 +201,10 @@ defineExpose({
   justify-content: space-between;
   align-items: flex-start;
   padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border-bottom: 1px solid var(--glass-border);
   transition: background 0.3s ease;
 
   .header-content {
@@ -218,13 +218,13 @@ defineExpose({
     font-size: 20px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
   }
 
   .section-subtitle {
     margin: 0;
     font-size: 13px;
-    color: var(--el-text-color-secondary);
+    color: var(--text-secondary);
   }
 
   .count-tag {
@@ -242,7 +242,7 @@ defineExpose({
 
 .skeleton-item {
   padding: 20px;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--glass-surface);
   border-radius: 16px;
 }
 
@@ -271,37 +271,15 @@ defineExpose({
   padding-bottom: 20px;
 }
 
-// 玻璃态效果 - Apple Style Enhanced
+// 玻璃态效果 - Nebula Theme
 .glass-panel {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow:
-    0 4px 24px -1px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
   /* Remove transition: all to prevent scale effect on theme switch */
   transition: box-shadow 0.3s ease, transform 0.3s ease !important;
-}
-
-// 深色模式适配
-html.dark {
-  .glass-panel {
-    background: rgba(28, 28, 30, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-  }
-
-  .section-header {
-    background: rgba(30, 41, 59, 0.7);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .skeleton-item {
-    background: rgba(255, 255, 255, 0.05);
-  }
 }
 
 // 响应式设计

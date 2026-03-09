@@ -118,9 +118,8 @@ function handleClose() {
 </template>
 
 <style scoped lang="scss">
-// 变量定义
-$color-primary: #0D9488; // Teal
-$color-accent: #F59E0B; // Amber/Gold
+// 变量定义 - 使用全局主题 + 金色强调
+$color-accent: #F59E0B; // Amber/Gold - 成就专属金色
 $ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 $ease-apple: cubic-bezier(0.25, 1, 0.5, 1);
 
@@ -131,8 +130,8 @@ $ease-apple: cubic-bezier(0.25, 1, 0.5, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.3); // 更通透的背景
-  backdrop-filter: blur(8px);
+  background: rgba(26, 15, 8, 0.85); // 使用全局深暖背景
+  backdrop-filter: blur(12px);
   perspective: 1000px;
 }
 
@@ -140,23 +139,17 @@ $ease-apple: cubic-bezier(0.25, 1, 0.5, 1);
   position: relative;
   width: 90%;
   max-width: 380px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: saturate(180%) blur(20px);
-  border-radius: 32px;
-  box-shadow: 
-    0 25px 50px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  background: rgba(45, 24, 16, 0.8); // 使用全局 --bg-warm-1 变体
+  backdrop-filter: saturate(180%) blur(24px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 248, 245, 0.08);
+  border-top: 1px solid rgba(255, 248, 245, 0.12);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(245, 158, 11, 0.1) inset;
   overflow: hidden;
   text-align: center;
   transform-origin: center center;
-  
-  // 深色模式适配
-  :deep(.dark) & {
-    background: rgba(30, 30, 30, 0.85);
-    box-shadow: 
-      0 25px 50px -12px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-  }
 }
 
 .glow-effect {
@@ -194,21 +187,14 @@ $ease-apple: cubic-bezier(0.25, 1, 0.5, 1);
   width: 88px;
   height: 88px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FFF 0%, #F0F0F0 100%);
-  box-shadow: 
-    0 10px 20px rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(255, 255, 255, 1);
+  background: linear-gradient(135deg, rgba(255, 248, 245, 0.1) 0%, rgba(255, 248, 245, 0.05) 100%);
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 248, 245, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
   animation: float 3s ease-in-out infinite;
-
-  :deep(.dark) & {
-    background: linear-gradient(135deg, #444 0%, #2a2a2a 100%);
-    box-shadow: 
-      0 10px 20px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.1);
-  }
 }
 
 .icon-circle {
@@ -235,43 +221,31 @@ $ease-apple: cubic-bezier(0.25, 1, 0.5, 1);
   align-items: center;
   gap: 4px;
   padding: 6px 12px;
-  background: rgba($color-accent, 0.1);
-  color: #D97706; // Darker Amber
+  background: rgba($color-accent, 0.15);
+  color: #FCD34D; // 金色高亮
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 16px;
-  
-  :deep(.dark) & {
-    background: rgba($color-accent, 0.2);
-    color: #FCD34D;
-  }
+  border: 1px solid rgba($color-accent, 0.2);
 }
 
 .title {
   font-size: 24px;
   font-weight: 800;
-  color: #111827;
+  color: #F9FAFB; // 主标题使用亮色
   margin: 0 0 8px;
   letter-spacing: -0.02em;
-  
-  :deep(.dark) & {
-    color: #F9FAFB;
-  }
 }
 
 .description {
   font-size: 15px;
-  color: #6B7280;
+  color: rgba(255, 255, 255, 0.6); // 次要文字
   line-height: 1.5;
   margin: 0 0 24px;
   max-width: 280px;
-  
-  :deep(.dark) & {
-    color: #9CA3AF;
-  }
 }
 
 // 进度条
@@ -282,65 +256,60 @@ $ease-apple: cubic-bezier(0.25, 1, 0.5, 1);
 
 .progress-bar-bg {
   height: 6px;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
   overflow: hidden;
   margin-bottom: 8px;
-  
-  :deep(.dark) & {
-    background: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .progress-bar-fill {
   height: 100%;
-  width: 100%; // 默认满
+  width: 100%;
   background: linear-gradient(90deg, $color-accent, #FBBF24);
   border-radius: 3px;
   transform-origin: left;
   animation: fillProgress 1s $ease-apple;
+  box-shadow: 0 0 10px rgba($color-accent, 0.4);
 }
 
 .progress-label {
   font-size: 12px;
-  color: $color-accent;
+  color: #FCD34D;
   font-weight: 600;
 }
 
 // 按钮
 .action-btn {
-  width: 100%;
-  height: 48px;
-  border-radius: 24px;
+  min-width: 140px;
+  height: 44px;
+  padding: 0 28px;
+  border-radius: 22px;
   border: none;
-  background: #111827;
+  background: linear-gradient(135deg, #CC6633 0%, #E07B47 100%);
   color: white;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  gap: 6px;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 4px 16px rgba(204, 102, 51, 0.3);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 24px rgba(204, 102, 51, 0.4);
+    background: linear-gradient(135deg, #D4703F 0%, #E88554 100%);
   }
 
   &:active {
     transform: translateY(0);
   }
 
-  :deep(.dark) & {
-    background: #F9FAFB;
-    color: #111827;
-    
-    &:hover {
-      background: #FFF;
-    }
+  .btn-icon {
+    margin-left: 2px;
+    font-size: 14px;
   }
 }
 
@@ -355,12 +324,8 @@ $ease-apple: cubic-bezier(0.25, 1, 0.5, 1);
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
-
-  :deep(.dark) & {
-    background: rgba(255, 255, 255, 0.2);
-  }
 
   &.active {
     background: $color-accent;

@@ -94,8 +94,4 @@ function handleNavClick(section) {
   line-height: 1;
 }
 
-/* Dark Mode */
-html.dark .nav-item.active {
-  background: rgba(64, 158, 255, 0.2);
-}
 </style>

@@ -613,7 +613,7 @@ const getQuestionTypeTagType = (type) => {
 </template>
 
 <style scoped lang="scss">
-@import '../../styles/variables';
+@use '../../styles/nebula-theme.scss' as *;
 
 .mistake-book-page {
   display: flex;
@@ -621,6 +621,7 @@ const getQuestionTypeTagType = (type) => {
   height: 100%;
   gap: 20px;
   box-sizing: border-box;
+  padding: 16px;
 }
 
 /* Remove padding when embedded - padding is provided by wrapper */
@@ -635,13 +636,13 @@ const getQuestionTypeTagType = (type) => {
   justify-content: space-between;
   align-items: flex-start;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--el-border-color-light);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .mistake-book-page.is-embedded .page-header-bar {
   padding: 16px 16px 12px 16px;
   margin: -16px -16px 16px -16px;
-  border-bottom: 1px solid var(--el-border-color-light);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .header-left {
@@ -655,7 +656,7 @@ const getQuestionTypeTagType = (type) => {
     padding: 4px 8px;
 
     &:hover {
-      background: var(--el-fill-color);
+      background: var(--glass-surface-hover);
     }
   }
 
@@ -663,13 +664,13 @@ const getQuestionTypeTagType = (type) => {
     .page-title {
       font-size: 28px;
       font-weight: 700;
-      color: var(--el-text-color-primary);
+      color: var(--text-primary);
       margin: 0 0 8px 0;
     }
 
     .page-subtitle {
       font-size: 14px;
-      color: var(--el-text-color-secondary);
+      color: var(--text-secondary);
       margin: 0;
     }
   }
@@ -692,16 +693,16 @@ const getQuestionTypeTagType = (type) => {
   align-items: center;
   gap: 16px;
   padding: 20px 24px;
-  background: var(--el-bg-color);
+  background: var(--glass-surface);
   border-radius: 12px;
-  border: 1px solid var(--el-border-color-light);
+  border: 1px solid var(--glass-border);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    border-color: var(--el-color-primary-light-5);
+    box-shadow: var(--shadow-md);
+    border-color: var(--glass-border-hover);
   }
 }
 
@@ -717,18 +718,18 @@ const getQuestionTypeTagType = (type) => {
 }
 
 .stat-card.total .stat-icon {
-  background: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
+  background: rgba(204, 102, 51, 0.15);
+  color: var(--accent-primary);
 }
 
 .stat-card.unmastered .stat-icon {
-  background: var(--el-color-warning-light-9);
-  color: var(--el-color-warning);
+  background: rgba(204, 102, 51, 0.1);
+  color: var(--accent-tertiary);
 }
 
 .stat-card.mastered .stat-icon {
-  background: var(--el-color-success-light-9);
-  color: var(--el-color-success);
+  background: rgba(61, 204, 106, 0.15);
+  color: var(--mastery-high);
 }
 
 .stat-info {
@@ -740,13 +741,13 @@ const getQuestionTypeTagType = (type) => {
 .stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   line-height: 1;
 }
 
 .stat-label {
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 // 筛选和搜索栏
@@ -756,9 +757,9 @@ const getQuestionTypeTagType = (type) => {
   align-items: center;
   gap: 16px;
   padding: 16px 20px;
-  background: var(--el-bg-color);
+  background: var(--glass-surface);
   border-radius: 12px;
-  border: 1px solid var(--el-border-color-light);
+  border: 1px solid var(--glass-border);
 }
 
 .filter-group {
@@ -776,9 +777,9 @@ const getQuestionTypeTagType = (type) => {
 
 // 复习推荐区块
 .recommendations-section {
-  background: var(--el-bg-color);
+  background: var(--glass-surface);
   border-radius: 12px;
-  border: 1px solid var(--el-border-color-light);
+  border: 1px solid var(--glass-border);
   padding: 20px;
   animation: fadeIn 0.4s ease;
 }
@@ -800,7 +801,7 @@ const getQuestionTypeTagType = (type) => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .section-header .header-left {
@@ -811,13 +812,13 @@ const getQuestionTypeTagType = (type) => {
 
 .section-icon {
   font-size: 20px;
-  color: var(--el-color-primary);
+  color: var(--accent-primary);
 }
 
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -833,9 +834,9 @@ const getQuestionTypeTagType = (type) => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background: var(--el-color-primary-light-9);
+  background: var(--glass-surface-active);
   border-radius: 12px;
-  border: 1px solid var(--el-color-primary-light-7);
+  border: 1px solid var(--glass-border-hover);
   animation: slideDown 0.3s ease;
 }
 
@@ -852,10 +853,10 @@ const getQuestionTypeTagType = (type) => {
 
 .selection-info {
   font-size: 14px;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 
   strong {
-    color: var(--el-color-primary);
+    color: var(--accent-primary);
     font-size: 18px;
     margin: 0 4px;
   }
@@ -870,9 +871,9 @@ const getQuestionTypeTagType = (type) => {
 .mistakes-list-wrapper {
   flex: 1;
   min-height: 0;
-  background: var(--el-bg-color);
+  background: var(--glass-surface);
   border-radius: 12px;
-  border: 1px solid var(--el-border-color-light);
+  border: 1px solid var(--glass-border);
   overflow: hidden;
 }
 
@@ -885,29 +886,29 @@ const getQuestionTypeTagType = (type) => {
 
 .select-all-bar {
   padding: 12px 16px;
-  background: var(--el-fill-color-light);
+  background: var(--glass-surface-hover);
   border-radius: 8px;
   margin-bottom: 8px;
 }
 
 // 错题卡片
 .mistake-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 
   &:hover {
-    border-color: var(--el-color-primary-light-5);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-color: var(--glass-border-hover);
+    box-shadow: var(--shadow-md);
     transform: translateY(-2px);
   }
 
   &.is-selected {
-    border-color: var(--el-color-primary);
-    background: var(--el-color-primary-light-9);
+    border-color: var(--accent-primary);
+    background: var(--glass-surface-active);
   }
 
   &.is-mastered {
@@ -920,8 +921,8 @@ const getQuestionTypeTagType = (type) => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: var(--el-fill-color-light);
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--glass-surface-hover);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .header-left {
@@ -933,9 +934,9 @@ const getQuestionTypeTagType = (type) => {
 .mistake-count-badge {
   font-size: 12px;
   font-weight: 600;
-  color: var(--el-color-danger);
+  color: var(--accent-secondary);
   padding: 4px 8px;
-  background: var(--el-color-danger-light-9);
+  background: rgba(204, 102, 51, 0.15);
   border-radius: 6px;
 }
 
@@ -955,7 +956,7 @@ const getQuestionTypeTagType = (type) => {
 .question-text {
   font-size: 15px;
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -976,7 +977,7 @@ const getQuestionTypeTagType = (type) => {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 
   .el-icon {
     font-size: 16px;
@@ -984,7 +985,7 @@ const getQuestionTypeTagType = (type) => {
 }
 
 .knowledge-point {
-  color: var(--el-color-primary);
+  color: var(--accent-primary);
 }
 
 .answer-preview {
@@ -992,19 +993,19 @@ const getQuestionTypeTagType = (type) => {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background: var(--el-fill-color-lighter);
+  background: var(--glass-surface-hover);
   border-radius: 8px;
 }
 
 .preview-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .preview-text {
   font-size: 13px;
-  color: var(--el-text-color-regular);
+  color: var(--text-primary);
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1020,10 +1021,10 @@ const getQuestionTypeTagType = (type) => {
   justify-content: center;
   padding: 60px 20px;
   gap: 16px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 
   .el-icon {
-    color: var(--el-color-primary);
+    color: var(--accent-primary);
   }
 }
 

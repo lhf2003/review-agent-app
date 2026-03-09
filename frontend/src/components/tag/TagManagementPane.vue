@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed, onMounted, watch, h } from 'vue'
-import { Plus, FolderOpened, Folder, Delete, Edit, Grid, Collection, Document, Cpu, Histogram, OfficeBuilding, TrendCharts, List, ScaleToOriginal, HelpFilled, Monitor, ArrowRight } from '@element-plus/icons-vue'
+import { ref, computed, onMounted, watch, h, Teleport } from 'vue'
+import { Plus, FolderOpened, Folder, Delete, Edit, Grid, Collection, Document, Cpu, Histogram, OfficeBuilding, TrendCharts, List, ScaleToOriginal, HelpFilled, Monitor, ArrowRight, Star, Rank } from '@element-plus/icons-vue'
 import { tagApi } from '../../api/tag'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CustomScroll from '../CustomScroll.vue'
 import TagRelationDrawer from './TagRelationDrawer.vue'
+import RecommendTagDrawer from './RecommendTagDrawer.vue'
 
 // 图标名称到组件的映射（支持数据库 icon 字段或友好别名）
 const iconMap = {
@@ -49,6 +50,14 @@ const loadingTags = ref(false)
 const selectedTag = ref(null)
 const drawerVisible = ref(false)
 const expandedKeys = ref([])
+
+// 推荐标签抽屉
+const recommendDrawerVisible = ref(false)
+
+// 打开推荐标签抽屉
+function openRecommendTags() {
+  recommendDrawerVisible.value = true
+}
 
 // 对话框状态
 const createDialog = ref(false)
@@ -133,12 +142,19 @@ watch(selectedDimensionId, () => {
 // 计算扁平化的标签列表（用于展示）
 const flatTags = computed(() => {
   const result = []
-  function traverse(list, level = 0, parentColor = null) {
+  function traverse(list, level = 0, parentColor = null, parentId = null) {
     for (const node of list || []) {
       const color = level === 0 ? getTagColor(result.filter(r => r.level === 0).length) : parentColor
-      result.push({ ...node, level, color })
+      result.push({
+        ...node,
+        level,
+        color,
+        parentId,
+        isSystemTag: node.isSystemTag,
+        children: node.children
+      })
       if (node.children) {
-        traverse(node.children, level + 1, color)
+        traverse(node.children, level + 1, color, node.id)
       }
     }
   }
@@ -261,6 +277,166 @@ onMounted(async () => {
   await loadDimensions()
   await loadTagTree()
 })
+
+// ========== 拖拽相关 ==========
+
+const draggingTag = ref(null)
+const dragOverTag = ref(null)
+const dragOverPosition = ref(null) // 'before', 'after', 'inside'
+const dragOverFloat = ref(false) // 是否悬停在浮动放置面板
+
+// 判断是否允许拖拽
+function isDraggable(tag) {
+  return !tag.isSystemTag
+}
+
+// 判断是否可以作为放置目标
+function isValidDropTarget(sourceTag, targetTag) {
+  if (!sourceTag || !targetTag) return false
+  if (sourceTag.id === targetTag.id) return false
+  // 不能放到自己的子标签中
+  if (isDescendant(targetTag, sourceTag)) return false
+  // 系统标签不能作为放置目标
+  if (targetTag.isSystemTag) return false
+  return true
+}
+
+// 判断是否为后代
+function isDescendant(possibleChild, possibleParent) {
+  function findInChildren(tag, parentId) {
+    if (tag.id === parentId) return true
+    if (tag.children) {
+      for (const child of tag.children) {
+        if (findInChildren(child, parentId)) return true
+      }
+    }
+    return false
+  }
+  return findInChildren(possibleChild, possibleParent.id)
+}
+
+// 开始拖拽
+function handleDragStart(event, tag) {
+  if (!isDraggable(tag)) {
+    event.preventDefault()
+    return
+  }
+  draggingTag.value = tag
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', tag.id)
+}
+
+// 拖拽经过
+function handleDragOver(event, tag, position) {
+  event.preventDefault()
+  if (!isValidDropTarget(draggingTag.value, tag)) {
+    event.dataTransfer.dropEffect = 'none'
+    return
+  }
+  dragOverTag.value = tag
+  dragOverPosition.value = position
+  event.dataTransfer.dropEffect = 'move'
+}
+
+// 拖拽离开
+function handleDragLeave() {
+  dragOverTag.value = null
+  dragOverPosition.value = null
+}
+
+// 放置
+async function handleDrop(event, targetTag, position) {
+  event.preventDefault()
+  event.stopPropagation()
+
+  if (!isValidDropTarget(draggingTag.value, targetTag)) {
+    handleDragLeave()
+    return
+  }
+
+  const sourceTag = draggingTag.value
+  let newParentId = 0
+
+  // 根据放置位置确定新的 parentId
+  if (position === 'inside') {
+    // 放到目标标签内部
+    newParentId = targetTag.id
+  } else if (position === 'before' || position === 'after') {
+    // 放到目标标签前后，使用目标的 parentId（null 转为 0）
+    newParentId = targetTag.parentId || 0
+  }
+
+  // 如果 parentId 没有变化，不执行操作
+  if (sourceTag.parentId === newParentId || (sourceTag.parentId === null && newParentId === 0)) {
+    handleDragLeave()
+    return
+  }
+
+  // 执行移动
+  try {
+    await tagApi.updateTag({
+      id: sourceTag.id,
+      parentId: newParentId
+    })
+    ElMessage.success('标签移动成功')
+    await loadTagTree()
+  } catch (e) {
+    ElMessage.error(`移动失败: ${e.message}`)
+  } finally {
+    handleDragLeave()
+    draggingTag.value = null
+  }
+}
+
+// 拖拽结束
+function handleDragEnd() {
+  draggingTag.value = null
+  dragOverTag.value = null
+  dragOverPosition.value = null
+  dragOverFloat.value = false
+}
+
+// ========== 浮动放置面板相关 ==========
+
+function handleFloatDragOver(event) {
+  event.preventDefault()
+  if (!draggingTag.value) return
+  // 只有当前有父级的标签才能成为根级标签（parentId 为 null 或 0 表示顶级）
+  if (draggingTag.value.parentId !== null && draggingTag.value.parentId !== 0) {
+    event.dataTransfer.dropEffect = 'move'
+    dragOverFloat.value = true
+  }
+}
+
+function handleFloatDragLeave() {
+  dragOverFloat.value = false
+}
+
+async function handleFloatDrop(event) {
+  event.preventDefault()
+  event.stopPropagation()
+
+  if (!draggingTag.value || draggingTag.value.parentId === null || draggingTag.value.parentId === 0) {
+    handleFloatDragLeave()
+    return
+  }
+
+  const sourceTag = draggingTag.value
+
+  try {
+    await tagApi.updateTag({
+      id: sourceTag.id,
+      parentId: 0
+    })
+    ElMessage.success('标签已移动到顶级')
+    await loadTagTree()
+  } catch (e) {
+    ElMessage.error(`移动失败: ${e.message}`)
+  } finally {
+    handleFloatDragLeave()
+    draggingTag.value = null
+  }
+}
 </script>
 
 <template>
@@ -307,15 +483,29 @@ onMounted(async () => {
         <div class="section-header">
           <el-icon class="section-icon"><Collection /></el-icon>
           <span class="section-title">{{ currentDimension?.name || '标签' }}管理</span>
-          <el-button
-            type="primary"
-            :icon="Plus"
-            size="small"
-            @click="openCreateTag(null)"
-            :disabled="!selectedDimensionId"
-          >
-            创建标签
-          </el-button>
+          <span class="drag-hint" title="拖拽标签可调整层级关系">
+            <el-icon><Rank /></el-icon>
+            <span>拖拽移动</span>
+          </span>
+          <div class="header-actions">
+            <el-button
+              type="warning"
+              :icon="Star"
+              size="small"
+              @click="openRecommendTags"
+            >
+              推荐标签
+            </el-button>
+            <el-button
+              type="primary"
+              :icon="Plus"
+              size="small"
+              @click="openCreateTag(null)"
+              :disabled="!selectedDimensionId"
+            >
+              创建标签
+            </el-button>
+          </div>
         </div>
 
         <div class="tag-tree-container">
@@ -340,58 +530,105 @@ onMounted(async () => {
                 :class="{
                   'is-selected': selectedTag?.id === tag.id,
                   'is-expanded': expandedKeys.includes(tag.id),
-                  [`level-${tag.level}`]: true
+                  [`level-${tag.level}`]: true,
+                  'is-dragging': draggingTag?.id === tag.id,
+                  'is-drag-over': dragOverTag?.id === tag.id,
+                  'drag-over-inside': dragOverTag?.id === tag.id && dragOverPosition === 'inside',
+                  'is-draggable': isDraggable(tag),
+                  'is-system': tag.isSystemTag
                 }"
                 :style="{ '--tag-color': tag.color }"
+                :draggable="isDraggable(tag)"
+                @dragstart="handleDragStart($event, tag)"
+                @dragend="handleDragEnd"
               >
-                <!-- 缩进占位 -->
-                <div class="indent-spacer" :style="{ width: `${tag.level * 24}px` }"></div>
-
-                <!-- 展开/折叠按钮 -->
+                <!-- 拖拽指示器 - 前 -->
                 <div
-                  v-if="tag.children?.length"
-                  class="expand-btn"
-                  @click.stop="toggleExpand(tag)"
+                  v-if="!tag.isSystemTag"
+                  class="drop-indicator drop-before"
+                  :class="{ 'is-active': dragOverTag?.id === tag.id && dragOverPosition === 'before' }"
+                  @dragover.prevent="handleDragOver($event, tag, 'before')"
+                  @dragleave="handleDragLeave"
+                  @drop="handleDrop($event, tag, 'before')"
+                ></div>
+
+                <!-- 内部放置区域 -->
+                <div
+                  class="tag-inner-area"
+                  :class="{ 'is-drag-target': dragOverTag?.id === tag.id && dragOverPosition === 'inside' }"
+                  @dragover.prevent="handleDragOver($event, tag, 'inside')"
+                  @dragleave="handleDragLeave"
+                  @drop="handleDrop($event, tag, 'inside')"
                 >
-                  <el-icon><FolderOpened v-if="expandedKeys.includes(tag.id)" /><Folder v-else /></el-icon>
-                </div>
-                <div v-else class="expand-placeholder"></div>
+                  <!-- 缩进占位 -->
+                  <div class="indent-spacer" :style="{ width: `${tag.level * 24}px` }"></div>
 
-                <!-- 标签内容 -->
-                <div class="tag-content" @click="onSelectTag(tag)" title="点击查看标签关系">
-                  <div class="tag-indicator" :style="{ backgroundColor: tag.color }"></div>
-                  <span class="tag-name">{{ tag.name }}</span>
-                  <span v-if="tag.children?.length" class="tag-count">
-                    ({{ tag.children.length }})
-                  </span>
-                  <el-icon class="relation-hint" :size="14"><ArrowRight /></el-icon>
+                  <!-- 展开/折叠按钮 -->
+                  <div
+                    v-if="tag.children?.length"
+                    class="expand-btn"
+                    @click.stop="toggleExpand(tag)"
+                  >
+                    <el-icon><FolderOpened v-if="expandedKeys.includes(tag.id)" /><Folder v-else /></el-icon>
+                  </div>
+                  <div v-else class="expand-placeholder"></div>
+
+                  <!-- 标签内容 -->
+                  <div class="tag-content" @click="onSelectTag(tag)" title="点击查看标签关系">
+                    <div class="tag-indicator" :style="{ backgroundColor: tag.color }"></div>
+                    <span class="tag-name">{{ tag.name }}</span>
+                    <span v-if="tag.children?.length" class="tag-count">
+                      ({{ tag.children.length }})
+                    </span>
+                    <el-icon class="relation-hint" :size="14"><ArrowRight /></el-icon>
+                  </div>
+
+                  <!-- 拖拽手柄（仅可拖拽标签显示） -->
+                  <el-icon
+                    v-if="isDraggable(tag)"
+                    class="drag-handle"
+                    :size="14"
+                    title="拖拽移动标签"
+                  >
+                    <Rank />
+                  </el-icon>
+
+                  <!-- 操作按钮 -->
+                  <div class="tag-actions">
+                    <el-button
+                      text
+                      size="small"
+                      :icon="Plus"
+                      @click.stop="openCreateTag(tag.id)"
+                      title="添加子标签"
+                    />
+                    <el-button
+                      text
+                      size="small"
+                      :icon="Edit"
+                      @click.stop="openRenameTag(tag)"
+                      title="重命名"
+                    />
+                    <el-button
+                      text
+                      size="small"
+                      type="danger"
+                      :icon="Delete"
+                      @click.stop="doDeleteTag(tag)"
+                      title="删除"
+                    />
+                  </div>
                 </div>
 
-                <!-- 操作按钮 -->
-                <div class="tag-actions">
-                  <el-button
-                    text
-                    size="small"
-                    :icon="Plus"
-                    @click.stop="openCreateTag(tag.id)"
-                    title="添加子标签"
-                  />
-                  <el-button
-                    text
-                    size="small"
-                    :icon="Edit"
-                    @click.stop="openRenameTag(tag)"
-                    title="重命名"
-                  />
-                  <el-button
-                    text
-                    size="small"
-                    type="danger"
-                    :icon="Delete"
-                    @click.stop="doDeleteTag(tag)"
-                    title="删除"
-                  />
-                </div>
+                <!-- 拖拽指示器 - 后 -->
+                <div
+                  v-if="!tag.isSystemTag"
+                  class="drop-indicator drop-after"
+                  :class="{ 'is-active': dragOverTag?.id === tag.id && dragOverPosition === 'after' }"
+                  @dragover.prevent="handleDragOver($event, tag, 'after')"
+                  @dragleave="handleDragLeave"
+                  @drop="handleDrop($event, tag, 'after')"
+                ></div>
               </div>
             </div>
           </CustomScroll>
@@ -399,10 +636,37 @@ onMounted(async () => {
       </div>
     </div>
 
+    <!-- 拖拽浮动放置面板 -->
+    <Teleport to="body">
+      <div
+        v-if="draggingTag"
+        class="drag-float-panel"
+        :class="{ 'is-active': dragOverFloat }"
+      >
+        <div class="float-panel-content">
+          <el-icon :size="24"><Rank /></el-icon>
+          <span class="panel-title">拖放到此处</span>
+          <span class="panel-desc">成为顶级标签</span>
+        </div>
+        <div
+          class="float-drop-zone"
+          @dragover.prevent="handleFloatDragOver"
+          @dragleave="handleFloatDragLeave"
+          @drop="handleFloatDrop"
+        ></div>
+      </div>
+    </Teleport>
+
     <!-- 标签关系抽屉 -->
     <TagRelationDrawer
       v-model="drawerVisible"
       :tag="selectedTag"
+      @refresh="loadTagTree"
+    />
+
+    <!-- 推荐标签抽屉 -->
+    <RecommendTagDrawer
+      v-model="recommendDrawerVisible"
       @refresh="loadTagTree"
     />
 
@@ -477,14 +741,33 @@ onMounted(async () => {
 
 .section-icon {
   font-size: 18px;
-  color: var(--el-color-primary);
+  color: var(--accent-primary);
 }
 
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   flex: 1;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drag-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-left: 12px;
+  padding: 4px 10px;
+  background: var(--glass-surface);
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
 }
 
 .dimension-loading {
@@ -503,7 +786,7 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   padding: 14px 18px;
-  background: var(--dim-bg, #f5f5f5);
+  background: var(--glass-surface);
   border: 2px solid transparent;
   border-radius: 12px;
   cursor: pointer;
@@ -513,13 +796,12 @@ onMounted(async () => {
 
 .dimension-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-color: var(--dim-color, #909399);
+  background: var(--glass-surface-hover);
 }
 
 .dimension-card.is-active {
-  border-color: var(--dim-color, #909399);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  background: rgba(204, 102, 51, 0.1);
+  box-shadow: 0 4px 16px rgba(204, 102, 51, 0.15);
 }
 
 .dimension-indicator {
@@ -548,12 +830,12 @@ onMounted(async () => {
 .dimension-name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .dimension-desc {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -571,9 +853,9 @@ onMounted(async () => {
 .tag-tree-container {
   flex: 1;
   min-height: 0;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  background-color: var(--el-bg-color-overlay);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background-color: var(--glass-surface);
   overflow: hidden;
 }
 
@@ -588,19 +870,19 @@ onMounted(async () => {
 
 .tag-item {
   display: flex;
-  align-items: center;
-  padding: 10px 16px;
+  align-items: flex-start;
+  flex-direction: column;
   cursor: pointer;
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
 }
 
 .tag-item:hover {
-  background-color: var(--el-fill-color-light);
+  background-color: var(--glass-surface-hover);
 }
 
 .tag-item.is-selected {
-  background-color: var(--el-color-primary-light-9);
+  background-color: rgba(204, 102, 51, 0.1);
   border-left-color: var(--tag-color);
 }
 
@@ -621,12 +903,12 @@ onMounted(async () => {
 .expand-btn {
   cursor: pointer;
   border-radius: 4px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .expand-btn:hover {
-  background-color: var(--el-fill-color);
-  color: var(--el-text-color-primary);
+  background-color: var(--glass-surface-hover);
+  color: var(--text-primary);
 }
 
 .tag-content {
@@ -655,19 +937,19 @@ onMounted(async () => {
 
 .tag-count {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .relation-hint {
   margin-left: auto;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   opacity: 0;
   transition: all 0.2s ease;
 }
 
-.tag-row:hover .relation-hint {
+.tag-item:hover .relation-hint {
   opacity: 1;
-  color: var(--el-color-primary);
+  color: var(--accent-primary);
 }
 
 .tag-actions {
@@ -689,22 +971,100 @@ onMounted(async () => {
 }
 
 .level-1 .tag-name {
-  color: var(--el-text-color-regular);
+  color: var(--text-secondary);
 }
 
 .level-2 .tag-name {
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   font-size: 13px;
 }
 
-/* 暗黑模式 */
-html.dark .tag-tree-container {
-  background-color: rgba(28, 28, 30, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
+/* ========== 拖拽样式 ========== */
+.tag-item {
+  position: relative;
 }
 
-html.dark .dimension-card {
-  background: rgba(255, 255, 255, 0.05);
+.tag-item.is-dragging {
+  opacity: 0.5;
+}
+
+.tag-item.is-system {
+  opacity: 0.8;
+}
+
+.tag-item.is-draggable {
+  cursor: grab;
+}
+
+.tag-item.is-draggable:active {
+  cursor: grabbing;
+}
+
+.tag-inner-area {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.tag-inner-area.is-drag-target {
+  background-color: rgba(204, 102, 51, 0.2);
+  box-shadow: inset 0 0 0 2px var(--accent-primary);
+}
+
+.drag-handle {
+  color: var(--text-tertiary);
+  margin-right: 8px;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tag-item:hover .drag-handle {
+  opacity: 0.6;
+}
+
+.drag-handle:hover {
+  opacity: 1 !important;
+  color: var(--accent-primary);
+}
+
+/* 放置指示器 */
+.drop-indicator {
+  height: 2px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  pointer-events: all;
+  transition: all 0.15s ease;
+}
+
+.drop-before {
+  top: -1px;
+}
+
+.drop-after {
+  bottom: -1px;
+}
+
+.drop-indicator.is-active {
+  height: 3px;
+  background-color: var(--accent-primary);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+
+.drop-indicator.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-primary);
 }
 
 /* 响应式 */
@@ -731,5 +1091,56 @@ html.dark .dimension-card {
   .tag-actions {
     opacity: 1;
   }
+}
+
+/* ========== 浮动放置面板样式 ========== */
+.drag-float-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.float-panel-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 48px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px dashed var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.drag-float-panel.is-active .float-panel-content {
+  border-color: var(--accent-primary);
+  background: rgba(204, 102, 51, 0.15);
+  color: var(--accent-primary);
+  transform: scale(1.05);
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.panel-desc {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.float-drop-zone {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
 }
 </style>

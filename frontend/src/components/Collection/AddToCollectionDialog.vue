@@ -210,39 +210,43 @@ defineExpose({ open })
 </template>
 
 <style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
+
 // 动画曲线
 $ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
 
 /* 背景模糊效果 */
 :global(.el-overlay.blur-backdrop) {
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  background-color: rgba(26, 15, 8, 0.7);
 }
 
 .add-to-collection-dialog {
   :deep(.el-dialog) {
-    border-radius: 20px;
+    border-radius: var(--radius-card);
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px) saturate(180%);
+    background: var(--glass-surface);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    border: 1px solid var(--glass-border);
     box-shadow:
-      0 25px 50px -12px rgba(0, 0, 0, 0.25),
-      0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+      0 25px 50px -12px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 var(--glass-highlight);
   }
 
   :deep(.el-dialog__header) {
     padding: 20px 24px 16px;
     margin: 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    background: linear-gradient(135deg, rgba(var(--el-color-primary-rgb), 0.05) 0%, transparent 100%);
+    border-bottom: 1px solid var(--glass-border);
+    background: linear-gradient(135deg, rgba(204, 102, 51, 0.1) 0%, transparent 100%);
   }
 
   :deep(.el-dialog__title) {
     font-size: 17px;
     font-weight: 600;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
     letter-spacing: -0.01em;
   }
 
@@ -252,8 +256,8 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
 
   :deep(.el-dialog__footer) {
     padding: 16px 24px 20px;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    background: rgba(var(--el-color-primary-rgb), 0.02);
+    border-top: 1px solid var(--glass-border);
+    background: var(--glass-surface);
   }
 }
 
@@ -267,8 +271,9 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   gap: 8px;
   margin-bottom: 20px;
   padding: 4px;
-  background: var(--el-fill-color-light);
+  background: var(--glass-surface);
   border-radius: 12px;
+  border: 1px solid var(--glass-border);
 }
 
 .mode-tab {
@@ -282,7 +287,7 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   transition: all 0.25s $ease-smooth;
   border: 1px solid transparent;
 
@@ -292,15 +297,15 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   }
 
   &:hover {
-    color: var(--el-text-color-primary);
-    background: rgba(255, 255, 255, 0.5);
+    color: var(--text-primary);
+    background: rgba(255, 248, 245, 0.05);
   }
 
   &.active {
-    background: #fff;
-    color: var(--el-color-primary);
-    border-color: rgba(var(--el-color-primary-rgb), 0.2);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    background: rgba(204, 102, 51, 0.15);
+    color: var(--accent-tertiary);
+    border-color: rgba(204, 102, 51, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
     .el-icon {
       transform: scale(1.1);
@@ -327,7 +332,7 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
 .section-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
@@ -347,20 +352,20 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
 
   .empty-icon {
     font-size: 48px;
-    color: var(--el-border-color);
+    color: var(--glass-border);
     margin-bottom: 12px;
   }
 
   .empty-text {
     font-size: 14px;
     font-weight: 500;
-    color: var(--el-text-color-secondary);
+    color: var(--text-secondary);
     margin-bottom: 4px;
   }
 
   .empty-hint {
     font-size: 12px;
-    color: var(--el-text-color-placeholder);
+    color: var(--text-tertiary);
   }
 }
 
@@ -382,11 +387,11 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
+    background: rgba(255, 248, 245, 0.1);
     border-radius: 2px;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.25);
+      background: rgba(255, 248, 245, 0.2);
     }
   }
 }
@@ -400,17 +405,18 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   cursor: pointer;
   transition: all 0.25s $ease-smooth;
   border: 1px solid transparent;
-  background: rgba(var(--el-fill-color-light), 0.5);
+  background: var(--glass-surface);
 
   .item-icon {
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: var(--el-fill-color);
+    background: var(--glass-surface);
+    border: 1px solid var(--glass-border);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--el-text-color-secondary);
+    color: var(--text-tertiary);
     transition: all 0.25s $ease-smooth;
     flex-shrink: 0;
 
@@ -427,7 +433,7 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   .item-name {
     font-size: 14px;
     font-weight: 500;
-    color: var(--el-text-color-primary);
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -435,7 +441,7 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
 
   .item-desc {
     font-size: 12px;
-    color: var(--el-text-color-secondary);
+    color: var(--text-secondary);
     margin-top: 2px;
     white-space: nowrap;
     overflow: hidden;
@@ -446,7 +452,7 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: var(--el-color-primary);
+    background: var(--accent-primary);
     color: #fff;
     display: flex;
     align-items: center;
@@ -459,28 +465,30 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   }
 
   &:hover {
-    background: rgba(var(--el-color-primary-rgb), 0.06);
-    border-color: rgba(var(--el-color-primary-rgb), 0.15);
+    background: rgba(204, 102, 51, 0.08);
+    border-color: rgba(204, 102, 51, 0.2);
 
     .item-icon {
-      background: rgba(var(--el-color-primary-rgb), 0.12);
-      color: var(--el-color-primary);
+      background: rgba(204, 102, 51, 0.15);
+      border-color: rgba(204, 102, 51, 0.25);
+      color: var(--accent-tertiary);
     }
   }
 
   &.active {
-    background: rgba(var(--el-color-primary-rgb), 0.1);
-    border-color: rgba(var(--el-color-primary-rgb), 0.25);
-    box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.1);
+    background: rgba(204, 102, 51, 0.12);
+    border-color: rgba(204, 102, 51, 0.3);
+    box-shadow: 0 2px 8px rgba(204, 102, 51, 0.15);
 
     .item-icon {
-      background: var(--el-color-primary);
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
       color: #fff;
-      box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
+      box-shadow: 0 4px 12px rgba(204, 102, 51, 0.3);
     }
 
     .item-name {
-      color: var(--el-color-primary);
+      color: var(--accent-tertiary);
       font-weight: 600;
     }
   }
@@ -508,15 +516,15 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   display: block;
   font-size: 12px;
   font-weight: 500;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   margin-bottom: 8px;
 
   .required {
-    color: var(--el-color-danger);
+    color: var(--mastery-low);
   }
 
   .optional {
-    color: var(--el-text-color-placeholder);
+    color: var(--text-tertiary);
     font-weight: 400;
   }
 }
@@ -524,27 +532,36 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
 // Element Plus 组件样式覆盖
 :deep(.el-input__wrapper),
 :deep(.el-textarea__inner) {
+  background: var(--glass-surface);
   border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--glass-border);
+  box-shadow: none;
   transition: all 0.2s ease;
 
   &:hover {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    background: var(--glass-surface-hover);
+    border-color: var(--glass-border-hover);
   }
 
   &:focus-within {
-    box-shadow: 0 0 0 2px rgba(var(--el-color-primary-rgb), 0.15);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(204, 102, 51, 0.15);
   }
+}
+
+:deep(.el-input__inner) {
+  color: var(--text-primary);
 }
 
 :deep(.el-textarea__inner) {
   border-radius: 10px;
   resize: none;
+  color: var(--text-primary);
 }
 
 :deep(.el-input__count) {
   font-size: 11px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
 }
 
 // 底部按钮
@@ -554,33 +571,38 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   gap: 12px;
 
   .cancel-btn {
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 9px 20px;
     font-weight: 500;
+    background: var(--glass-surface);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
     transition: all 0.2s ease;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.05);
+      background: var(--glass-surface-hover);
+      border-color: var(--glass-border-hover);
+      color: var(--text-primary);
       transform: translateY(-1px);
     }
   }
 
   .confirm-btn {
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 9px 24px;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 6px;
     transition: all 0.3s $ease-spring;
-    background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
+    background: var(--gradient-warm);
     border: none;
-    box-shadow: 0 4px 14px rgba(var(--el-color-primary-rgb), 0.35);
+    box-shadow: 0 4px 14px rgba(204, 102, 51, 0.35);
     color: #ffffff !important;
 
     &:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(var(--el-color-primary-rgb), 0.45);
+      box-shadow: 0 6px 20px rgba(204, 102, 51, 0.45);
     }
 
     &:active:not(:disabled) {
@@ -604,78 +626,4 @@ $ease-smooth: cubic-bezier(0.25, 0.8, 0.5, 1);
   }
 }
 
-// 深色模式适配
-html.dark {
-  .add-to-collection-dialog {
-    :deep(.el-dialog) {
-      background: rgba(30, 30, 30, 0.95);
-      box-shadow:
-        0 25px 50px -12px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-    }
-
-    :deep(.el-dialog__header) {
-      border-bottom-color: rgba(255, 255, 255, 0.08);
-      background: linear-gradient(135deg, rgba(var(--el-color-primary-rgb), 0.1) 0%, transparent 100%);
-    }
-
-    :deep(.el-dialog__footer) {
-      border-top-color: rgba(255, 255, 255, 0.08);
-      background: rgba(0, 0, 0, 0.2);
-    }
-  }
-
-  .mode-tabs {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .mode-tab {
-    &:hover {
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    &.active {
-      background: rgba(30, 30, 30, 0.8);
-      border-color: rgba(var(--el-color-primary-rgb), 0.3);
-    }
-  }
-
-  .collection-item {
-    background: rgba(255, 255, 255, 0.03);
-
-    &:hover {
-      background: rgba(var(--el-color-primary-rgb), 0.1);
-    }
-
-    &.active {
-      background: rgba(var(--el-color-primary-rgb), 0.15);
-      border-color: rgba(var(--el-color-primary-rgb), 0.3);
-    }
-  }
-
-  .collection-list {
-    &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.25);
-      }
-    }
-  }
-
-  .empty-state {
-    .empty-icon {
-      color: rgba(255, 255, 255, 0.2);
-    }
-  }
-
-  :deep(.el-input__wrapper),
-  :deep(.el-textarea__inner) {
-    background: rgba(255, 255, 255, 0.05);
-
-    &:hover {
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    }
-  }
-}
 </style>

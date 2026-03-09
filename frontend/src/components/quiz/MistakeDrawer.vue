@@ -309,10 +309,8 @@ watch(() => props.visible, (newVal) => {
 @import '../../styles/variables';
 
 .mistake-drawer {
-  :deep(.el-drawer__body) {
-    padding: 0;
-    background: var(--el-bg-color-page);
-  }
+  height: 100%;
+  background: var(--el-bg-color-page);
 }
 
 .drawer-loading,

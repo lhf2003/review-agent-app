@@ -1,0 +1,517 @@
+/**
+ * Warm Amber Theme - 暖橙棕玻璃主题
+ * 全局CSS变量定义文件
+ *
+ * 设计规范来源：docs/architecture/*.md
+ * 主导色：#CC6633 (Terracotta/暖橙棕)
+ * 核心特征：深暖背景 + 玻璃态效果 + 暖橙渐变
+ */
+
+/* ========================================
+   CSS变量根定义
+   ======================================== */
+:root {
+  /* -------------------
+     背景色彩系统 - 深暖色调
+     ------------------- */
+  --bg-deep: #1a0f08;
+  --bg-warm-1: #2d1810;
+  --bg-warm-2: #3d1f14;
+  --bg-accent-overlay: rgba(204, 102, 51, 0.15);
+  --bg-overlay: rgba(26, 15, 8, 0.95);
+
+  /* -------------------
+     强调色彩系统
+     ------------------- */
+  --accent-primary: #CC6633;
+  --accent-secondary: #E07B47;
+  --accent-tertiary: #F09562;
+  --accent-glow: #CC6633;
+  --accent-glow-soft: rgba(204, 102, 51, 0.4);
+  --accent-glow-strong: rgba(204, 102, 51, 0.6);
+
+  /* 暖色渐变 */
+  --gradient-warm: linear-gradient(135deg, #CC6633 0%, #E07B47 50%, #F09562 100%);
+  --gradient-bg: radial-gradient(circle at 10% 20%, rgba(204, 102, 51, 0.15) 0%, transparent 40%),
+                 radial-gradient(circle at 90% 60%, rgba(224, 123, 71, 0.12) 0%, transparent 40%),
+                 radial-gradient(circle at 50% 50%, rgba(45, 24, 16, 1) 0%, var(--bg-deep) 100%);
+
+  /* -------------------
+     玻璃效果系统 - 暖色调
+     ------------------- */
+  --glass-surface: rgba(255, 248, 245, 0.03);
+  --glass-surface-hover: rgba(255, 248, 245, 0.06);
+  --glass-border: rgba(255, 248, 245, 0.08);
+  --glass-border-hover: rgba(255, 248, 245, 0.15);
+  --glass-highlight: rgba(255, 248, 245, 0.12);
+  --glass-blur: 24px;
+  --glass-blur-strong: 32px;
+
+  /* -------------------
+     文字色彩系统
+     ------------------- */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.45);
+  --text-muted: rgba(255, 255, 255, 0.25);
+
+  /* -------------------
+     掌握度指示色
+     ------------------- */
+  --mastery-low: #ef4444;
+  --mastery-med: #f59e0b;
+  --mastery-high: #22c55e;
+  --mastery-low-glow: rgba(239, 68, 68, 0.4);
+  --mastery-med-glow: rgba(245, 158, 11, 0.4);
+  --mastery-high-glow: rgba(34, 197, 94, 0.4);
+
+  /* -------------------
+     间距系统
+     ------------------- */
+  --space-xs: 8px;
+  --space-s: 16px;
+  --space-m: 24px;
+  --space-l: 32px;
+  --space-xl: 48px;
+
+  /* -------------------
+     圆角系统
+     ------------------- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-card: 24px;
+  --radius-pill: 999px;
+
+  /* -------------------
+     字体系统 - Inter (Apple Design Language)
+     ------------------- */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "SF Mono", "SFMono-Regular", ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  /* -------------------
+     过渡动画
+     ------------------- */
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+  --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* -------------------
+     阴影系统
+     ------------------- */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(204, 102, 51, 0.3);
+
+  /* -------------------
+     Element Plus 覆盖变量
+     ------------------- */
+  --el-color-primary: #CC6633;
+  --el-color-primary-light-3: #E07B47;
+  --el-color-primary-light-5: #F09562;
+  --el-color-primary-light-7: #F5B085;
+  --el-color-primary-light-8: #FAC4A3;
+  --el-color-primary-light-9: rgba(204, 102, 51, 0.1);
+  --el-color-primary-dark-2: #A8552A;
+
+  --el-bg-color: #1a0f08;
+  --el-bg-color-page: #1a0f08;
+  --el-bg-color-overlay: rgba(255, 248, 245, 0.03);
+
+  --el-text-color-primary: #ffffff;
+  --el-text-color-regular: rgba(255, 255, 255, 0.7);
+  --el-text-color-secondary: rgba(255, 255, 255, 0.45);
+  --el-text-color-placeholder: rgba(255, 255, 255, 0.25);
+  --el-text-color-disabled: rgba(255, 255, 255, 0.15);
+
+  --el-border-color: rgba(255, 248, 245, 0.08);
+  --el-border-color-light: rgba(255, 248, 245, 0.06);
+  --el-border-color-lighter: rgba(255, 248, 245, 0.04);
+  --el-border-color-extra-light: rgba(255, 248, 245, 0.02);
+
+  --el-fill-color: rgba(255, 248, 245, 0.03);
+  --el-fill-color-light: rgba(255, 248, 245, 0.06);
+  --el-fill-color-lighter: rgba(255, 248, 245, 0.04);
+  --el-fill-color-extra-light: rgba(255, 248, 245, 0.02);
+  --el-fill-color-dark: rgba(255, 248, 245, 0.1);
+  --el-fill-color-darker: rgba(255, 248, 245, 0.15);
+  --el-fill-color-blank: #1a0f08;
+
+  --el-border-radius-base: 12px;
+  --el-border-radius-small: 8px;
+  --el-border-radius-round: 999px;
+  --el-border-radius-circle: 50%;
+}
+
+/* ========================================
+   全局基础样式
+   ======================================== */
+html {
+  background-color: var(--bg-deep);
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* 暖色渐变背景 */
+  background-image: var(--gradient-bg);
+  background-attachment: fixed;
+}
+
+/* ========================================
+   玻璃态效果工具类
+   ======================================== */
+.glass {
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+}
+
+.glass-hover:hover {
+  background: var(--glass-surface-hover);
+  border-color: var(--glass-border-hover);
+}
+
+.glass-strong {
+  background: rgba(255, 248, 245, 0.05);
+  backdrop-filter: blur(var(--glass-blur-strong));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+}
+
+.glass-card {
+  @extend .glass;
+  border-radius: var(--radius-card);
+  transition: var(--transition-base);
+}
+
+.glass-card:hover {
+  @extend .glass-hover;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ========================================
+   按钮样式系统
+   ======================================== */
+.btn-text {
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid rgba(255, 248, 245, 0.2);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.btn-text:hover {
+  background: rgba(255, 248, 245, 0.05);
+  border-color: rgba(255, 248, 245, 0.4);
+}
+
+.btn-primary {
+  background: var(--text-primary);
+  color: var(--bg-deep);
+  border: none;
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition-base);
+}
+
+.btn-primary:hover {
+  transform: scale(1.02);
+}
+
+.btn-accent {
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-accent:hover {
+  background: var(--accent-secondary);
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px var(--accent-glow-soft);
+}
+
+/* ========================================
+   卡片样式系统
+   ======================================== */
+.nebula-card {
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  border-radius: var(--radius-card);
+  padding: var(--space-m);
+  transition: var(--transition-base);
+}
+
+.nebula-card:hover {
+  background: var(--glass-surface-hover);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ========================================
+   标签样式
+   ======================================== */
+.tag-small {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 248, 245, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 248, 245, 0.05);
+}
+
+.tag-pill {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 248, 245, 0.03);
+  border: 1px solid rgba(255, 248, 245, 0.1);
+  color: var(--text-secondary);
+  font-size: 12px;
+  transition: var(--transition-base);
+  cursor: default;
+}
+
+.tag-pill:hover {
+  background: rgba(255, 248, 245, 0.1);
+  color: var(--text-primary);
+  border-color: rgba(255, 248, 245, 0.3);
+}
+
+.tag-accent {
+  background: rgba(204, 102, 51, 0.15);
+  border: 1px solid rgba(204, 102, 51, 0.3);
+  color: var(--accent-tertiary);
+}
+
+/* ========================================
+   进度条样式
+   ======================================== */
+.progress-bar-bg {
+  height: 6px;
+  background: rgba(255, 248, 245, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 3px;
+  box-shadow: 0 0 10px var(--accent-glow-soft);
+  transition: width 0.5s ease;
+}
+
+.progress-bar-fill.low {
+  background: var(--mastery-low);
+  box-shadow: 0 0 10px var(--mastery-low-glow);
+}
+
+.progress-bar-fill.medium {
+  background: var(--mastery-med);
+  box-shadow: 0 0 10px var(--mastery-med-glow);
+}
+
+.progress-bar-fill.high {
+  background: var(--mastery-high);
+  box-shadow: 0 0 10px var(--mastery-high-glow);
+}
+
+/* ========================================
+   滚动条样式
+   ======================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 248, 245, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 248, 245, 0.2);
+}
+
+/* ========================================
+   页面容器样式
+   ======================================== */
+.page-container {
+  padding: var(--space-l);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--space-l);
+  flex-wrap: wrap;
+  gap: var(--space-s);
+}
+
+.page-title-group h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.page-title-group p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ========================================
+   网格布局系统
+   ======================================== */
+.grid-auto-fill {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-m);
+}
+
+/* ========================================
+   状态指示器
+   ======================================== */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-processing {
+  background-color: var(--mastery-med);
+  box-shadow: 0 0 8px var(--mastery-med-glow);
+}
+
+.status-done {
+  background-color: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-glow-soft);
+}
+
+/* ========================================
+   头部导航样式
+   ======================================== */
+.nebula-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-m);
+  flex-shrink: 0;
+  z-index: 10;
+  @extend .glass;
+}
+
+.brand {
+  font-weight: 500;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0.9;
+}
+
+.brand-icon {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 248, 245, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 248, 245, 0.2);
+}
+
+/* ========================================
+   动画定义
+   ======================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px var(--accent-glow-soft);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--accent-glow-soft), 0 0 40px var(--accent-glow-soft);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease forwards;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* ========================================
+   响应式设计
+   ======================================== */
+@media (max-width: 768px) {
+  :root {
+    --space-l: 24px;
+    --space-m: 16px;
+    --radius-card: 16px;
+  }
+
+  .page-container {
+    padding: var(--space-m);
+  }
+
+  .grid-auto-fill {
+    grid-template-columns: 1fr;
+  }
+
+  .page-title-group h1 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

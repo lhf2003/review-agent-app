@@ -1,6 +1,5 @@
 <template>
-  <CustomScroll class="default-model-scroll">
-    <div class="default-model-page">
+  <div class="default-model-page">
     <div class="page-header">
       <h2>默认模型配置</h2>
       <p>为不同的分析场景配置默认使用的模型</p>
@@ -114,8 +113,7 @@
         保存默认模型配置
       </el-button>
     </div>
-    </div>
-  </CustomScroll>
+  </div>
 </template>
 
 <script setup>
@@ -124,7 +122,6 @@ import { QuestionFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api/http'
 import { useAuthStore } from '../../stores/auth'
-import CustomScroll from '../../components/CustomScroll.vue'
 
 const auth = useAuthStore()
 
@@ -287,10 +284,6 @@ async function saveDefaultModels() {
 </script>
 
 <style scoped>
-.default-model-scroll {
-  height: 100%;
-}
-
 .default-model-page {
   width: 100%;
   padding-bottom: 40px;
@@ -305,13 +298,13 @@ async function saveDefaultModels() {
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .page-header p {
   margin: 0;
   font-size: 14px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .default-model-item {
@@ -320,9 +313,13 @@ async function saveDefaultModels() {
   gap: 8px;
   margin-bottom: 32px;
   padding: 24px;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 12px;
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  border-radius: var(--radius-card);
+  transition: var(--transition-base);
 }
 
 .model-label {
@@ -331,19 +328,19 @@ async function saveDefaultModels() {
   gap: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .model-label .help-icon {
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   cursor: help;
   font-size: 14px;
   transition: all 0.2s;
 }
 
 .model-label .help-icon:hover {
-  color: var(--el-color-primary);
+  color: var(--accent-primary);
 }
 
 .apple-select.full-width {
@@ -355,13 +352,23 @@ async function saveDefaultModels() {
   justify-content: center;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid var(--el-border-color-light);
+  border-top: 1px solid var(--glass-border);
 }
 
 .save-btn {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  border-radius: var(--radius-pill);
   padding: 12px 32px;
   font-weight: 600;
-  border-radius: 8px;
+  transition: all var(--transition-base);
+}
+
+.save-btn:hover {
+  background: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--accent-glow-soft);
 }
 
 @media (max-width: 768px) {

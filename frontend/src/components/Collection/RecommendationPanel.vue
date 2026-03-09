@@ -169,33 +169,28 @@ defineExpose({
 </script>
 
 <style scoped lang="scss">
+@use '../../styles/nebula-theme.scss' as *;
+
 .recommendation-panel {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-card);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
-html.dark .recommendation-panel {
-  background: rgba(28, 28, 30, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-}
 
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--glass-border);
 }
 
-html.dark .panel-header {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
 
 .header-left {
   display: flex;
@@ -205,13 +200,13 @@ html.dark .panel-header {
 
 .light-icon {
   font-size: 18px;
-  color: var(--el-color-warning);
+  color: var(--accent-tertiary);
 }
 
 .header-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .panel-loading {
@@ -223,7 +218,7 @@ html.dark .panel-header {
 
   p {
     font-size: 13px;
-    color: var(--el-text-color-placeholder);
+    color: var(--text-tertiary);
     margin-top: 8px;
   }
 }
@@ -243,17 +238,12 @@ html.dark .panel-header {
 
 .panel-footer {
   padding: 12px 20px;
-  background: var(--el-fill-color-lighter);
-  border-top: 1px solid var(--el-border-color-lighter);
-}
-
-html.dark .panel-footer {
-  background: rgba(0, 0, 0, 0.15);
-  border-top-color: rgba(255, 255, 255, 0.05);
+  background: var(--glass-surface);
+  border-top: 1px solid var(--glass-border);
 }
 
 .footer-info {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 </style>

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Document, Share } from '@element-plus/icons-vue'
+import { Document, ArrowLeft } from '@element-plus/icons-vue'
 import QuizHistoryPage from './QuizHistoryPage.vue'
 import QuizDetailPage from './QuizDetailPage.vue'
 import MistakeListPane from '../../components/quiz/MistakeListPane.vue'
@@ -11,7 +11,7 @@ import RecommendationsPage from './RecommendationsPage.vue'
 import { api } from '../../api/http'
 
 const router = useRouter()
-const activeView = ref('recommendations') // recommendations, history, mistake, mistake-review - 智能推荐为默认视图
+const activeView = ref('recommendations')
 const currentQuizId = ref('')
 const mistakeCount = ref(0)
 const recommendationCount = ref(0)
@@ -23,7 +23,6 @@ const mistakeListPaneRef = ref(null)
 
 function handleSelectQuiz(quizId) {
   currentQuizId.value = quizId
-  // In split view, we stay in history view, just update the selected ID
 }
 
 function handleGoBack() {
@@ -53,45 +52,35 @@ async function loadMistakeCount() {
     const stats = await api.getMistakeStats()
     mistakeCount.value = stats.totalCount || 0
   } catch (error) {
-    
+    // Silent fail
   }
 }
 
-// 加载推荐数量
 async function loadRecommendationCount() {
   try {
     const stats = await api.getMistakeStats()
-    // 使用未掌握的错题数量作为推荐数量
     recommendationCount.value = stats.unmastered || 0
   } catch (error) {
-    
+    // Silent fail
   }
 }
 
-// 推荐数据加载完成
 function handleRecommendationsLoaded(count) {
   recommendationCount.value = count
 }
 
-// 从推荐页面开始复习
 function handleStartReviewFromRecommendations(data) {
-  // 跳转到错题详情视图，进入复习模式
   currentMistakeId.value = data.mistakeId
   currentQuestionId.value = data.questionId
-  // 使用 'review' 模式，初始隐藏答案，需要用户提交
   activeView.value = 'mistake-review'
 }
 
-// 处理复习提交完成
 function handleReviewSubmitted(questionId) {
-  // 刷新错题数量统计
   loadMistakeCount()
   loadRecommendationCount()
 }
 
-// 处理复习关闭（下一题或完成）
 function handleReviewClosed() {
-  // 清空当前题目，返回推荐列表
   currentMistakeId.value = null
   currentQuestionId.value = null
   activeView.value = 'recommendations'
@@ -105,45 +94,41 @@ onMounted(() => {
 
 <template>
   <div class="app-root">
-    <!-- 顶部导航 -->
+    <!-- Top Navigation -->
     <div class="top-nav-container">
-       <div class="nav-left">
-         <el-radio-group v-model="activeView" class="nav-radio-group">
-           <!-- 智能推荐（默认） -->
-           <el-radio-button value="recommendations">
-             智能推荐
-             <span v-if="recommendationCount > 0" class="recommendation-badge">
-               ({{ recommendationCount }})
-             </span>
-           </el-radio-button>
+      <!-- Left: Back Button -->
+      <div class="nav-left">
+        <div class="back-link" @click="$router.push('/dashboard')">
+          <el-icon><ArrowLeft /></el-icon>
+          <span>返回</span>
+        </div>
+      </div>
 
-           <el-radio-button value="history">习题历史</el-radio-button>
+      <!-- Center: Navigation Group -->
+      <div class="nav-center">
+        <el-radio-group v-model="activeView" class="nav-radio-group">
+          <el-radio-button value="recommendations">
+            智能推荐
+            <span v-if="recommendationCount > 0" class="recommendation-badge">
+              ({{ recommendationCount }})
+            </span>
+          </el-radio-button>
 
-           <el-radio-button value="mistake">
-             错题本
-             <span v-if="mistakeCount > 0" class="mistake-badge-text">({{ mistakeCount }})</span>
-           </el-radio-button>
-         </el-radio-group>
-       </div>
+          <el-radio-button value="history">答题历史</el-radio-button>
 
-       <div class="nav-right">
-         <el-button
-           type="primary"
-           plain
-           size="small"
-           @click="$router.push('/knowledge-graph')"
-           class="kg-nav-btn"
-         >
-           <el-icon><Share /></el-icon>
-           知识图谱
-         </el-button>
-       </div>
+          <el-radio-button value="mistake">
+            错题本
+            <span v-if="mistakeCount > 0" class="mistake-badge-text">({{ mistakeCount }})</span>
+          </el-radio-button>
+        </el-radio-group>
+      </div>
+
     </div>
 
-    <!-- 主内容区 -->
+    <!-- Main Content Area -->
     <main class="content-area">
       <Transition name="fade" mode="out-in">
-        <!-- 智能推荐视图 -->
+        <!-- Smart Recommendations -->
         <div v-if="activeView === 'recommendations'" key="recommendations" class="view-container">
           <RecommendationsPage
             @recommendations-loaded="handleRecommendationsLoaded"
@@ -151,70 +136,70 @@ onMounted(() => {
           />
         </div>
 
-        <!-- 习题历史 (Split View) -->
+        <!-- Quiz History -->
         <div v-else-if="activeView === 'history'" key="history" class="view-container split-layout">
-           <!-- 左侧列表 -->
-           <div class="list-pane glass-panel">
-             <QuizHistoryPage :embedded="true" :selected-quiz-id="currentQuizId" @select-quiz="handleSelectQuiz" />
-           </div>
-           
-           <!-- 右侧详情 -->
-           <div class="detail-pane glass-panel">
-             <Transition name="fade" mode="out-in">
-               <QuizDetailPage 
-                 v-if="currentQuizId" 
-                 :key="currentQuizId" 
-                 :quizId="currentQuizId" 
-                 :embedded="true"
-                 @go-back="handleGoBack" 
-               />
-               <div v-else class="empty-detail-state">
-                 <div class="empty-icon-wrapper">
-                   <el-icon :size="48"><Document /></el-icon>
-                 </div>
-                 <h3>选择习题查看详情</h3>
-                 <p>点击左侧列表中的习题记录，在此处查看详细解析</p>
-               </div>
-             </Transition>
-           </div>
+          <div class="list-pane glass">
+            <QuizHistoryPage 
+              :embedded="true" 
+              :selected-quiz-id="currentQuizId" 
+              @select-quiz="handleSelectQuiz" 
+            />
+          </div>
+          
+          <div class="detail-pane glass">
+            <Transition name="fade" mode="out-in">
+              <QuizDetailPage 
+                v-if="currentQuizId" 
+                :key="currentQuizId" 
+                :quizId="currentQuizId" 
+                :embedded="true"
+                @go-back="handleGoBack" 
+              />
+              <div v-else class="empty-detail-state">
+                <div class="empty-icon-wrapper">
+                  <el-icon :size="48"><Document /></el-icon>
+                </div>
+                <h3>选择测验</h3>
+                <p>点击列表中的测验记录查看详细分析</p>
+              </div>
+            </Transition>
+          </div>
         </div>
 
-        <!-- 错题本 -->
+        <!-- Mistake Book -->
         <div v-else-if="activeView === 'mistake'" key="mistake" class="view-container split-layout">
-           <!-- 左侧列表 -->
-           <div class="list-pane glass-panel">
-             <MistakeListPane
-               ref="mistakeListPaneRef"
-               :embedded="true"
-               @select-mistake="handleSelectMistake"
-             />
-           </div>
+          <div class="list-pane glass">
+            <MistakeListPane
+              ref="mistakeListPaneRef"
+              :embedded="true"
+              @select-mistake="handleSelectMistake"
+            />
+          </div>
 
-           <!-- 右侧详情 -->
-           <div class="detail-pane glass-panel">
-             <Transition name="fade" mode="out-in">
-               <MistakeDetailPane
-                 v-if="currentMistakeId"
-                 :key="currentQuestionId"
-                 :mistake-id="currentMistakeId"
-                 :question-id="currentQuestionId"
-                 @marked-mastered="handleMarkedMastered"
-                 @deleted="handleDeleted"
-               />
-               <div v-else class="empty-detail-state">
-                 <div class="empty-icon-wrapper">
-                   <el-icon :size="48"><Document /></el-icon>
-                 </div>
-                 <h3>选择错题查看详情</h3>
-                 <p>点击左侧列表中的错题，在此处查看完整解析和掌握情况</p>
-               </div>
-             </Transition>
-           </div>
+          <div class="detail-pane glass">
+            <Transition name="fade" mode="out-in">
+              <MistakeDetailPane
+                v-if="currentMistakeId"
+                :key="currentQuestionId"
+                :mistake-id="currentMistakeId"
+                :question-id="currentQuestionId"
+                @marked-mastered="handleMarkedMastered"
+                @deleted="handleDeleted"
+              />
+              <div v-else class="empty-detail-state">
+                <div class="empty-icon-wrapper">
+                  <el-icon :size="48"><Document /></el-icon>
+                </div>
+                <h3>选择错题</h3>
+                <p>点击列表中的错题查看详细分析和掌握状态</p>
+              </div>
+            </Transition>
+          </div>
         </div>
 
-        <!-- 复习模式（独立组件） -->
+        <!-- Review Mode -->
         <div v-else-if="activeView === 'mistake-review'" key="mistake-review" class="view-container">
-          <div class="review-pane-wrapper glass-panel">
+          <div class="review-pane-wrapper glass">
             <ReviewModePane
               v-if="currentMistakeId"
               :key="currentQuestionId"
@@ -228,7 +213,7 @@ onMounted(() => {
                 <el-icon :size="48"><Document /></el-icon>
               </div>
               <h3>暂无复习题目</h3>
-              <p>请从智能推荐中选择题目进行复习</p>
+              <p>请从智能推荐中选择题目开始复习</p>
             </div>
           </div>
         </div>
@@ -249,14 +234,14 @@ onMounted(() => {
   min-height: 0;
 }
 
-/* ============ Top Nav ============ */
+/* ============ Top Navigation ============ */
 .top-nav-container {
-  padding: 4px 0;
+  padding: 4px 16px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: relative;
+  height: 50px;
   z-index: 10;
 }
 
@@ -264,52 +249,116 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-shrink: 0;
+}
+
+.nav-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.back-link:hover {
+  color: var(--text-primary);
+  background: var(--glass-surface);
+  border-color: var(--glass-border);
+  transform: translateY(-1px);
+}
+
+.back-link:active {
+  transform: translateY(0);
+}
+
+.back-link .el-icon {
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.back-link:hover .el-icon {
+  transform: translateX(-2px);
 }
 
 .nav-radio-group {
-  --el-fill-color-light: rgba(255, 255, 255, 0.5);
-  --el-border-radius-base: 8px;
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 4px;
+  display: flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  transition: border-color 0.3s ease;
+}
+
+.nav-radio-group:hover {
+  border-color: var(--glass-border-hover);
 }
 
 .nav-radio-group :deep(.el-radio-button__inner) {
   border: none;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  border-radius: 8px;
-  padding: 6px 12px;
-  min-width: 90px;
+  background: transparent;
+  color: var(--text-secondary);
   font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 8px 18px;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  white-space: nowrap;
 }
 
-.nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background-color: var(--el-color-primary);
+.nav-radio-group :deep(.el-radio-button__inner:hover) {
+  background: rgba(255, 248, 245, 0.06);
+  color: var(--text-primary);
+}
+
+.nav-radio-group :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background: var(--accent-primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
+  box-shadow:
+    0 4px 12px var(--accent-glow-soft),
+    0 0 0 1px rgba(204, 102, 51, 0.3);
+  font-weight: 600;
 }
 
-/* ============ Mistake Badge ============ */
+/* ============ Badge Styles ============ */
 .mistake-badge-text {
-  margin-left: 4px;
-  color: #ff3b30;
+  margin-left: 6px;
+  color: var(--mastery-low);
   font-weight: 600;
   font-size: 12px;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
 }
 
-.nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) .mistake-badge-text {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* 推荐数量标记 */
 .recommendation-badge {
-  margin-left: 4px;
-  color: #67c23a;
+  margin-left: 6px;
+  color: var(--mastery-high);
   font-weight: 600;
   font-size: 12px;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
 }
 
-.nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) .recommendation-badge {
-  color: rgba(255, 255, 255, 0.9);
+/* Active 状态 badge 更亮 */
+.nav-radio-group :deep(.el-radio-button.is-active .el-radio-button__inner) .mistake-badge-text,
+.nav-radio-group :deep(.el-radio-button.is-active .el-radio-button__inner) .recommendation-badge {
+  color: rgba(255, 255, 255, 0.95);
+  opacity: 1;
 }
 
 /* ============ Content Area ============ */
@@ -324,6 +373,7 @@ onMounted(() => {
 .view-container {
   height: 100%;
   width: 100%;
+  background: var(--bg-deep);
 }
 
 /* ============ Split Layout ============ */
@@ -332,7 +382,7 @@ onMounted(() => {
   grid-template-columns: 360px 1fr;
   gap: 16px;
   height: 100%;
-  overflow: visible; /* Allow shadow to be visible */
+  overflow: visible;
   padding: 4px;
 }
 
@@ -346,42 +396,37 @@ onMounted(() => {
 
 .detail-pane {
   height: 100%;
-  overflow: hidden; /* Detail page has its own scroll */
+  overflow: hidden;
   border-radius: 16px;
   position: relative;
   display: flex;
   flex-direction: column;
-
-  &.full-width {
-    grid-column: 1 / -1;
-  }
 }
 
-/* Adjust inner components to fit pane */
-.detail-pane :deep(.quiz-detail-page) {
-  /* 移除所有覆盖性设置，让组件保持自己的样式 */
-  flex: 1;
-  min-height: 0;
+/* ============ Glass Panel ============ */
+.glass {
+  background: var(--glass-surface);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--glass-highlight);
 }
 
-/* MistakeBookPage 已有自己的布局，不需要额外宽度设置 */
-
-/* 复习模式容器 */
+/* ============ Review Mode Container ============ */
 .review-pane-wrapper {
   height: 100%;
   overflow: hidden;
   border-radius: 16px;
 }
 
-/* Scrollbar for detail pane - Not needed as inner list scrolls */
-/* Empty State */
+/* ============ Empty State ============ */
 .empty-detail-state {
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
   text-align: center;
   padding: 40px;
 }
@@ -390,36 +435,26 @@ onMounted(() => {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(255, 248, 245, 0.03);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 24px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
 }
 
 .empty-detail-state h3 {
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .empty-detail-state p {
   font-size: 14px;
   margin: 0;
   max-width: 300px;
-}
-
-/* ============ Glassmorphism ============ */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow:
-    0 4px 24px -1px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+  color: var(--text-tertiary);
 }
 
 /* ============ Transitions ============ */
@@ -447,51 +482,48 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .split-layout {
-    grid-template-columns: 1fr; /* Stack on mobile, or hide list when detail is open */
+    grid-template-columns: 1fr;
   }
-  
-  .detail-pane {
-    position: fixed;
-    top: 0;
-    left: 0;
+
+  .top-nav-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    height: auto;
+    padding: 12px 16px;
+  }
+
+  .nav-left {
+    justify-content: center;
+  }
+
+  .nav-center {
+    justify-content: center;
+  }
+
+  .nav-radio-group {
+    display: flex;
     width: 100%;
-    height: 100%;
-    z-index: 100;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
   }
-  
-  /* Need a way to show detail pane on mobile, but for now assuming desktop focus */
+
+  .nav-radio-group :deep(.el-radio-button) {
+    flex: 1;
+  }
+
+  .nav-radio-group :deep(.el-radio-button__inner) {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
 }
 
-/* ============ html.dark 深色模式兼容 ============ */
-html.dark .app-root {
-  background-color: #000000;
-}
+@media (max-width: 480px) {
+  .app-root {
+    padding: 0;
+  }
 
-html.dark .glass-panel {
-  background: rgba(28, 28, 30, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-}
-
-html.dark .detail-pane :deep(.quiz-detail-page)::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.15);
-}
-
-html.dark .nav-radio-group :deep(.el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--el-text-color-regular);
-}
-
-html.dark .nav-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background-color: var(--el-color-primary);
-  color: white;
-}
-
-html.dark .empty-icon-wrapper {
-  background: rgba(255, 255, 255, 0.05);
+  .split-layout {
+    gap: 8px;
+    padding: 0;
+  }
 }
 </style>

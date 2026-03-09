@@ -24,6 +24,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -40,6 +41,8 @@ public class AnalysisService {
     private AnalysisResultRepository analysisResultRepository;
     @Resource
     private AnalysisTagRepository analysisTagRepository;
+    @Resource
+    private AnalysisRecommendTagRepository analysisRecommendTagRepository;
     @Resource
     private DataInfoService fileInfoService;
     @Resource
@@ -59,6 +62,8 @@ public class AnalysisService {
     private TagRelationDiscoveryService tagRelationDiscoveryService;
     @Resource(name = "analysisTaskExecutor")
     private Executor analysisTaskExecutor;
+    @Resource
+    private TransactionTemplate transactionTemplate;
 
     /**
      * 开始分析
@@ -118,7 +123,12 @@ public class AnalysisService {
                         .threadId("analysis-graph-" + userId)
                         .build();
                 Optional<OverAllState> callResult = analysisCompiledGraph.invoke(metaMap, config);
-                callResult.ifPresent(overAllState -> processAnalysisResult(overAllState, dataInfo));
+                callResult.ifPresent(overAllState ->
+                    transactionTemplate.execute(status -> {
+                        processAnalysisResult(overAllState, dataInfo);
+                        return null;
+                    })
+                );
 
                 // 推送阶段3：分析完成
                 sseService.sendStage(userId, 3);
@@ -165,6 +175,8 @@ public class AnalysisService {
             analysisResultRepository.save(analysisResult);
             // 保存多维度标签（新版表）
             saveMultiDimensionTags(analysisResult.getId(), nodeExecuteDto.getMultiDimensionResult());
+            // 保存推荐标签
+            saveRecommendTags(analysisResult.getId(), userId, nodeExecuteDto.getMultiDimensionResult());
 
             // 异步触发标签关系发现
             final Long finalAnalysisResultId = analysisResult.getId();
@@ -279,6 +291,63 @@ public class AnalysisService {
             scenarioTag.setConfidence(multiResult.getScenario().getConfidence() != null ?
                     multiResult.getScenario().getConfidence() : 75);
             analysisTagRepository.save(scenarioTag);
+        }
+    }
+
+    /**
+     * 保存推荐标签
+     * 将LLM建议但未匹配到现有标签的推荐词保存到推荐标签表
+     */
+    private void saveRecommendTags(Long analysisResultId, Long userId, MultiDimensionTagResult multiResult) {
+        if (multiResult == null || multiResult.getTechDomain() == null) {
+            return;
+        }
+
+        List<String> recommends = multiResult.getTechDomain().getRecommends();
+        if (CollectionUtils.isEmpty(recommends)) {
+            return;
+        }
+
+        // 获取该分析结果已关联的所有标签名称（用于去重判断）
+        List<AnalysisTag> existingTags = analysisTagRepository.findByAnalysisResultId(analysisResultId);
+        Set<String> existingTagNames = existingTags.stream()
+                .map(AnalysisTag::getTag)
+                .filter(tag -> tag != null)
+                .map(Tag::getName)
+                .collect(Collectors.toSet());
+
+        // 过滤掉已存在的标签，只保存新的推荐
+        for (String recommendName : recommends) {
+            if (recommendName == null || recommendName.trim().isEmpty()) {
+                continue;
+            }
+
+            String trimmedName = recommendName.trim();
+
+            // 跳过已存在的标签
+            if (existingTagNames.contains(trimmedName)) {
+                continue;
+            }
+
+            // 检查是否已存在相同的推荐（避免重复）
+            if (analysisRecommendTagRepository.existsByAnalysisResultIdAndTagName(analysisResultId, trimmedName)) {
+                continue;
+            }
+
+            // 创建推荐标签记录
+            AnalysisRecommendTag recommendTag = new AnalysisRecommendTag();
+            recommendTag.setAnalysisResultId(analysisResultId);
+            recommendTag.setTagName(trimmedName);
+            recommendTag.setUserId(userId);
+            recommendTag.setUserAction(AnalysisRecommendTag.UserAction.PENDING);
+
+            try {
+                analysisRecommendTagRepository.save(recommendTag);
+                log.debug("保存推荐标签成功: analysisResultId={}, tagName={}", analysisResultId, trimmedName);
+            } catch (Exception e) {
+                log.warn("保存推荐标签失败: analysisResultId={}, tagName={}, error={}",
+                        analysisResultId, trimmedName, e.getMessage());
+            }
         }
     }
 

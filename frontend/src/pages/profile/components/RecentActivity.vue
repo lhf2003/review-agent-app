@@ -148,35 +148,6 @@ const getActivityIcon = (type) => {
   line-height: 1.5;
 }
 
-/* Dark Mode */
-html.dark .activity-section {
-  background: rgba(30, 30, 30, 0.85);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.24),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-}
-
-html.dark .activity-section :deep(.el-timeline-item__tail) {
-  border-left-color: var(--el-border-color-darker);
-}
-
-html.dark .activity-section :deep(.el-timeline-item__node--normal) {
-  background: var(--el-color-primary);
-  border-color: rgba(30, 30, 30, 0.9);
-}
-
-html.dark .activity-section :deep(.el-timeline-item__timestamp) {
-  color: var(--el-text-color-secondary);
-}
-
-html.dark .activity-item {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-html.dark .activity-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
 /* el-empty 样式定制 */
 .activity-section :deep(.el-empty) {
   padding: 40px 0;
